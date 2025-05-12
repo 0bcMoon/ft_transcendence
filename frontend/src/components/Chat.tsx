@@ -2,8 +2,9 @@ import { useState } from 'react';
 import profile from '../image/profile.svg'
 import options from '../image/options.svg'
 
-type Event = React.FormEvent<HTMLFormElement>
+import MessageApi from '../api/messageApi.ts';
 
+type Event = React.FormEvent<HTMLFormElement>
 
 interface MessageBoxProps {
     message: string | undefined,
@@ -24,26 +25,24 @@ interface ChatBannerProps {
 }
 
 const ChatBubble = ({ message, sender }: MessageBoxProps) => {
-
     return (
-        <div className={
-                        `flex w-full flex-row 
-                        items-center h-auto min-h-[50px] pl-2 pr-2
-                        ${sender ? "justify-start" : "justify-end"}`
-        }
+        <div className={`flex w-full flex-row break-words mt-1 mb-1
+                        items-start min-h-auto 
+                        ${sender ? "justify-start" : "justify-end"}`}
         >
-            <p
-                className={`flex rounded-2xl w-[70%]  break-words pl-8 pr-2 h-full 
-                            items-center
-                        ${sender ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+            <div
+                className={`flex rounded-2xl max-w-[70%] break-all break-words px-4 py-2 
+                           ${sender ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
             >
-                {message}
-            </p>
-
+                <p className="whitespace-pre-wrap ">
+                    {message}
+                </p>
+            </div>
         </div>
     )
 }
-const ChatBanner = ({displayName, status}: ChatBannerProps) => {
+
+const ChatBanner = ({ displayName, status }: ChatBannerProps) => {
 
     return (
         <div
@@ -66,33 +65,9 @@ const ChatBanner = ({displayName, status}: ChatBannerProps) => {
         </div>
     )
 }
-export default function Chat() {
-    const [messages, setMessage] = useState<MessageBoxProps[]>([
-
-        {
-            message: "Hello",
-            sender: true
-        },
-        {
-            message: "Hi",
-            sender: false
-        },
-        {
-            message: "How are you doing?",
-            sender: true
-        },
-        {
-            message: "I am doing great, thank you!",
-            sender: false
-        },
-        {
-            message: "What about you?",
-            sender: true
-        }
-    ])
-    function getRandomInt(max: number): number {
-        return Math.floor(Math.random() * max);
-    }
+export default function ChatContainer() {
+    const messageApi = MessageApi.getMessages()
+    const [messages, setMessage] = useState<MessageBoxProps[]>(messageApi)
     const SendMessage = (event: Event) => {
         event.preventDefault()
         const form = event.currentTarget
@@ -102,30 +77,28 @@ export default function Chat() {
             return;
         const newMessage: MessageBoxProps = {
             message: message,
-            sender: getRandomInt(2) === 0
+            sender: Math.floor(Math.random() * 2) === 0
         }
         setMessage([newMessage, ...messages])
         form.reset()
-
-
     }
     const chatBannerProps: ChatBannerProps = {
         displayName: "John Doe",
         status: Status.Playing
     }
     return (
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center bg-white-200 h-screen
-                        row-span-3 border border-gray-100 col-span-2">
 
-            <ChatBanner {...chatBannerProps}/>
-            <div
-                className="flex flex-col-reverse gap-4 overflow-auto no-scrollbar  h-full w-full"
-            >
-                {/* this is where message get render  */}
-                {/* TODO: add infinte content and only store a part of message Bonus: add redis to backend hh */}
+        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+                        bg-white-200 h-[97svh] 
+                        row-span-3 col-span-2
+                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+        >
+            <ChatBanner {...chatBannerProps} />
+            <div 
+                className="flex-1 overflow-y-auto no-scrollbar
+                                           flex flex-col-reverse w-full pl-2 pr-2">
                 {messages.map((message, idx) => <ChatBubble key={idx} {...message} />)}
             </div>
-
             <form
                 className="flex flex-row justify-around w-full "
                 onSubmit={SendMessage}
@@ -134,9 +107,9 @@ export default function Chat() {
                     name="message"
                     className="shadow-gray-50 bg-gray-100 h-[50px] 
                     w-full rounded-lg 
-                    mt-2  
+                    mt-2  mr-4 ml-4
                     placeholder:text-center p-4"
-                    placeholder="input your message"
+                    placeholder="type your message"
                 >
                 </input>
 
