@@ -1,16 +1,18 @@
-
-import Fastify from 'fastify'
-
 import db from '../sql/db.js'
-const fastify = Fastify({
-    logger: true
+import UserAuth from './auth/auth.js'
+import fastify from './app.js'
+
+fastify.get('/users', async (req, res) => {
+    return await db.all('SELECT * FROM users')
 })
 
-fastify.get('/', async function handler(req, res) {
-    console.log(req.headers)
-    return { hello: 'world' }
-})
+// fastify.get('/login', UserAuth.login)
+fastify.post('/login', UserAuth.login)
 
+fastify.get('/me', async (req, res) => {
+    console.log(req.user)
+    return await db.all('SELECT * FROM users')
+})
 // Run the server!
-await fastify.listen({ port: 3000 })
-db.close();
+console.log('Server listening on http://localhost:3000')
+fastify.listen({ port: 3000 })

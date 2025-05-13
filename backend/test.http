@@ -1,5 +1,21 @@
 ###
 
-GET http://127.0.0.1:3000
+GET http://127.0.0.1:3000/users
+
+###
+
+POST http://127.0.0.1:3000/login
+Accept: application/json
+Content-Type: application/json
+
+{
+    "username": "Kenyatta28",
+    "password": "password"
+}
+
+###
+
+GET http://127.0.0.1:3000/me
+Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.gyJwYXlsb2FkIjp7ImlkIjoxLCJ1c2VybmFtZSI6IktlbnlhdHRhMjgiLCJmdWxsX25hbWUiOiJPbGxpZSBIYW5zZW4iLCJlbWFpbCI6IkFuaXRhNDVAaG90bWFpbC5jb20ifSwiaWF0IjoxNzQ3MTY2MjY0fQ.S79PVHeSRzs1vDUtmSliqe2OolAicpikxlmj_JRwutk
 
 ###
