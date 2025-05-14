@@ -8,6 +8,7 @@ const fastify = Fastify({
 fastify.register(jwt, {
     secret: process.env.JWT_SECRET
 })
+
 fastify.addHook('preHandler', async (request, reply) => {
     // Skip JWT validation for public routes like /login
     if (request.url === '/login') {
