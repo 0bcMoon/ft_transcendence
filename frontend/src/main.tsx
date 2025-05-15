@@ -7,19 +7,23 @@ import { RouterProvider } from "react-router-dom";
 import Login from './login/Login.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-
+import Home from './home/Home.tsx';
+import { AuthProvider } from './context/AuthContext';
 
 const router = createBrowserRouter([
     { path: '/', element: <App /> },
     { path: '/chat', element: <Chat /> },
     { path: '/login', element: <Login /> },
+    { path: '/home', element: <Home /> },
 ])
 
 const queryClient = new QueryClient()
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
+            <AuthProvider>
             <RouterProvider router={router} />
+            </AuthProvider>
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
     </StrictMode>
