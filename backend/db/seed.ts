@@ -1,16 +1,23 @@
 import { faker } from '@faker-js/faker'
 import bcrypt from 'bcrypt'
+import 'dotenv/config';
 
-import db from './db.js'
+import db from './db'
 
-db.serialize( async () => {
-    // Create the users table
+db.serialize(async () => {
 
-    // Insert a user into the users table
-    const createUsers = db.prepare('INSERT INTO users (username, full_name, password, email) VALUES ( ?, ?, ?, ?)')
+    //truncate the tables
+    db.exec('DELETE FROM users')
+    const createUsers = db.prepare('INSERT INTO users (username, display_name, password, email) VALUES ( ?, ?, ?, ?)')
     // const createMessages = db.prepare('INSERT INTO message (sender_id, receiver_id, content) VALUES (?,  ?, ?)')
     const salt = await bcrypt.genSalt(10)
-    for (let i = 0;i<5;i++) {
+    createUsers.run(
+        "hicham",
+        "Hicham Benoukaiss",
+        await bcrypt.hash('password', salt),
+        "hicham@mail.com"
+    )
+    for (let i = 0; i < 5; i++) {
         createUsers.run(
             faker.internet.username(),
             faker.person.fullName(),

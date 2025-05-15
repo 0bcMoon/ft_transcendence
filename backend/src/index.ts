@@ -1,12 +1,19 @@
-import db from '../sql/db.js'
-import UserAuth from './auth/auth.js'
-import fastify from './app.js'
+require('module-alias/register')
+
+import db from '../db/db'
+import UserAuth from './auth/auth'
+import fastify from './app'
+
+interface LoginBody {
+  username: string;
+  password: string;
+}
 
 fastify.get('/users', async (req, res) => {
     return await db.all('SELECT * FROM users')
 })
 
-// fastify.get('/login', UserAuth.login)
+
 fastify.post('/login', UserAuth.login)
 
 fastify.get('/me', async (req, res) => {
