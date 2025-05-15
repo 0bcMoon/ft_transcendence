@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import googleIcon from "../image/google.svg";
 import fortytwoIcon from "../image/42.svg";
@@ -7,6 +7,16 @@ import userIcon from "../image/user.svg";
 import { z } from "zod";
 import { Toaster } from "react-hot-toast";
 import { toast } from "react-hot-toast";
+import { useMutation } from "@tanstack/react-query";
+import api from "../api/api";
+import { AxiosError } from 'axios';
+import { useAuth } from '../context/useAuth';
+import { useEffect } from "react";
+
+
+interface ApiError {
+    message: string;
+}
 
 interface LogoProps {
     source: string;
@@ -76,21 +86,70 @@ const validateLogin = (data: UserLogin): boolean => {
     }
     return true;
 }
-const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    const userData: UserLogin = {
-        username: data["username"] as string,
-        password: data["password"] as string,
-    };
 
-    if (validateLogin(userData)) {
-        // Perform login action here
-    }
-
-}
 export default function Login() {
+
+    const { setUser , isAuthenticated} = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate("/home");
+            console.log("User is already authenticated");
+
+        }
+    }, [isAuthenticated, navigate]);
+
+    const LoginMutation = useMutation({
+        mutationFn: async (userData: UserLogin) => {
+            const response = await api.post("/login", userData);
+            return response.data;
+        },
+        onSuccess: async (data) => {
+            toast.success("Login successful", {
+                duration: 5000,
+                position: "top-right",
+                style: {
+                    width: "300px",
+                },
+            });
+            setUser(data);
+
+        },
+        onError: async (error: AxiosError<ApiError>) => {
+            toast.error(error.response?.data?.message || "500 Internal Server Error", {
+                duration: 5000,
+                position: "top-right",
+                style: {
+                    width: "300px",
+                },
+            });
+        },
+    });
+
+    const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData.entries());
+        const userData: UserLogin = {
+            username: data["username"] as string,
+            password: data["password"] as string,
+        };
+
+        if (validateLogin(userData)) {
+            LoginMutation.mutate(userData);
+            if (LoginMutation.isPending) {
+                toast.loading("Loading...", {
+                    duration: 5000,
+                    position: "top-right",
+                    style: {
+                        width: "300px",
+                    },
+                });
+            }
+        }
+    }
     return (
         <>
             <div><Toaster /></div>
