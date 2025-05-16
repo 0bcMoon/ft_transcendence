@@ -1,0 +1,23 @@
+#!/bin/bash
+set -xe
+# Start a new tmux session named 'dev' if it doesn't exist, or attach to it if it does
+tmux new-session -d -s dev
+
+
+# Window 1: server
+tmux new-window -t dev:2 -n "backend-server"
+tmux send-keys -t dev:2 "cd backend" C-m
+tmux send-keys -t dev:2 "npm run dev" C-m
+
+# Window 2: database
+tmux new-window -t dev:3 -n "nvim-frontend"
+tmux send-keys -t dev:3 "cd frontend" C-m
+tmux send-keys -t dev:3 "nvim" C-m
+
+# Window 3: logs
+tmux new-window -t dev:4 -n "frontend-server"
+tmux send-keys -t dev:4 "cd frontend" C-m
+tmux send-keys -t dev:4 "npm run dev" C-m
+
+# Attach to the session
+tmux attach-session -t dev
