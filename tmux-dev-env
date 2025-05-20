@@ -3,8 +3,6 @@ set -xe
 
 tmux new-session -d -s dev
 
-
-
 tmux new-window -t dev:2 -n "backend-server"
 tmux send-keys -t dev:2 "cd backend" C-m
 tmux send-keys -t dev:2 "npm run dev" C-m

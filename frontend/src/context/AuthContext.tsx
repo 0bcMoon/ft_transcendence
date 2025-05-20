@@ -42,6 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [user]);
 
+
+    // Update localStorage when user changes
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('user');
+        }
+    }, [user]);
+
     const logout = () => {
         setUser(null);
     };

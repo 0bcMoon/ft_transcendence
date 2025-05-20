@@ -20,6 +20,12 @@ export const userRepository = {
     getUserById: async (id: number) => {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
     },
+    getContactList: async (userId: number) => {
+        const sql: string = `SELECT users.id, users.display_name, users.username 
+                            from contacts 
+                            INNER JOIN users on  contacts.contact_id = users.id and contacts.user_id = ?`;
+        return await db.all(sql, [userId]);
+    }
     // createUser: async (user) => {
     //     const { username, full_name, password, email } = user;
     //     return await db.run('INSERT INTO users (username, full_name, password, email) VALUES (?, ?, ?, ?)', [username, full_name, password, email]);

@@ -13,10 +13,11 @@ const Contact = ({ profilePicture, displayName, status, lastMessage }: chatProfi
     if (lastMessage != undefined && lastMessage.length > 35) {
         lastMessage = lastMessage.slice(1, 35) + "....."
     }
+
     return (
         <div
             className="flex flex-row
-                    border border-gray-200 w-[96%] rounded-2xl h-[8%]"
+                    border border-gray-200 w-[96%] rounded-2xl h-16"
         >
             <img
                 src={profilePicture ?? profile}

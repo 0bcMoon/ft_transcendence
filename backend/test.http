@@ -9,13 +9,13 @@ Accept: application/json
 Content-Type: application/json
 
 {
-    "username": "Kenyatta28",
+    "username": "hicham",
     "password": "password"
 }
 
 ###
 
-GET http://127.0.0.1:3000/me
-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXlsb2FkIjp7ImlkIjoxLCJ1c2VybmFtZSI6IktlbnlhdHRhMjgiLCJmdWxsX25hbWUiOiJPbGxpZSBIYW5zZW4iLCJlbWFpbCI6IkFuaXRhNDVAaG90bWFpbC5jb20ifSwiaWF0IjoxNzQ3MjI2MDc5fQ.ut-lb6isVU1QpvaMc7enbHTXKM2eln5GNAabxlMMgao 
+GET http://127.0.0.1:3000/user
+Authorization: bearer {{JWT_TOKEN}}
 
 ###

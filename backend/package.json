@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
-        "migrate": "rm  db/db/db.sqlite"
+        "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts"
     },
     "_moduleAliases": {
         "@root": ".",
