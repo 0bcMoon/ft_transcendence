@@ -3,7 +3,6 @@ import { userRepository } from "../repository/userRepository";
 
 
 const User = {
-
     getContactList: async (req: FastifyRequest, reply: FastifyReply) => {
         const contacts = await userRepository.getContactList(req.user.id);
         return reply.status(200).send(contacts);
