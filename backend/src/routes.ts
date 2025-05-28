@@ -13,7 +13,8 @@ export default async function routes(
         console.log(request.user.id)
         // return userRepository.getUserById();
     })
-    fastify.get('/chat/contact', User.getContactList)
+    fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
+    fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
     fastify.post('/login', UserAuth.login)
 }
 
