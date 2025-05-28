@@ -14,7 +14,7 @@ export type UserResponse = Omit<User, 'password'>;
 
 export const userRepository = {
 
-    getUserByUsername: async (username: string): Promise<User | undefined> => {
+    getUserByUsername: async (username: string) => {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
     getUserById: async (id: number) => {
@@ -25,7 +25,15 @@ export const userRepository = {
                             from contacts 
                             INNER JOIN users on  contacts.contact_id = users.id and contacts.user_id = ?`;
         return await db.all(sql, [userId]);
-    }
+    },
+    getMessages: async (senderId: number, receiverId: number) => {
+
+        const sql: string = `SELECT * FROM messages 
+                             WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)`;
+        return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
+        // return await db.all(sql, []);
+    },
+
     // createUser: async (user) => {
     //     const { username, full_name, password, email } = user;
     //     return await db.run('INSERT INTO users (username, full_name, password, email) VALUES (?, ?, ?, ?)', [username, full_name, password, email]);
