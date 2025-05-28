@@ -37,25 +37,7 @@ const MessageApi = {
                 sender: true
             },
         ]
-    },
-    getContactList: ()  => {
-        return [
-            {
-                profilePicture: undefined,
-                displayName: "john Doe",
-                status: "Online",
-                lastMessage: "Hello"
-            },
-
-            {
-                profilePicture: undefined,
-                displayName: "john Doe",
-                status: "Online",
-                lastMessage: "Hello"
-            }
-        ]
     }
-
 }
 
 export default MessageApi;

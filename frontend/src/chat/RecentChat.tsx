@@ -1,21 +1,33 @@
 import profile from '../image/profile.svg'
 import options from '../image/options.svg'
-import MessageApi from '../api/messageApi.ts';
+import { useQuery } from '@tanstack/react-query';
+import api from '../api/api';
+import Loader from '../vendor/loader';
+import { useChat } from '../context/ChatContext';
 
 interface chatProfileProps {
-    profilePicture: string | undefined
-    displayName: string | undefined,
-    status: string,
-    lastMessage: string | undefined
+    id: number,
+    display_name: string,
+    username: string
+    lastMessage: string
+    profilePicture?: string
 
 }
-const Contact = ({ profilePicture, displayName, status, lastMessage }: chatProfileProps) => {
+const Contact = ({ id, display_name, lastMessage, profilePicture }: chatProfileProps) => {
+
+
+    const { setCurrentChat } = useChat();
+
     if (lastMessage != undefined && lastMessage.length > 35) {
         lastMessage = lastMessage.slice(1, 35) + "....."
     }
 
+    const selectUser = async () => {
+        setCurrentChat({ id, display_name });
+    }
+
     return (
-        <div
+        <div onClick={selectUser}
             className="flex flex-row
                     border border-gray-200 w-[96%] rounded-2xl h-16"
         >
@@ -24,7 +36,7 @@ const Contact = ({ profilePicture, displayName, status, lastMessage }: chatProfi
                 className="rounded-full w-auto h-[80%] m-2 "
             />
             <div className="flex flex-col justify-evenly w-full">
-                <p className="text-xl"> {displayName}</p>
+                <p className="text-xl"> {display_name}</p>
                 <p className="text-xs pl-2 text-gray-600"> {lastMessage}</p>
             </div>
 
@@ -36,22 +48,42 @@ const Contact = ({ profilePicture, displayName, status, lastMessage }: chatProfi
         </div>
     )
 }
+export interface ChatUser {
+    id: string;
+    display_name: string;
+}
+
+const getContacts = async () => {
+    const response = await api.get<chatProfileProps[]>('/chat/contacts');
+    return response.data;
+}
+
 export default function RecentChat() {
-    const contactsList = MessageApi.getContactList()
+
+    const { data: contacts, error, isLoading } = useQuery<chatProfileProps[]>({
+        queryFn: getContacts,
+        queryKey: ['contacts'],
+    })
+
     return (
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+        <div 
+            className="flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
-                        row-span-3 col-span-1 gap-2
-                        border-gray-100 border-2 shadow-lg shadow-gray-200">
+                        gap-2
+                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+        >
             <div
                 className="flex items-center flex-row w-full gap-8 border-b border-gray-100 h-[10%]"
             >
                 <span className="text-center w-full font-bold text-xl ">Direct Messages</span>
             </div>
+
             <div
                 className="flex gap-4 overflow-auto no-scrollbar  h-full w-full justify-start items-center flex-col"
             >
-                {contactsList.map((profile, index) => <Contact key={index} {...profile} />)}
+                {isLoading && <Loader />}
+                {contacts?.map((profile, index) => <Contact key={index} {...profile} />)}
+                {error && <div className="text-red-500 font-bold mt-4">Error fetching contacts</div>}
             </div>
         </div>
     )

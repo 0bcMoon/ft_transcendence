@@ -10,7 +10,7 @@ import { toast } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
 import { AxiosError } from 'axios';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../context/AuthContext.tsx';
 import { useEffect } from "react";
 
 
@@ -23,6 +23,7 @@ interface LogoProps {
 }
 
 interface InputProps {
+    type: string;
     icon?: string;
     label: string;
     name: string;
@@ -41,13 +42,14 @@ const Logo = ({ source }: LogoProps) => {
     );
 }
 
-const Input = ({ label, name, placeholder }: InputProps) => {
+const Input = ({ type, label, name, placeholder }: InputProps) => {
 
     return (
 
         <div className="flex flex-col items-center justify-center h-[30%] w-full " >
             <label className="w-[82%] mb-1 font-bold"> {name}</label>
             <input
+                type={type}
                 className="border  w-[82%] h-[60%] rounded bg-gray-100 border-gray-200 p-4"
                 placeholder={placeholder}
                 id={label}
@@ -79,6 +81,9 @@ const validateLogin = (data: UserLogin): boolean => {
                 {
                     duration: 5000,
                     position: "top-right",
+                    style: {
+                        width: "300px",
+                    },
                 }
             );
         }
@@ -89,7 +94,7 @@ const validateLogin = (data: UserLogin): boolean => {
 
 export default function Login() {
 
-    const { setUser, isAuthenticated } = useAuth();
+    const { setToken, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -99,6 +104,7 @@ export default function Login() {
     }, [isAuthenticated, navigate]);
 
     const LoginMutation = useMutation({
+        mutationKey: ["login"],
         mutationFn: async (userData: UserLogin) => {
             const response = await api.post("/login", userData);
             return response.data;
@@ -111,17 +117,14 @@ export default function Login() {
                     width: "300px",
                 },
             });
-            setUser(data);
-
+            console.log("Login successful", data);
+            setToken(data.access_token);
+            localStorage.setItem("access_token", data.access_token);
         },
         onError: async (error: AxiosError<ApiError>) => {
-            toast.error(error.response?.data?.message || "500 Internal Server Error", {
-                duration: 5000,
-                position: "top-right",
-                style: {
-                    width: "300px",
-                },
-            });
+
+            console.log("Login failed", error);
+            toast.error(error.response?.data?.message || "500 Internal Server Error");
         },
     });
 
@@ -150,7 +153,16 @@ export default function Login() {
     }
     return (
         <>
-            <div><Toaster /></div>
+            <div><Toaster
+                toastOptions={{
+                    duration: 5000,
+                    position: "top-right",
+                    style: {
+                        width: "300px",
+                    },
+                }}
+            /></div>
+
             <div className=" flex flex-col items-center justify-center h-screen w-screen bg-gray-100 m-0 p-0">
                 <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded gap-4 shadow-md h-155 w-120  border border-gray-200">
                     <div className="gap-4 w-full text-center mt-8">
@@ -161,8 +173,8 @@ export default function Login() {
                     </div>
 
                     <div className="flex flex-col items-center justify-center h-[50%] w-full border-b" >
-                        <Input icon={userIcon} label="username" name="Username" placeholder="Enter your username" />
-                        <Input icon={passwordIcon} label="password" name="Password" placeholder="Enter your Password" />
+                        <Input type={"text"} icon={userIcon} label="username" name="Username" placeholder="Enter your username" />
+                        <Input type={"password"} icon={passwordIcon} label="password" name="Password" placeholder="Enter your Password" />
 
                         <button
                             type="submit"

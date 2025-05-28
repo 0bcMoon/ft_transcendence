@@ -6,25 +6,34 @@ const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
     },
 })
 
-// Add request interceptor for authentication
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
 
 api.interceptors.request.use(
     (config) => {
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-            return config
+        if (config.url === '/login') {
+            return config;
         }
-        const user = JSON.parse(storedUser);
-        const token = user.token;
+        const token = localStorage.getItem("access_token")
         if (!token) {
-            throw new Error('No token found in localStorage')
+            console.log("No user found in local storage");
+            throw new Error("No user found in local storage");
         }
         config.headers.Authorization = `Bearer ${token}`
         return config
     },
-    (error) => Promise.reject(error)
-)
+    (error) => Promise.reject(error))
+
 export default api;

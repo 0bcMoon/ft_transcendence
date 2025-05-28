@@ -1,11 +1,24 @@
+import { useNavigate } from 'react-router-dom';
 import './App.css'
-import  Chat  from './chat/Chat.tsx'
+import { useAuth } from './context/AuthContext';
+import { useEffect } from 'react';
 
 function App() {
 
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate("/login");
+        }
+    }, [isAuthenticated, navigate]);
+
+
     // TODO: here should be dashboard and check if user is logged in
     return (
-        <Chat />
+        <div className="App">
+            Hello World!
+        </div>
     );
 }
 

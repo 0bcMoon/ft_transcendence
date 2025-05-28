@@ -1,19 +1,12 @@
 // AuthContext.tsx
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 
 // Define user type
-interface User {
-    id: string;
-    username: string;
-    display_name: string;
-    email: string;
-    token: string;
-}
 
 // Define context type
 interface AuthContextType {
-    user: User | null;
-    setUser: (user: User | null) => void;
+    token: string | null;
+    setToken: (token: string | null) => void;
     isAuthenticated: boolean;
     logout: () => void;
 }
@@ -23,45 +16,38 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 // Create a provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [token, setToken] = useState<string | null>(null);
 
     // Load user from localStorage on mount
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
+        const access_token = localStorage.getItem('access_token');
+        setToken(access_token || null);
     }, []);
 
-    // Update localStorage when user changes
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('user');
-        }
-    }, [user]);
 
 
     // Update localStorage when user changes
     useEffect(() => {
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('user');
+        if (token){
+            localStorage.setItem('access_token', token);
         }
-    }, [user]);
+        else {
+            const access_token = localStorage.getItem('access_token');
+            setToken(access_token || null);
+        }
+    }, [token]);
 
     const logout = () => {
-        setUser(null);
+        setToken(null);
+        localStorage.removeItem('access_token');
     };
 
     return (
         <AuthContext.Provider
             value={{
-                user,
-                setUser,
-                isAuthenticated: !!user,
+                token,
+                setToken,
+                isAuthenticated: !!token,
                 logout
             }}
         >
@@ -70,4 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 }
 
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
 
