@@ -15,7 +15,7 @@ const UserAuth = {
     login: async (req: FastifyRequest, reply: FastifyReply) => {
         const { username, password } = req.body as LoginBody;
         if (!username || !password) {
-            return reply.status(400).send({ message: 'Username and password are required' });
+            return reply.status(400).send({ message: 'Invalid username or password' });
         }
         const user = await userRepository.getUserByUsername(username);
         if (!user) {
@@ -25,14 +25,25 @@ const UserAuth = {
         if (!isPasswordValid) {
             return reply.status(401).send({ message: 'Invalid username or password' });
         }
-        user.token = fastify.jwt.sign({
-            payload: {
-                id: user.id,
-                username: user.username,
-            }
-        })
-        const { password: hashedPassword, created_at, ...userResponse } = user;
-        return reply.status(200).send(userResponse);
+        const token = fastify.jwt.sign({
+            id: user.id,
+            username: user.username,
+        },
+            {
+                expiresIn: '24h' // Token expiration time
+            },
+        )
+
+        reply
+            .setCookie('token', token, {
+                path: '/',
+                secure: true, // send cookie over HTTPS only
+                httpOnly: true,
+                sameSite: true // alternative CSRF protection
+            })
+        return reply.status(200).send({
+            access_token: token
+        });
     },
 
     register: async (req: FastifyRequest, reply: FastifyReply) => {

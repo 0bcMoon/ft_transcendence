@@ -1,39 +1,72 @@
-import Fastify from 'fastify';
 import jwt from '@fastify/jwt'
 import cors from '@fastify/cors'
-import { FastifyRequest } from 'fastify/types/request';
+import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import websocket from '@fastify/websocket'
+import wsRouter from './websocket'
+import cookie from '@fastify/cookie'
 
+
+declare module "@fastify/jwt" {
+    interface FastifyJWT {
+        user: {
+            id: number,
+            username: string
+        };
+    }
+}
+
+declare module 'fastify' {
+
+    type Authenticate = (
+        request: FastifyRequest,
+        reply: FastifyReply
+    ) => Promise<void>;
+
+    /** Apply the extension */
+    interface FastifyInstance {
+        authenticate: Authenticate,
+    }
+}
 const fastify = Fastify({
     logger: true
 })
 
+
+fastify.register(cookie)
 fastify.register(jwt, {
     secret: process.env.JWT_SECRET!
+
 })
 
+fastify.register(websocket)
+
+fastify.register(wsRouter);
 
 fastify.register(cors, {
     // Configure CORS options
-    origin: ['http://localhost:5173'], // Reflects the request origin, or specify allowed origins like: ['http://localhost:5173']
-    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
-    credentials: true, // Allows cookies to be sent with requests
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: true, // Allow any origin for development (restrict this in production!)
+    methods: ['GET', 'OPTIONS', 'POST', 'HEAD'], // Include both GET and OPTIONS
+    allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
+    credentials: true,
+    preflightContinue: true // Important for WebSocket connections
 });
 
-fastify.addHook('preHandler', async (request, reply) => {
-    // Skip JWT validation for public routes like /login
-    if (request.method === 'POST' && request.body === undefined) {
-        return reply.status(400).send({ error: 'Request body is required' });
-    }
-    else if (request.url === '/login') {
-        return;
-    }
-    try {
-        await request.jwtVerify(); // Verify the JWT
-        // If valid, request.user will contain the decoded payload
-    } catch (err: any) {
-        return reply.code(401).send({ message: err.message });
-    }
-});
 
+
+fastify.decorate(
+    'authenticate',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+        try {
+            console.log(request.query)
+            await request.jwtVerify();
+        } catch (error: any) {
+            return reply.code(401).send({ message: error.message });
+        }
+    }
+);
+
+fastify.decorate(
+    'wsAuth',
+    
+);
 export default fastify;
