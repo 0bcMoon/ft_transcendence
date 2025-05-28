@@ -1,9 +1,13 @@
 {
     "include": [
         "src/**/*",
-        "fastify.d.ts"
+        "types/**/*"
     ],
     "compilerOptions": {
+        "types": [
+            "node",
+            "@types/node"
+        ],
         "typeRoots": [
             "./types",
             "./node_modules/@types"
