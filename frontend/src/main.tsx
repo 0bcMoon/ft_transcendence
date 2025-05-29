@@ -1,8 +1,8 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { StrictMode } from 'react'
 import App from './App.tsx'
 import Chat from './chat/Chat.tsx'
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter} from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
 import Login from './login/Login.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -11,32 +11,45 @@ import Home from './home/Home.tsx';
 import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
 
+import RootLayout from './RootLayout'
+
 
 
 
 const router = createBrowserRouter([
-    { path: '/', element: <App /> },
     {
-        path: '/chat',
-        element: (
-                <ChatProvider>
-                    <Chat />
-                </ChatProvider>
-        ),
+        path: '/',
+        element: <RootLayout />, // Use the layout component here
+        children: [ // Nested routes
+            { index: true, element: <App /> }, // `index: true` makes this the default child route for '/'
+            { path: 'login', element: <Login /> }, // Relative path to parent '/'
+            { path: 'home', element: <Home /> },   // Relative path to parent '/'
+            {
+                path: 'chat', // Relative path to parent '/'
+                element: (
+                    <ChatProvider>
+                        <Chat />
+                    </ChatProvider>
+                ),
+            },
+        ],
     },
-    { path: '/login', element: <Login /> },
-    { path: '/home', element: <Home /> },
-]);
+
+    // You could also have other top-level routes outside of the layout if needed
+    // For example, a '/admin' route with a different layout, or a '/404' route
+])
+
 const queryClient = new QueryClient()
 
 // WARNING: : alot of providers are used in this app 
+
 createRoot(document.getElementById('root')!).render(
-      <StrictMode> 
+    <StrictMode>
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
                 <RouterProvider router={router} />
             </AuthProvider>
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
-     </StrictMode>
+    </StrictMode>
 )
