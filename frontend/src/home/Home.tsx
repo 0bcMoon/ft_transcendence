@@ -16,7 +16,7 @@ export default function Home() {
             <div className="home">
                 <h1>Welcome to the Home Page</h1>
                 <p>Your token is: {token}</p>
-                <h2><p>TODO: create home page </p></h2>
+                <p>TODO: create home page </p>
                 <Link to="/chat"> Chat </Link>
             </div>
         </>
