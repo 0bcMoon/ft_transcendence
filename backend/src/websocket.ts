@@ -30,8 +30,8 @@ export default async function(fastify: FastifyInstance) {
     fastify.get('/ws', { websocket: true, preValidation: validate }, (socket, req) => {
         // Add the new connection to the set
         chatConnections.set(req.user.id, socket)
+
         socket.on('message', async (message) => {
-            console.log("new message has arrive")
             const recvMessage: RecvMessage = JSON.parse(message.toString());
 
             // TODO: try and catch here to handle errors gracefully
@@ -47,9 +47,9 @@ export default async function(fastify: FastifyInstance) {
             chatConnections.get(req.user.id)?.send(resultString);
             // TODO add also a notification to the receiver
             chatConnections.get(recvMessage.receiver_id)?.send(resultString);
+
             socket.on('close', () => {
                 chatConnections.delete(req.user.id);
-                console.log('Client disconnected:', chatConnections.size, ' clients connected');
             });
         });
     });
