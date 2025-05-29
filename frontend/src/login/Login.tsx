@@ -5,7 +5,6 @@ import fortytwoIcon from "../image/42.svg";
 import passwordIcon from "../image/password.svg";
 import userIcon from "../image/user.svg";
 import { z } from "zod";
-import { Toaster } from "react-hot-toast";
 import { toast } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import api from "../api/api";
@@ -153,15 +152,6 @@ export default function Login() {
     }
     return (
         <>
-            <div><Toaster
-                toastOptions={{
-                    duration: 5000,
-                    position: "top-right",
-                    style: {
-                        width: "300px",
-                    },
-                }}
-            /></div>
 
             <div className=" flex flex-col items-center justify-center h-screen w-screen bg-gray-100 m-0 p-0">
                 <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded gap-4 shadow-md h-155 w-120  border border-gray-200">
