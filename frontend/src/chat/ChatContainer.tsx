@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect} from 'react';
 
 import profile from '../image/profile.svg'
 import options from '../image/options.svg'
@@ -6,7 +6,6 @@ import { useChat } from '../context/ChatContext.tsx';
 import toast from 'react-hot-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
 
 type Event = React.FormEvent<HTMLFormElement>
 
@@ -111,12 +110,10 @@ const fetchMessages = async (userId: number | null) => {
 
 //find a way to use websocket to send messages
 
-export default function ChatContainer() {
 
-    const { token } = useAuth()
+export default function ChatContainer({ isConnected, webSocket }: { isConnected: boolean, webSocket: WebSocket | null }) {
+
     const { currentChat } = useChat()
-    const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
-    const [isConnected, setIsConnected] = useState<boolean>(false);
     const queryClient = useQueryClient();
 
 
@@ -168,54 +165,28 @@ export default function ChatContainer() {
     }
 
     // Initialize WebSocket connection
+
     useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
-            ws.onopen = () => {
-
-                toast.success('Connected to WebSocket');
-                setIsConnected(true);
-            };
-            ws.onerror = (error) => {
-                toast.error('Error: WebSocket error: ' + error);
-            };
-
-            ws.onclose = () => {
-                toast.error("WebSocket connection closed");
-                setWebSocket(null);
-                setIsConnected(false);
-            };
-            setWebSocket(ws);
-        }, 1000); // Delay to ensure the token is available
-
-        // Cleanup on unmount
-        return () => {
-            clearTimeout(timeoutId);
-            console.log("Cleaning up WebSocket connection");
-        };
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Reconnect if currentChat changes or token changes
-    useEffect(() => {
+        //TODO: try to reconnect to socket
         if (webSocket === null)
             return;
         webSocket.onmessage = (event) => {
             const data: Message = JSON.parse(event.data); //plz dont fail me
             // Update the messages cache with the new message
-            queryClient.setQueryData<Message[]>(queryKey, (oldMessages) => {
+            queryClient.setQueryData<Message[]>(['messages', currentChat?.id], (oldMessages) => {
                 if (!oldMessages) return [data];
                 return [data, ...oldMessages];
             });
             toast.success('New message received');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentChat]);
 
     return (
 
         <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
-                        col-span-2
+                        col-span-8
                         border-gray-100 border-2 shadow-lg shadow-gray-200"
         >
             <ChatBanner />

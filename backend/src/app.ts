@@ -28,7 +28,7 @@ declare module 'fastify' {
     }
 }
 const fastify = Fastify({
-    logger: true
+    logger: false
 })
 
 
@@ -57,7 +57,6 @@ fastify.decorate(
     'authenticate',
     async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-            console.log(request.query)
             await request.jwtVerify();
         } catch (error: any) {
             return reply.code(401).send({ message: error.message });
