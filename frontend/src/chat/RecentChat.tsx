@@ -70,6 +70,7 @@ export default function RecentChat() {
             className="flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
                         gap-2
+                        col-span-5
                         border-gray-100 border-2 shadow-lg shadow-gray-200"
         >
             <div
