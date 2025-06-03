@@ -28,7 +28,7 @@ api.interceptors.request.use(
         }
         const token = localStorage.getItem("access_token")
         if (!token) {
-            console.log("No user found in local storage");
+            console.log("No Token found in local storage");
             throw new Error("No user found in local storage");
         }
         config.headers.Authorization = `Bearer ${token}`

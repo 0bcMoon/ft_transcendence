@@ -4,8 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../api/api';
 import Loader from '../vendor/loader';
 import { useChat } from '../context/ChatContext';
+import { useState } from 'react';
 
-interface chatProfileProps {
+interface ChatProfileProps {
     id: number,
     display_name: string,
     username: string
@@ -13,7 +14,7 @@ interface chatProfileProps {
     profilePicture?: string
 
 }
-const Contact = ({ id, display_name, lastMessage, profilePicture }: chatProfileProps) => {
+const Contact = ({ id, display_name, lastMessage, profilePicture }: ChatProfileProps) => {
 
 
     const { setCurrentChat } = useChat();
@@ -54,19 +55,63 @@ export interface ChatUser {
 }
 
 const getContacts = async () => {
-    const response = await api.get<chatProfileProps[]>('/chat/contacts');
+    const response = await api.get<ChatProfileProps[]>('/chat/contacts');
     return response.data;
+}
+interface OptionsProps {
+    fetchState: boolean;
+    setFetchState: (user: boolean) => void;
+}
+const Options = ({ fetchState, setFetchState }: OptionsProps) => {
+
+    return (
+        <div
+            className="flex flex-row justify-evenly items-center gap-4 
+                    w-[96%]"
+        >
+            <button
+                onClick={() => setFetchState(true)}
+                className={`w-45 h-8 border rounded-xl border-gray-100 ml-4 text-gray-600 font-bold ${fetchState ? 'bg-gray-200' : ''}`}
+            >
+                Messages
+
+            </button>
+            <button
+                onClick={() => setFetchState(false)}
+                className={`w-45 h-8 border rounded-xl border-gray-100 ml-4 text-gray-600 font-bold ${!fetchState ? 'bg-gray-200' : ''}`}
+            >
+                Chat Request
+            </button>
+        </div>
+    )
+}
+const Contacts = ({ contacts }: { contacts: ChatProfileProps[] | undefined }) => {
+
+    return (
+        <>
+            {contacts?.map((profile, index) => <Contact key={index} {...profile} />)}
+        </>
+    )
+}
+const MessagesRequest = () => {
+    return (
+        <div className="flex flex-col items-center justify-center h-full">
+            {/* <p className="text-gray-400 font-bold text-xl"> No Chat Request</p> */}
+        </div>
+    )
 }
 
 export default function RecentChat() {
 
-    const { data: contacts, error, isLoading } = useQuery<chatProfileProps[]>({
+    const [fetchState, setFetchState] = useState<boolean>(true);
+
+    const { data: contacts, error, isLoading } = useQuery<ChatProfileProps[]>({
         queryFn: getContacts,
         queryKey: ['contacts'],
     })
 
     return (
-        <div 
+        <div
             className="flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
                         gap-2
@@ -79,12 +124,13 @@ export default function RecentChat() {
                 <span className="text-center w-full font-bold text-xl ">Direct Messages</span>
             </div>
 
+            <Options fetchState={fetchState} setFetchState={setFetchState}/>
             <div
                 className="flex gap-4 overflow-auto no-scrollbar  h-full w-full justify-start items-center flex-col"
             >
+                {fetchState ? <Contacts contacts={contacts} /> : <MessagesRequest />}
                 {isLoading && <Loader />}
-                {contacts?.map((profile, index) => <Contact key={index} {...profile} />)}
-                {error && <div className="text-red-500 font-bold mt-4">Error fetching contacts</div>}
+                {error && <div className="text-red-500 font-bold mt-4">Error fetching date</div>}
             </div>
         </div>
     )

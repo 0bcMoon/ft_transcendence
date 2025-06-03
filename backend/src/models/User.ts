@@ -12,6 +12,14 @@ const User = {
         const { id } = req.params as { id: number };
         const messages = await userRepository.getMessages(req.user.id, id);
         return reply.status(200).send(messages.reverse());
+    },
+    getChatRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const chatRequests = await userRepository.getChatRequests(req.user.id);
+        return reply.status(200).send(chatRequests);
+    },
+    getFriends : async (req: FastifyRequest, reply: FastifyReply) => {
+        const friends = await userRepository.getFriends(req.user.id);
+        return reply.status(200).send(friends);
     }
 }
 

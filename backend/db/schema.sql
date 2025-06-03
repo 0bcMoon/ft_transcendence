@@ -20,8 +20,6 @@ CREATE TABLE IF NOT EXISTS "messages" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
--- like friend but for messages
--- may be add group chat later will see
 
 CREATE TABLE IF NOT EXISTS "contacts" (
     "id" INTEGER,
@@ -33,7 +31,18 @@ CREATE TABLE IF NOT EXISTS "contacts" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
-CREATE TABLE IF NOT EXISTS "friend" (
+
+CREATE TABLE IF NOT EXISTS "chat_requests" (
+    "id" INTEGER,
+    "sender_id" INT NOT NULL,
+    "receiver_id" INT NOT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(id),
+    FOREIGN KEY (receiver_id) REFERENCES users(id),
+    PRIMARY KEY("id" AUTOINCREMENT)
+);
+
+CREATE TABLE IF NOT EXISTS "friends" (
     "id" INTEGER,
     "sender_id" INT NOT NULL,
     "receiver_id" INT NOT NULL,
@@ -42,3 +51,4 @@ CREATE TABLE IF NOT EXISTS "friend" (
     FOREIGN KEY (receiver_id) REFERENCES users(id),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+

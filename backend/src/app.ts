@@ -28,7 +28,7 @@ declare module 'fastify' {
     }
 }
 const fastify = Fastify({
-    logger: false
+    logger: true
 })
 
 
