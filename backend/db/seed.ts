@@ -9,6 +9,7 @@ db.serialize(async () => {
     //truncate the tables
     db.exec('DELETE FROM users')
     const createUsers = db.prepare('INSERT INTO users (username, display_name, password, email) VALUES ( ?, ?, ?, ?)')
+    const insertFriends = db.prepare('INSERT INTO friends (sender_id, receiver_id) VALUES (?, ?)')
     const insertContact = db.prepare('INSERT INTO contacts (user_id, contact_id) VALUES (?, ?)')
     const createMessages = db.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
 
@@ -40,6 +41,9 @@ db.serialize(async () => {
     insertContact.run(1, 3)
     insertContact.run(2, 3)
     insertContact.run(2, 1)
+
+    insertFriends.run(1, 2)
+    insertFriends.run(1, 3)
 
     createMessages.run(1, 2, faker.lorem.sentence())
     createMessages.run(2, 1, faker.lorem.sentence())

@@ -1,5 +1,6 @@
 // AuthContext.tsx
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import toast from 'react-hot-toast';
 
 // Define user type
 
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         setToken(null);
         localStorage.removeItem('access_token');
+        toast.success("Logout Successfully")
     };
 
     return (

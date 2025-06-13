@@ -30,10 +30,8 @@ interface SendMessage {
 
 const ChatBubble = ({ user_id, sender_id, content }: Message) => {
     //WARNING: remove this later
+    const sender: boolean = sender_id === user_id;
 
-    if (user_id == undefined)
-        throw new Error("fatal: user_id is undefined");
-    const sender = sender_id === user_id; // Assuming 1 is the current user's ID, adjust as necessary 
     return (
         <div className={`flex w-full flex-row break-words mt-1 mb-1
                         items-start min-h-auto 
@@ -115,8 +113,6 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
 
     const { currentChat } = useChat()
     const queryClient = useQueryClient();
-
-
     const queryKey = ['messages', currentChat?.id]; // Unique query key for messages of the current chat
     const { data: messages } = useQuery<Message[]>({
         queryKey: queryKey,
@@ -179,7 +175,7 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
             });
             toast.success('New message received');
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentChat]);
 
     return (

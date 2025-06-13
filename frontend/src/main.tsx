@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react'
 import App from './App.tsx'
 import Chat from './chat/Chat.tsx'
-import { createBrowserRouter} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
 import Login from './login/Login.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -12,6 +12,8 @@ import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
 
 import RootLayout from './RootLayout'
+import NotFound from './NotFound.tsx';
+import FriendsPage from './friend/FriendsPage.tsx';
 
 
 
@@ -22,8 +24,8 @@ const router = createBrowserRouter([
         element: <RootLayout />, // Use the layout component here
         children: [ // Nested routes
             { index: true, element: <App /> }, // `index: true` makes this the default child route for '/'
-            { path: 'login', element: <Login /> }, // Relative path to parent '/'
             { path: 'home', element: <Home /> },   // Relative path to parent '/'
+            { path: 'friends', element: <FriendsPage /> },   // Relative path to parent '/'
             {
                 path: 'chat', // Relative path to parent '/'
                 element: (
@@ -32,11 +34,13 @@ const router = createBrowserRouter([
                     </ChatProvider>
                 ),
             },
+
+            { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],
     },
+    { path: '/login', element: <Login /> },
+    { path: '*', element: <NotFound /> },
 
-    // You could also have other top-level routes outside of the layout if needed
-    // For example, a '/admin' route with a different layout, or a '/404' route
 ])
 
 const queryClient = new QueryClient()

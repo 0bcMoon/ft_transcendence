@@ -10,12 +10,18 @@ export default async function routes(
 ): Promise<void> {
 
     fastify.get('/user', async (request, reply) => {
-        console.log(request.user.id)
-        // return userRepository.getUserById();
+
+        return userRepository.getUserById(request.user.id);
     })
+
+    fastify.get('/friends', { onRequest: fastify.authenticate }, User.getFriends)
+    fastify.get('/friends/:id', { onRequest: fastify.authenticate }, User.getContactList)
+
     fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
+
     fastify.post('/login', UserAuth.login)
+    fastify.post('/register', UserAuth.login)
 }
 
 

@@ -1,0 +1,18 @@
+{
+    "auth": {
+        "login": "/auth/login",
+        "register": "/auth/register",
+        "logout": "/auth/logout",
+        "refresh": "/auth/refresh"
+    },
+    "user": {
+        "profile": "/user/profile",
+        "update": "/user/update",
+        "search": "/user/search"
+    },
+    "chat": {
+        "messages": "/chat/messages",
+        "conversations": "/chat/conversations",
+        "send": "/chat/send"
+    }
+} 

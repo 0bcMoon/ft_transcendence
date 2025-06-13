@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { getEndpoint } from '../endpoints'
 
-const API_URL = 'http://localhost:3000/' // Replace with your API URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/' // Fallback to localhost if env var is not set
 
 const api = axios.create({
     baseURL: API_URL,
@@ -23,12 +24,12 @@ api.interceptors.response.use(
 
 api.interceptors.request.use(
     (config) => {
-        if (config.url === '/login') {
+        if (config.url === getEndpoint('auth', 'login')) {
             return config;
         }
         const token = localStorage.getItem("access_token")
         if (!token) {
-            console.log("No user found in local storage");
+            console.log("No Token found in local storage");
             throw new Error("No user found in local storage");
         }
         config.headers.Authorization = `Bearer ${token}`

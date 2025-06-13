@@ -20,10 +20,11 @@ export const userRepository = {
     getUserById: async (id: number) => {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
     },
+    // get last message for each contact
     getContactList: async (userId: number) => {
         const sql: string = `SELECT users.id, users.display_name, users.username 
                             from contacts 
-                            INNER JOIN users on  contacts.contact_id = users.id and contacts.user_id = ?`;
+                            INNER JOIN users on contacts.contact_id = users.id and contacts.user_id = ?`;
         return await db.all(sql, [userId]);
     },
     getMessages: async (senderId: number, receiverId: number) => {
@@ -31,9 +32,21 @@ export const userRepository = {
         const sql: string = `SELECT * FROM messages 
                              WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)`;
         return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
-        // return await db.all(sql, []);
+    },
+    getFriends: async (userId: number) => {
+        const sql: string = `SELECT users.id, users.display_name
+                            from friends
+                            INNER JOIN users on  users.id = friends.sender_id OR users.id = friends.receiver_id`;
+        return await db.all(sql, [userId]);
     },
 
+    //TODO: implement chat requests 
+
+    getChatRequests: async (userId: number) => {
+        const sql: string = `SELECT * from chat_requests`;
+        return await db.all(sql, [userId]);
+    }
+    //
     // createUser: async (user) => {
     //     const { username, full_name, password, email } = user;
     //     return await db.run('INSERT INTO users (username, full_name, password, email) VALUES (?, ?, ?, ?)', [username, full_name, password, email]);
