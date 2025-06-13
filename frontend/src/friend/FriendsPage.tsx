@@ -23,7 +23,7 @@ const SearchOptions = ({ name, searchOption, setSearchOption }: SearchOptionsPro
         <div
             onClick={() => { setSearchOption(name as SearchOptionEnum) }}
             className={`font-semibold flex items-center justify-center text-center
-                        ${(searchOption == name) ? 'bg-gray-200' : ''}
+                        ${(searchOption === name) ? 'bg-gray-200' : ''}
                         pl-6 pr-6 border border-gray-100 h-9 text-center 
                         mr-4 ml-4 rounded-2xl`}>
             {name}
