@@ -1,24 +1,30 @@
 
 import { useQuery } from '@tanstack/react-query';
-import api from '../api/api';
-import profile from '../image/profile.svg'
-
-
+import api from '@/api/api';
+import profile from '@/image/profile.svg'
+import endpoints from '@/endpoints.json';
+import { useNavigate } from 'react-router-dom';
 
 interface FriendsProfileCardProps {
 
+    id: string;
     display_name: string;
     status: string;
 }
 
 
-const FriendsProfileCard = ({ display_name, status }: FriendsProfileCardProps) => {
+const FriendsProfileCard = ({ id, display_name, status }: FriendsProfileCardProps) => {
 
+    const navigate = useNavigate();
+    const handleClick = () => {
+
+        navigate(`/users/${id}`);
+    }
 
     // This may need daynamique route 
     return (
         <div
-            onClick={() => { console.log("Profile Card Clicked") }}
+            onClick={handleClick}
             className=" flex p-2 gap-4
                         rounded-xl  border border-gray-100 col-span-1 h-20 hover:bg-gray-200
                         "
@@ -45,7 +51,7 @@ const FriendsProfileCard = ({ display_name, status }: FriendsProfileCardProps) =
 }
 
 const fetchFriends = async () => {
-    const result = await api.get("/friends")
+    const result = await api.get(endpoints.user.friends);
     return result.data
 
 
@@ -56,7 +62,7 @@ const Friends = () => {
         queryKey: ["friends"],
         queryFn: fetchFriends
     })
-    console.log(friendsProfileCards)
+
     return friendsProfileCards?.map((items, index) => <FriendsProfileCard key={index} {...items} />)
 
 }

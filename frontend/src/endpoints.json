@@ -8,11 +8,11 @@
     "user": {
         "profile": "/user/profile",
         "update": "/user/update",
-        "search": "/user/search"
+        "search": "/user/search",
+        "friends": "/user/friends"
     },
     "chat": {
-        "messages": "/chat/messages",
-        "conversations": "/chat/conversations",
-        "send": "/chat/send"
+        "contacts": "/chat/contacts",
+        "messages": "/chat/messages"
     }
 } 

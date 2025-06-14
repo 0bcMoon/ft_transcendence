@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getEndpoint } from '../endpoints'
+import  endpoints  from '@/endpoints.json';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/' // Fallback to localhost if env var is not set
 
@@ -24,7 +24,7 @@ api.interceptors.response.use(
 
 api.interceptors.request.use(
     (config) => {
-        if (config.url === getEndpoint('auth', 'login')) {
+        if (config.url === endpoints.auth.login) {
             return config;
         }
         const token = localStorage.getItem("access_token")

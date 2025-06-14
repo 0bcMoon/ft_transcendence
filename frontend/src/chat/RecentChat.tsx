@@ -1,10 +1,11 @@
-import profile from '../image/profile.svg'
-import options from '../image/options.svg'
+import profile from '@/image/profile.svg'
+import options from '@/image/options.svg'
 import { useQuery } from '@tanstack/react-query';
-import api from '../api/api';
-import Loader from '../vendor/loader';
-import { useChat } from '../context/ChatContext';
+import api from '@/api/api';
+import Loader from '@/vendor/loader';
+import { useChat } from '@/context/ChatContext';
 import { useState } from 'react';
+import endpoints from '@/endpoints.json';
 
 interface ChatProfileProps {
     id: number,
@@ -55,7 +56,7 @@ export interface ChatUser {
 }
 
 const getContacts = async () => {
-    const response = await api.get<ChatProfileProps[]>('/chat/contacts');
+    const response = await api.get<ChatProfileProps[]>(endpoints.chat.contacts);
     return response.data;
 }
 interface OptionsProps {

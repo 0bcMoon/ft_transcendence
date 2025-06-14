@@ -14,6 +14,7 @@ import { ChatProvider } from './context/ChatContext';
 import RootLayout from './RootLayout'
 import NotFound from './NotFound.tsx';
 import FriendsPage from './friend/FriendsPage.tsx';
+import UserProfile from './friend/UserProfile.tsx';
 
 
 
@@ -21,13 +22,14 @@ import FriendsPage from './friend/FriendsPage.tsx';
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <RootLayout />, // Use the layout component here
-        children: [ // Nested routes
-            { index: true, element: <App /> }, // `index: true` makes this the default child route for '/'
-            { path: 'home', element: <Home /> },   // Relative path to parent '/'
-            { path: 'friends', element: <FriendsPage /> },   // Relative path to parent '/'
+        element: <RootLayout />, 
+        children: [ 
+            { index: true, element: <App /> }, 
+            { path: 'home', element: <Home /> },   
+            { path: 'users/:userId', element: <UserProfile /> },   
+            { path: 'friends', element: <FriendsPage /> },   
             {
-                path: 'chat', // Relative path to parent '/'
+                path: 'chat', 
                 element: (
                     <ChatProvider>
                         <Chat />
