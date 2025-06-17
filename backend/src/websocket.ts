@@ -15,8 +15,8 @@ interface RecvMessage {
 // const connections : Map<number, WebSocketConnection> = new Map();
 const chatConnections: Map<number, WebSocket> = new Map();
 
-
 const validate = async (request: FastifyRequest, reply: FastifyReply) => {
+
     try {
         const { token } = request.query as { token: string }
         const decoded = fastify.jwt.verify(token)
@@ -27,10 +27,9 @@ const validate = async (request: FastifyRequest, reply: FastifyReply) => {
 }
 
 export default async function(fastify: FastifyInstance) {
-    fastify.get('/ws', { websocket: true, preValidation: validate }, (socket, req) => {
+    fastify.get('/chat', { websocket: true, preValidation: validate }, (socket, req) => {
         // Add the new connection to the set
         chatConnections.set(req.user.id, socket)
-
         socket.on('message', async (message) => {
             const recvMessage: RecvMessage = JSON.parse(message.toString());
 

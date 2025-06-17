@@ -18,7 +18,11 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
     getUserById: async (id: number) => {
-        return await db.get('SELECT * FROM users WHERE id = ?', [id]);
+        return await db.get('SELECT  u.id, u.username, u.display_name FROM users u WHERE id = ?', [id]);
+    },
+
+    getUserProfile: async (id: number) => {
+        return await db.get('SELECT u.id, u.username, u.display_name FROM users u WHERE id = ?', [id]);
     },
     // get last message for each contact
     getContactList: async (userId: number) => {
@@ -34,9 +38,12 @@ export const userRepository = {
         return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
     },
     getFriends: async (userId: number) => {
-        const sql: string = `SELECT users.id, users.display_name
-                            from friends
-                            INNER JOIN users on  users.id = friends.sender_id OR users.id = friends.receiver_id`;
+        const sql: string = `SELECT u.id, u.display_name from users u
+                             inner join friends f on f.sender_id = u.id and f.receiver_id = $1
+                            UNION
+                            SELECT u.id, u.display_name from users u
+                            inner join friends f on f.receiver_id= u.id and f.sender_id = $1
+                            `;
         return await db.all(sql, [userId]);
     },
 

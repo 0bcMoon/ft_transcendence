@@ -39,7 +39,7 @@ export default function Chat() {
                 wsRef.current.close();
                 wsRef.current = null;
             }
-            const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+            const ws = new WebSocket(`ws://localhost:3000/chat?token=${token}`);
             wsRef.current = ws
             ws.onopen = () => {
                 toast.success("Socket connect")

@@ -99,7 +99,7 @@ export default function Login() {
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/friends");
+            navigate("/chat");
         }
     }, [isAuthenticated, navigate]);
 

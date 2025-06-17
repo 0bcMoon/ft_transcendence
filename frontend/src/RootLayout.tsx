@@ -27,7 +27,7 @@ export default function RootLayout() {
                 />
             </div>
 
-            <main className="pt-2 no-scrollbar pr-2 pl-2 grid grid-flow-row gap-4 w-screen h-screen  grid-cols-14">
+            <main className="pt-2 no-scrollbar grid-flow-col pr-2 pl-2 grid gap-4 w-screen h-screen grid-cols-14 ">
                 <NavigationBar />
                 <Outlet />
             </main>

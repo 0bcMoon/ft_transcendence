@@ -1,4 +1,4 @@
-import { Home, MessageCircle, Gamepad2, Settings, LogOut,  ContactRound } from 'lucide-react';
+import { Home, MessageCircle, Gamepad2, Settings, LogOut, ContactRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import { useAuth } from '../context/AuthContext';
 
@@ -68,8 +68,8 @@ const NavigationBar = () => {
 
     return (
         <div
-            className="flex flex-col flex-nowrap rounded-2xl items-center 
-                       bg-white h-[97svh]  justify-center 
+            className="hidden md:flex flex-col flex-nowrap rounded-2xl items-center 
+                       bg-white h-[97svh]   justify-center 
                        gap-4 
                        col-span-1
                        border-gray-100 border-2 shadow-lg shadow-gray-200 p-2 
