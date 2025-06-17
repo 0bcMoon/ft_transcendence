@@ -1,19 +1,23 @@
 import RecentChat from './RecentChat.tsx';
 import ChatContainer from './ChatContainer.tsx';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '@/context/AuthContext.tsx';
 import { useEffect, useRef, useState } from 'react';
-import { useChat } from '../context/ChatContext.tsx';
+import { useChat } from '@/context/ChatContext.tsx';
 import toast from 'react-hot-toast';
+// import { useSwapStore } from '@/state/Store.ts';
 
 
 const StartNewChat = () => {
 
-    return (
+    // const swap = useSwapStore((state) => state.swap);
 
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+    return (
+        <div className={`hidden md:flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white h-[97svh] 
-                        col-span-8 justify-center gap-8
-                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+                        col-span-14
+            			md:col-span-8
+                        justify-center gap-8
+                        border-gray-100 border-2 shadow-lg shadow-gray-200"`}
         >
             <p className="text-gray-900 font-bold text-4xl"> Welcome Back</p>
             <p className="text-gray-400 font-bold text-xl">  Select A Contact to Start a New Chat</p>
@@ -67,10 +71,10 @@ export default function Chat() {
 
     return (
         <>
-            <RecentChat />
+            <RecentChat/>
             {
                 currentChat ?
-                    <ChatContainer isConnected={isConnected} webSocket={wsRef.current} /> :
+                    <ChatContainer  isConnected={isConnected} webSocket={wsRef.current} /> :
                     <StartNewChat />
             }
 

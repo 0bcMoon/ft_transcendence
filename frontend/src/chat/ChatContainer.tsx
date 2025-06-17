@@ -1,11 +1,13 @@
-import { useEffect} from 'react';
+import { useEffect } from 'react';
 
-import profile from '../image/profile.svg'
-import options from '../image/options.svg'
-import { useChat } from '../context/ChatContext.tsx';
+import profile from '@/image/profile.svg'
+import options from '@/image/options.svg'
+import { useChat } from '@/context/ChatContext.tsx';
 import toast from 'react-hot-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../api/api.ts';
+import api from '@/api/api.ts';
+import { useSwapStore } from '@/state/Store.ts';
+import { MoveLeft } from 'lucide-react';
 
 type Event = React.FormEvent<HTMLFormElement>
 
@@ -53,14 +55,17 @@ const ChatBubble = ({ user_id, sender_id, content }: Message) => {
 
 const ChatBanner = () => {
     const { currentChat } = useChat()
+    const setSwap = useSwapStore((state) => state.setSwap);
 
     return (
         <div
-            className="flex items-center flex-row w-full gap-8 border-b border-gray-100 h-[10%]"
+            className="flex items-center flex-row w-full gap-4 p-4 border-b border-gray-100 h-18"
         >
+            <MoveLeft onClick={() => setSwap(false)}  className=' md:hidden w-4 text-gray-500 hover:hover:text-gray-800
+            transition-colors duration-300'/>
             <img
                 src={profile}
-                className="rounded-full w-auto h-[80%] m-2 "
+                className="rounded-full w-13 h-13 border"
             />
             <p className="flex flex-col ">
                 <span className="font-bold">{currentChat?.display_name} </span>
@@ -108,8 +113,14 @@ const fetchMessages = async (userId: number | null) => {
 
 //find a way to use websocket to send messages
 
+interface ChatContainerProps {
 
-export default function ChatContainer({ isConnected, webSocket }: { isConnected: boolean, webSocket: WebSocket | null }) {
+    isConnected: boolean;
+    webSocket: WebSocket | null;
+}
+
+
+export default function ChatContainer({ isConnected, webSocket}: ChatContainerProps) {
 
     const { currentChat } = useChat()
     const queryClient = useQueryClient();
@@ -123,7 +134,7 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
 
     const postMessage = async (payload: SendMessage) => {
         //
-        if (webSocket === null || webSocket.readyState !== WebSocket.OPEN) {
+        if (webSocket === null || webSocket?.readyState !== WebSocket.OPEN) {
             throw new Error("WebSocket is not connected");
         }
         webSocket?.send(JSON.stringify(payload));
@@ -164,7 +175,7 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
 
     useEffect(() => {
         //TODO: try to reconnect to socket
-        if (webSocket === null)
+        if (webSocket === undefined || webSocket === null)
             return;
         webSocket.onmessage = (event) => {
             const data: Message = JSON.parse(event.data); //plz dont fail me
@@ -175,15 +186,16 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
             });
             toast.success('New message received');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentChat]);
-
+    const swap = useSwapStore((state) => state.swap);
     return (
 
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+        <div className={`${swap ? "flex" : " hidden md:flex"} flex-col   flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
-                        col-span-8
-                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+                        md:col-span-8
+            			col-span-14
+                        border-gray-100 border-2 shadow-lg shadow-gray-200`}
         >
             <ChatBanner />
             <div

@@ -6,6 +6,7 @@ import Loader from '@/vendor/loader';
 import { useChat } from '@/context/ChatContext';
 import { useState } from 'react';
 import endpoints from '@/endpoints.json';
+import { useSwapStore } from '@/state/Store';
 
 interface ChatProfileProps {
     id: number,
@@ -24,7 +25,9 @@ const Contact = ({ id, display_name, lastMessage, profilePicture }: ChatProfileP
         lastMessage = lastMessage.slice(1, 35) + "....."
     }
 
+    const setSwap = useSwapStore((state) => state.setSwap);
     const selectUser = async () => {
+        setSwap(true);
         setCurrentChat({ id, display_name });
     }
 
@@ -111,27 +114,33 @@ export default function RecentChat() {
         queryKey: ['contacts'],
     })
 
+    const swap = useSwapStore((state) => state.swap);
+
     return (
         <div
-            className="flex flex-col  flex-nowrap rounded-2xl items-center 
+            className={`${swap ? "hidden md:flex": "flex"} flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
                         gap-2
-                        col-span-5
-                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+                        col-span-14
+                        md:col-span-6
+                        border-gray-100 border-2 shadow-lg shadow-gray-200`}
         >
             <div
                 className="flex items-center flex-row w-full gap-8 border-b border-gray-100 h-[10%]"
             >
+
                 <span className="text-center w-full font-bold text-xl ">Direct Messages</span>
+
             </div>
 
-            <Options fetchState={fetchState} setFetchState={setFetchState}/>
+            <Options fetchState={fetchState} setFetchState={setFetchState} />
+
             <div
                 className="flex gap-4 overflow-auto no-scrollbar  h-full w-full justify-start items-center flex-col"
             >
                 {fetchState ? <Contacts contacts={contacts} /> : <MessagesRequest />}
                 {isLoading && <Loader />}
-                {error && <div className="text-red-500 font-bold mt-4">Error fetching date</div>}
+                {error && <div className="text-red-500 font-bold mt-4">Error fetching Users Contacts</div>}
             </div>
         </div>
     )
