@@ -3,10 +3,12 @@ import options from '@/image/options.svg'
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import Loader from '@/vendor/loader';
-import { useChat } from '@/context/ChatContext';
 import { useState } from 'react';
 import endpoints from '@/endpoints.json';
 import { useSwapStore } from '@/state/Store';
+import { useChatStore } from '@/state/Store';
+import { useNavigate } from 'react-router-dom';
+import UserAvatar from '@/component/UserAvatar';
 
 interface ChatProfileProps {
     id: number,
@@ -18,17 +20,21 @@ interface ChatProfileProps {
 }
 const Contact = ({ id, display_name, lastMessage, profilePicture }: ChatProfileProps) => {
 
-
-    const { setCurrentChat } = useChat();
+    const navigate = useNavigate()
 
     if (lastMessage != undefined && lastMessage.length > 35) {
         lastMessage = lastMessage.slice(1, 35) + "....."
     }
 
     const setSwap = useSwapStore((state) => state.setSwap);
+    const setChat = useChatStore((state) => state.setChat)!;
     const selectUser = async () => {
         setSwap(true);
-        setCurrentChat({ id, display_name });
+        navigate(`/chat/${id}`);
+        setChat({
+            display_name: display_name,
+            profile_image: profilePicture ?? profile,
+        });
     }
 
     return (
@@ -36,9 +42,13 @@ const Contact = ({ id, display_name, lastMessage, profilePicture }: ChatProfileP
             className="flex flex-row
                     border border-gray-200 w-[96%] rounded-2xl h-16"
         >
-            <img
-                src={profilePicture ?? profile}
-                className="rounded-full w-auto h-[80%] m-2 "
+            <UserAvatar
+                src={profile}
+                alt="profile image"
+                name={display_name}
+                isOnline={false}
+                size="md" 
+                className='m-3'
             />
             <div className="flex flex-col justify-evenly w-full">
                 <p className="text-xl"> {display_name}</p>
@@ -118,7 +128,7 @@ export default function RecentChat() {
 
     return (
         <div
-            className={`${swap ? "hidden md:flex": "flex"} flex-col  flex-nowrap rounded-2xl items-center 
+            className={`${swap ? "hidden md:flex" : "flex"} flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
                         gap-2
                         col-span-14

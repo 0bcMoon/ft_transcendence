@@ -12,6 +12,7 @@ import api from "@/api/api";
 import { AxiosError } from 'axios';
 import { useAuth } from '@/context/AuthContext.tsx';
 import { useEffect } from "react";
+import useAuthStore from "@/state/AuthStore.ts";
 
 
 interface ApiError {
@@ -103,6 +104,8 @@ export default function Login() {
         }
     }, [isAuthenticated, navigate]);
 
+    const setAuth = useAuthStore((state) => state.setAuth);
+
     const LoginMutation = useMutation({
         mutationKey: ["login"],
         mutationFn: async (userData: UserLogin) => {
@@ -111,6 +114,7 @@ export default function Login() {
         },
         onSuccess: async (data) => {
             toast.success("Login successful");
+            setAuth(true);
             setToken(data.access_token);
             localStorage.setItem("access_token", data.access_token);
         },

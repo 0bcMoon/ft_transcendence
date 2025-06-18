@@ -4,6 +4,7 @@ import api from '@/api/api';
 import profile from '@/image/profile.svg'
 import endpoints from '@/endpoints.json';
 import { useNavigate } from 'react-router-dom';
+import UserAvatar from '@/component/UserAvatar';
 
 interface FriendsProfileCardProps {
 
@@ -30,10 +31,12 @@ const FriendsProfileCard = ({ id, display_name, status }: FriendsProfileCardProp
                         "
         >
             <div >
-                <img
+                <UserAvatar
                     src={profile}
                     alt="profile image"
-                    className="w-16 h-16 rounded-full object-cover"
+                    name={display_name}
+                    isOnline={true}
+                    size="lg"
                 />
             </div>
 

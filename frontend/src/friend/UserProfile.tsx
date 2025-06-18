@@ -2,17 +2,39 @@ import { X, Trophy, Users, Zap } from 'lucide-react';
 // import { useParams } from "react-router-dom";
 import { AddFriendIcon, ChatIcons, PingPongFillIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
+import { useChatStore } from '@/state/Store';
 
 
-const StartChat = () => {
+interface StartChatProps {
+    id?: string;
+    display_name?: string;
+    profilePicture?: string;
+}
 
+const StartChat = ({ id, display_name, profilePicture }: StartChatProps) => {
+    const navigate = useNavigate();
+
+    const setChat = useChatStore((state) => state.setChat)!;
+
+    const handleClick = () => {
+        if (!id) {
+            return;
+        }
+        setChat({
+            display_name: display_name!,
+            profile_image: profilePicture ?? profile,
+        });
+        navigate(`/chat/${id}`);
+
+    }
     return (
         <div className="w-auto p-5 flex flex-row items-center gap-3
             justify-center h-8 rounded-xl bg-white hover:bg-gray-400
             transition-colors duration-300"
+            onClick={handleClick}
         >
             <ChatIcons />
             <p className="font-semibold ">Start Chat</p>
@@ -73,10 +95,10 @@ const fetchUsersById = async (friendId: string) => {
 interface User {
 
     id: string;
-    username: string;
+    username?: string;
     display_name: string;
     profilePicture: string;
-    status: string;
+    status?: string;
 }
 
 const FriendsProfile = () => {
@@ -88,7 +110,6 @@ const FriendsProfile = () => {
         queryFn: () => fetchUsersById(userId!),
         enabled: !!userId,
     })
-    console.log(data);
     const ProfileStatusData = [
         {
             value: 22,
@@ -149,7 +170,7 @@ const FriendsProfile = () => {
                             </div>
                         </div>
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
-                            <StartChat />
+                            <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
                             <AddFriend />
                         </div>

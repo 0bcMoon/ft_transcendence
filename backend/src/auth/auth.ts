@@ -33,12 +33,21 @@ const UserAuth = {
                 expiresIn: '24h' // Token expiration time
             },
         )
+        reply
+            .setCookie('access_token', token, {
+                path: '/',
+                secure: true, // send cookie over HTTPS only
+                // httpOnly: true,
+                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
+                sameSite: true // alternative CSRF protection
+            })
 
         reply
-            .setCookie('token', token, {
+            .setCookie('refresh_token', token, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 httpOnly: true,
+                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
                 sameSite: true // alternative CSRF protection
             })
         return reply.status(200).send({

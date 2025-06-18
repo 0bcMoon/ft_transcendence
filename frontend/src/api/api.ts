@@ -1,10 +1,11 @@
 import axios from 'axios'
-import  endpoints  from '@/endpoints.json';
+import endpoints from '@/endpoints.json';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/' // Fallback to localhost if env var is not set
 
 const api = axios.create({
     baseURL: API_URL,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -12,7 +13,9 @@ const api = axios.create({
 })
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        return response;
+    },
     (error) => {
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('access_token');
