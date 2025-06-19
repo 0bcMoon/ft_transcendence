@@ -1,6 +1,6 @@
 import { X, Trophy, Users, Zap } from 'lucide-react';
 // import { useParams } from "react-router-dom";
-import { AddFriendIcon, ChatIcons, PingPongFillIcon } from '@/image/Icons';
+import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -74,7 +74,23 @@ const PlayPingPong = () => {
         </div>
     )
 }
-const AddFriend = () => {
+
+const BlockUser = () => {
+
+    return (
+        <div className="p-5 flex flex-row items-center gap-3 justify-center
+            h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
+            duration-300"
+        >
+            <BlockIcon />
+            <p className="font-semibold text-white">Block</p>
+        </div>
+    )
+}
+
+const AddFriend = ({relation_status}: {relation_status: string | undefined}) => {
+
+    const display_text = relation_status === 'friends' ? 'Unfriend' : 'Add Friend';
 
     return (
         <div className="p-5 flex flex-row items-center gap-3 justify-center
@@ -82,7 +98,7 @@ const AddFriend = () => {
             duration-300"
         >
             <AddFriendIcon />
-            <p className="font-semibold text-white">Add Friends</p>
+            <p className="font-semibold text-white">{display_text}</p>
         </div>
     )
 }
@@ -95,13 +111,14 @@ const fetchUsersById = async (friendId: string) => {
 interface User {
 
     id: string;
+    relation_status: 'friends' | 'pending' | 'blocked' | 'none' | undefined;
     username?: string;
     display_name: string;
     profilePicture: string;
     status?: string;
 }
 
-const FriendsProfile = () => {
+const UserProfile = () => {
 
     const { userId } = useParams<{ userId: string }>();
 
@@ -140,7 +157,6 @@ const FriendsProfile = () => {
             className: 'w-6 h-6 text-purple-500'
         }
     ]
-
     return (
         <div
             className="flex flex-col items-center col-span-13  
@@ -148,7 +164,7 @@ const FriendsProfile = () => {
             border-gray-100 border-t-2 shadow-lg shadow-gray-200"
         >
             <div
-                className="flex flex-col rounded-xl  w-200 h-120 mt-4"
+                className="flex flex-col rounded-xl  w-250 h-120 mt-4"
             >
                 <div
                     className="flex flex-row w-full h-[50%] 
@@ -172,7 +188,8 @@ const FriendsProfile = () => {
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
                             <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
-                            <AddFriend />
+                            <AddFriend relation_status={data?.relation_status}/>
+                            <BlockUser />
                         </div>
                     </div>
                 </div>
@@ -194,4 +211,4 @@ const FriendsProfile = () => {
     )
 }
 
-export default FriendsProfile;
+export default UserProfile;

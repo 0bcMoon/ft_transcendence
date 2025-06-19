@@ -38,11 +38,18 @@ export const userRepository = {
         return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
     },
     getFriends: async (userId: number) => {
-        const sql: string = `SELECT u.id, u.display_name from users u
+        const sql: string = `SELECT u.id,
+                             u.display_name,
+                            'friend' AS relation_status 
+                             from users u
                              inner join friends f on f.sender_id = u.id and f.receiver_id = $1
-                            UNION
-                            SELECT u.id, u.display_name from users u
-                            inner join friends f on f.receiver_id= u.id and f.sender_id = $1
+                             UNION
+                             SELECT u.id,
+                             u.display_name,
+                            'friend' AS relation_status 
+                             from users u
+                             inner join friends f on f.receiver_id= u.id and f.sender_id = $1
+
                             `;
         return await db.all(sql, [userId]);
     },

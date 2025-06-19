@@ -56,16 +56,17 @@ const FriendsProfileCard = ({ id, display_name, status }: FriendsProfileCardProp
 const fetchFriends = async () => {
     const result = await api.get(endpoints.user.friends);
     return result.data
-
-
 }
-const Friends = () => {
 
-    const { data: friendsProfileCards } = useQuery<FriendsProfileCardProps[]>({
+const Friends = () => {
+    const { data: friendsProfileCards, error } = useQuery<FriendsProfileCardProps[]>({
         queryKey: ["friends"],
         queryFn: fetchFriends
     })
 
+    if (error) {
+        return <div>Error loading friends.</div>;
+    }
     return friendsProfileCards?.map((items, index) => <FriendsProfileCard key={index} {...items} />)
 
 }
