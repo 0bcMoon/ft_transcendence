@@ -12,32 +12,41 @@ const api = axios.create({
     },
 })
 
+
+/**
+ * Deletes a cookie by its name.
+ * @param {string} name The name of the cookie to delete.
+ * @param {string} [path] The path of the cookie. Defaults to '/'.
+ * @param {string} [domain] The domain of the cookie.
+ */
+function deleteCookie(name: string, path: string = "/", domain: string) {
+    let cookieString = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+    // Append path if provided, otherwise default to '/'
+    cookieString += " path=" + (path || "/");
+
+    // Append domain if provided
+    if (domain) {
+        cookieString += "; domain=" + domain;
+    }
+
+    document.cookie = cookieString;
+}
+
 api.interceptors.response.use(
     (response) => {
         return response;
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem('access_token');
-            window.location.href = '/login';
+            deleteCookie("access_token", "/", API_URL.replace(/https?:\/\//, ''));
         }
         return Promise.reject(error);
     }
 );
 
-api.interceptors.request.use(
-    (config) => {
-        if (config.url === endpoints.auth.login) {
-            return config;
-        }
-        const token = localStorage.getItem("access_token")
-        if (!token) {
-            console.log("No Token found in local storage");
-            throw new Error("No user found in local storage");
-        }
-        config.headers.Authorization = `Bearer ${token}`
-        return config
-    },
-    (error) => Promise.reject(error))
+// api.interceptors.request.use(
+//     (config) => config,
+//     (error) => Promise.reject(error))
 
 export default api;

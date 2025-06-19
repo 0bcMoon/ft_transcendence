@@ -4,6 +4,7 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import cookie from '@fastify/cookie'
+import { console } from 'inspector/promises';
 
 
 declare module "@fastify/jwt" {
@@ -34,7 +35,11 @@ const fastify = Fastify({
 
 fastify.register(cookie)
 fastify.register(jwt, {
-    secret: process.env.JWT_SECRET!
+    secret: process.env.JWT_SECRET!,
+    cookie: {
+        cookieName: 'access_token',
+        signed: false // Set to true if you want to use signed cookies
+    }
 
 })
 

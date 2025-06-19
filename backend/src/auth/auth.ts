@@ -37,7 +37,6 @@ const UserAuth = {
             .setCookie('access_token', token, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
-                // httpOnly: true,
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
                 sameSite: true // alternative CSRF protection
             })

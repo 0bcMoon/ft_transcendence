@@ -1,6 +1,5 @@
 import RecentChat from './RecentChat.tsx';
 import ChatContainer from './ChatContainer.tsx';
-import { useAuth } from '@/context/AuthContext.tsx';
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useParams } from 'react-router-dom';
@@ -26,8 +25,6 @@ const StartNewChat = () => {
 
 export default function Chat() {
 
-    const { token } = useAuth();
-
     const wsRef = useRef<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const { userId } = useParams<{ userId: string }>();
@@ -39,7 +36,7 @@ export default function Chat() {
                 wsRef.current.close();
                 wsRef.current = null;
             }
-            const ws = new WebSocket(`ws://localhost:3000/chat?token=${token}`);
+            const ws = new WebSocket("ws://localhost:3000/chat");
             wsRef.current = ws
             ws.onopen = () => {
                 toast.success("Socket connect")
@@ -65,8 +62,7 @@ export default function Chat() {
             wsRef.current = null; // Ensure the ref is cleared
             setIsConnected(false); // Reset connection status
         };
-
-    }, [token]); // Reconnect if currentChat changes or token changes
+    }, []); // Reconnect if currentChat changes or token changes
 
     return (
         <>

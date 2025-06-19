@@ -10,9 +10,8 @@ import { toast, Toaster } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import api from "@/api/api";
 import { AxiosError } from 'axios';
-import { useAuth } from '@/context/AuthContext.tsx';
 import { useEffect } from "react";
-import useAuthStore from "@/state/AuthStore.ts";
+import { useAuth } from "@/context/AuthContext";
 
 
 interface ApiError {
@@ -95,8 +94,9 @@ const validateLogin = (data: UserLogin): boolean => {
 
 export default function Login() {
 
-    const { setToken, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    // const {setAuth, isAuthenticated} = useAuthStore((state) => state);
+    const {isAuthenticated, setAuth} = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -104,7 +104,6 @@ export default function Login() {
         }
     }, [isAuthenticated, navigate]);
 
-    const setAuth = useAuthStore((state) => state.setAuth);
 
     const LoginMutation = useMutation({
         mutationKey: ["login"],
@@ -112,14 +111,12 @@ export default function Login() {
             const response = await api.post(endpoint.auth.login, userData);
             return response.data;
         },
-        onSuccess: async (data) => {
+        onSuccess: async () => {
             toast.success("Login successful");
             setAuth(true);
-            setToken(data.access_token);
-            localStorage.setItem("access_token", data.access_token);
+            
         },
         onError: async (error: AxiosError<ApiError>) => {
-
             toast.error(error.response?.data?.message || "500 Internal Server Error");
         },
     });

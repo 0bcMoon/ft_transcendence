@@ -1,55 +1,33 @@
 // AuthContext.tsx
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
-import toast from 'react-hot-toast';
-
-// Define user type
-
-// Define context type
 interface AuthContextType {
-    token: string | null;
-    setToken: (token: string | null) => void;
+    setAuth: (auth: boolean) => void;
     isAuthenticated: boolean;
     logout: () => void;
 }
 
 // Create the context
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-// Create a provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [token, setToken] = useState<string | null>(null);
+    const [isAuthenticated, setAuth] = useState<boolean >(false);
 
-    // Load user from localStorage on mount
     useEffect(() => {
-        const access_token = localStorage.getItem('access_token');
-        setToken(access_token || null);
+        const access_token = document.cookie.includes("access_token")
+        console.log("Access Token Found:", access_token);
+        
+        setAuth(access_token)
     }, []);
 
-
-
-    // Update localStorage when user changes
-    useEffect(() => {
-        if (token){
-            localStorage.setItem('access_token', token);
-        }
-        else {
-            const access_token = localStorage.getItem('access_token');
-            setToken(access_token || null);
-        }
-    }, [token]);
-
     const logout = () => {
-        setToken(null);
-        localStorage.removeItem('access_token');
-        toast.success("Logout Successfully")
+        setAuth(false);
     };
 
     return (
         <AuthContext.Provider
             value={{
-                token,
-                setToken,
-                isAuthenticated: !!token,
+                setAuth,
+                isAuthenticated,
                 logout
             }}
         >

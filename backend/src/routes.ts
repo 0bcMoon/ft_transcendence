@@ -10,7 +10,7 @@ export default async function routes(
 ): Promise<void> {
 
     fastify.get('/user', async (request, reply) => {
-        return userRepository.getUserById(request.user.id);
+        return ({message: 'Hello World! user'})
     })
 
     fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)

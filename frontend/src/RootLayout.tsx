@@ -1,8 +1,8 @@
 import { Toaster } from "react-hot-toast";
 import NavigationBar from "./home/NavigationBar";
 import { Outlet, useNavigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
 import { useEffect } from "react";
+import { useAuth } from "./context/AuthContext";
 
 export default function RootLayout() {
 
