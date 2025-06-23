@@ -17,27 +17,25 @@ export const useSwapStore = create<SwapStoreState>((set) => ({
 interface ChatStoreState {
     display_name: string;
     profile_image: string,
-    setChat?: ({ display_name, profile_image}: ChatStoreState) => void;
+    setChat?: ({ display_name, profile_image }: ChatStoreState) => void;
 }
 
 export const useChatStore = create<ChatStoreState>((set) => ({
     display_name: '',
     profile_image: '',
-    setChat: ({ display_name, profile_image}: ChatStoreState) =>
-        set({ display_name, profile_image}),
+    setChat: ({ display_name, profile_image }: ChatStoreState) =>
+        set({ display_name, profile_image }),
 }));
 
 
-
-
-interface WebSocketStoreState {
-    ws: WebSocket | null;
-    setWebSocket: (ws: WebSocket | null) => void;
-
+interface SearchStoreState {
+    searchQuery: string;
+    setSearchQuery: (option: string) => void;
 }
 
 
-export const useWebSocketStore = create<WebSocketStoreState>((set) => ({
-    ws: null,
-    setWebSocket: (ws: WebSocket | null) => set({ ws }),
+export const useSearchStore = create<SearchStoreState>((set) => ({
+    searchQuery: '',
+    setSearchQuery: (option: string) => set({ searchQuery: option }),
 }));
+
