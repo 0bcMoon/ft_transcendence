@@ -1,4 +1,5 @@
 
+import { rejects } from 'assert';
 import db from '../../db/db';
 
 export interface User {
@@ -17,10 +18,34 @@ export const userRepository = {
     getUserByUsername: async (username: string) => {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
-    getUserById: async (id: number) => {
-        return await db.get('SELECT  u.id, u.username, u.display_name FROM users u WHERE id = ?', [id]);
+    getUserById: async (id: number, userId: number) => {
+        const sql: string = `
+                    SELECT u.id, u.display_name,
+                    CASE
+                        WHEN b.blocked_user_id is NOT NULL THEN 'blocked'
+                        ELSE 'none'
+                    END AS relation_status 
+                    FROM users u
+                    JOIN blocks b
+                    on u.id = b.blocked_user_id AND b.user_id=$1 AND u.id=$2
+                    UNION
+                    SELECT u.id,
+                    u.display_name,
+                    CASE
+                        WHEN f.sender_id is NOT NULL THEN 'friend'
+                        ELSE 'none'
+                    END AS relation_status
+                    FROM users u
+                    INNER JOIN friends f ON f.receiver_id= u.id and f.sender_id = $1 and u.id=$2
+                `
+        return await db.get(sql, [id, userId]);
     },
-
+    // CASE
+    //     WHEN f.user_id1 IS NOT NULL THEN 'friend'
+    //     WHEN b1.blocker_id IS NOT NULL THEN 'blocked'
+    //     WHEN b2.blocked_id IS NOT NULL THEN 'blocked'
+    //     ELSE 'none'
+    // END AS relationship_status
     getUserProfile: async (id: number) => {
         return await db.get('SELECT u.id, u.username, u.display_name FROM users u WHERE id = ?', [id]);
     },
@@ -39,30 +64,77 @@ export const userRepository = {
     },
     getFriends: async (userId: number) => {
         const sql: string = `SELECT u.id,
-                             u.display_name,
-                            'friend' AS relation_status 
-                             from users u
-                             inner join friends f on f.sender_id = u.id and f.receiver_id = $1
-                             UNION
-                             SELECT u.id,
-                             u.display_name,
-                            'friend' AS relation_status 
-                             from users u
-                             inner join friends f on f.receiver_id= u.id and f.sender_id = $1
-
+                            u.display_name
+                            from users u
+                            inner join friends f on f.sender_id = u.id 
+                            WHERE f.receiver_id = $1
+                            UNION
+                            SELECT u.id,
+                            u.display_name
+                            from users u
+                            inner join friends f on f.receiver_id= u.id 
+                            WHERE f.sender_id = $1
                             `;
         return await db.all(sql, [userId]);
     },
 
+    findFriends: async (userId: number, search: string) => {
+        const sql: string = `SELECT u.id,
+                            u.display_name
+                            from users u
+                            inner join friends f on f.sender_id = u.id 
+                            WHERE f.receiver_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
+                            UNION
+                            SELECT u.id,
+                            u.display_name
+                            from users u
+                            inner join friends f on f.receiver_id= u.id 
+                            WHERE f.sender_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
+                            `;
+
+        const searchTermWithWildcards = `%${search}%`;
+        return await db.all(sql, [userId, searchTermWithWildcards]);
+
+    },
+    findUsers: async (search: string) => {
+        const sql: string = "SELECT id, username, display_name FROM users WHERE username LIKE $1 OR display_name LIKE $1";
+        const searchTermWithWildcards = `%${search}%`;
+        return await db.all(sql, [searchTermWithWildcards]);
+    },
     //TODO: implement chat requests 
 
     getChatRequests: async (userId: number) => {
         const sql: string = `SELECT * from chat_requests`;
         return await db.all(sql, [userId]);
-    }
-    //
-    // createUser: async (user) => {
-    //     const { username, full_name, password, email } = user;
-    //     return await db.run('INSERT INTO users (username, full_name, password, email) VALUES (?, ?, ?, ?)', [username, full_name, password, email]);
-    // }
+    },
+    createFriendRequests: async (senderId: number, receiverId: number) => {
+        const isBlock = await userRepository.isBlocked(senderId, receiverId)
+        if (isBlock.length > 0)
+            return false
+        const isFriend = await userRepository.isFriend(senderId, receiverId)
+        if (isFriend.length > 0)
+            return false
+        const sql: string = `insert into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
+        const result = await db.run(sql, [senderId, receiverId, 'friend'])
+        console.log(result)
+        return true
+
+    },
+    isBlocked: async (userX: number, userY: number) => {
+        const sql: string = `
+                            SELECT id FROM blocks
+                            WHERE (user_id=$1 AND blocked_user_id=$2) 
+                            OR (user_id=$2 AND blocked_user_id=$1)
+                            `
+        return await db.all(sql, [userX, userY])
+    },
+    isFriend: async (userX: number, userY: number) => {
+
+        const sql: string = `
+                            select id from friends
+                            where (sender_id=$1 and receiver_id=$2) or (sender_id=$2 and receiver_id=$1)
+                            `
+        return await db.all(sql, [userX, userY])
+    },
 }
+
