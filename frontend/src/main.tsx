@@ -12,9 +12,8 @@ import { AuthProvider } from '@/context/AuthContext';
 
 import RootLayout from '@/RootLayout'
 import NotFound from '@/NotFound.tsx';
-import FriendsPage from '@/friend/FriendsPage.tsx';
-import UserProfile from '@/friend/UserProfile.tsx';
-
+import UsersPage from '@/users/UsersPage';
+import UserProfile from '@/users/UserProfile';
 
 
 
@@ -26,7 +25,7 @@ const router = createBrowserRouter([
             { index: true, element: <App /> },
             { path: 'home', element: <Home /> },
             { path: 'users/:userId', element: <UserProfile /> },
-            { path: 'friends', element: <FriendsPage /> },
+            { path: 'friends', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:userId', element: <Chat /> },
 
