@@ -1,6 +1,7 @@
 import { Home, MessageCircle, Gamepad2, Settings, LogOut, ContactRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import useAuthStore from '@/state/AuthStore';
+import { useAuth } from '@/context/AuthContext';
 
 interface NavigationItemProps {
     link: string;
@@ -38,7 +39,7 @@ const NavigationItem = ({ label, icon: Icon, isActive, link }: NavigationItemPro
 }
 
 const Logout = () => {
-    const logout = useAuthStore((state) => state.logout);
+    const {logout} = useAuth();
 
     return (
         <Link onClick={logout} to="/login" className="w-full mt-auto">
