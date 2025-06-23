@@ -19,18 +19,8 @@ const api = axios.create({
  * @param {string} [path] The path of the cookie. Defaults to '/'.
  * @param {string} [domain] The domain of the cookie.
  */
-function deleteCookie(name: string, path: string = "/", domain: string) {
-    let cookieString = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-
-    // Append path if provided, otherwise default to '/'
-    cookieString += " path=" + (path || "/");
-
-    // Append domain if provided
-    if (domain) {
-        cookieString += "; domain=" + domain;
-    }
-
-    document.cookie = cookieString;
+export function deleteCookie(name: string): void {
+    document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
 
 api.interceptors.response.use(
@@ -39,7 +29,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            deleteCookie("access_token", "/", API_URL.replace(/https?:\/\//, ''));
+            deleteCookie("access_token");
         }
         return Promise.reject(error);
     }
