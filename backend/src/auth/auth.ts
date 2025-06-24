@@ -25,16 +25,26 @@ const UserAuth = {
         if (!isPasswordValid) {
             return reply.status(401).send({ message: 'Invalid username or password' });
         }
-        const token = fastify.jwt.sign({
+        const access_token = fastify.jwt.sign({
             id: user.id,
             username: user.username,
         },
             {
-                expiresIn: '24h' // Token expiration time
+                expiresIn: process.env.ACCESS_TOEKN_EXPR || '10m' // Token expiration time
             },
         )
+
+        const refresh_token = fastify.jwt.sign({
+            id: user.id,
+            username: user.username,
+        },
+            {
+                expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
+            },
+        )
+
         reply
-            .setCookie('access_token', token, {
+            .setCookie('access_token', access_token, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
@@ -42,16 +52,19 @@ const UserAuth = {
             })
 
         reply
-            .setCookie('refresh_token', token, {
+            .setCookie('refresh_token', refresh_token, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 httpOnly: true,
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
                 sameSite: true // alternative CSRF protection
             })
-        return reply.status(200).send({
-            access_token: token
-        });
+
+        return reply.status(200).send(
+            {
+                message: 'Login successful',
+            }
+        );
     },
 
     register: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -66,6 +79,14 @@ const UserAuth = {
         // }
         // console.log(user)
         // return reply.status(200).send({ message: 'Login successful', user });
+    },
+    logout: async (req: FastifyRequest, reply: FastifyReply) => {
+        console.log('logout')
+        return reply
+            .clearCookie('access_token')
+            .clearCookie('refresh_token')
+            .status(200)
+            .send({ message: 'Logout successful' });
     }
 
 }

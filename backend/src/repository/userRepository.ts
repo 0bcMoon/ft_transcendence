@@ -40,12 +40,6 @@ export const userRepository = {
                 `
         return await db.get(sql, [id, userId]);
     },
-    // CASE
-    //     WHEN f.user_id1 IS NOT NULL THEN 'friend'
-    //     WHEN b1.blocker_id IS NOT NULL THEN 'blocked'
-    //     WHEN b2.blocked_id IS NOT NULL THEN 'blocked'
-    //     ELSE 'none'
-    // END AS relationship_status
     getUserProfile: async (id: number) => {
         return await db.get('SELECT u.id, u.username, u.display_name FROM users u WHERE id = ?', [id]);
     },
@@ -91,7 +85,6 @@ export const userRepository = {
                             inner join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
                             `;
-
         const searchTermWithWildcards = `%${search}%`;
         return await db.all(sql, [userId, searchTermWithWildcards]);
 
