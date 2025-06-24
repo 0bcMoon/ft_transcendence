@@ -26,6 +26,7 @@ export default async function routes(
 
     fastify.post('/auth/login', UserAuth.login)
     fastify.post('/auth/register', UserAuth.login)
+    fastify.get('/auth/logout', UserAuth.logout)
 }
 
 
