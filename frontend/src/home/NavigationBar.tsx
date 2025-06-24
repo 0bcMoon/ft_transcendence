@@ -1,6 +1,5 @@
 import { Home, MessageCircle, Gamepad2, Settings, LogOut, ContactRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Import useLocation
-import useAuthStore from '@/state/AuthStore';
 import { useAuth } from '@/context/AuthContext';
 
 interface NavigationItemProps {
