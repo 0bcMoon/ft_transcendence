@@ -1,6 +1,6 @@
-import { Home, MessageCircle, Gamepad2, Settings, LogOut, Bell, ContactRound } from 'lucide-react';
+import { Home, MessageCircle, Gamepad2, Settings, LogOut, ContactRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Import useLocation
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface NavigationItemProps {
     link: string;
@@ -38,7 +38,7 @@ const NavigationItem = ({ label, icon: Icon, isActive, link }: NavigationItemPro
 }
 
 const Logout = () => {
-    const { logout } = useAuth();
+    const {logout} = useAuth();
 
     return (
         <Link onClick={logout} to="/login" className="w-full mt-auto">
@@ -63,14 +63,13 @@ const NavigationBar = () => {
         { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/friends", label: "Friends", icon: ContactRound },
-        { link: "/event", label: "Event", icon: Bell },
         { link: "/settings", label: "Settings", icon: Settings },
     ];
 
     return (
         <div
-            className="flex flex-col flex-nowrap rounded-2xl items-center 
-                       bg-white h-[97svh]  justify-center 
+            className="hidden md:flex flex-col flex-nowrap rounded-2xl items-center 
+                       bg-white h-[97svh]   justify-center 
                        gap-4 
                        col-span-1
                        border-gray-100 border-2 shadow-lg shadow-gray-200 p-2 

@@ -1,11 +1,14 @@
-import { useEffect} from 'react';
+import { useEffect } from 'react';
 
-import profile from '../image/profile.svg'
-import options from '../image/options.svg'
-import { useChat } from '../context/ChatContext.tsx';
+import profile from '@/image/profile.svg'
+import options from '@/image/options.svg'
 import toast from 'react-hot-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../api/api.ts';
+import api from '@/api/api.ts';
+import { useChatStore, useSwapStore } from '@/state/Store.ts';
+import { MoveLeft } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import UserAvatar from '@/component/UserAvatar';
 
 type Event = React.FormEvent<HTMLFormElement>
 
@@ -21,25 +24,27 @@ interface Message {
 }
 
 interface SendMessage {
-    receiver_id: number,
+    receiver_id: string,
     content: string,
 }
 
 
 
 
-const ChatBubble = ({ user_id, sender_id, content }: Message) => {
-    //WARNING: remove this later
-    const sender: boolean = sender_id === user_id;
+const ChatBubble = ({ receiver_id, content }: Message) => {
+    const { userId } = useParams<{ userId: string }>();
 
+    const user_id = parseInt(userId!, 10);
+
+    const sender: boolean = receiver_id === user_id;
     return (
         <div className={`flex w-full flex-row break-words mt-1 mb-1
                         items-start min-h-auto 
-                        ${sender ? "justify-start" : "justify-end"}`}
+                        ${!sender ? "justify-start" : "justify-end"}`}
         >
             <div
                 className={`flex rounded-2xl max-w-[70%] break-all break-words px-4 py-2 
-                           ${sender ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+                           ${!sender ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
             >
                 <p className="whitespace-pre-wrap ">
                     {content}
@@ -52,20 +57,29 @@ const ChatBubble = ({ user_id, sender_id, content }: Message) => {
 }
 
 const ChatBanner = () => {
-    const { currentChat } = useChat()
+    const setSwap = useSwapStore((state) => state.setSwap);
+    const currentChat = useChatStore((state) => state);
 
     return (
         <div
-            className="flex items-center flex-row w-full gap-8 border-b border-gray-100 h-[10%]"
+            className="flex items-center flex-row w-full gap-4 p-4 border-b border-gray-100 h-18"
         >
-            <img
+            <MoveLeft 
+                onClick={() => setSwap(false)}
+                className=' md:hidden w-4 text-gray-500 hover:hover:text-gray-800
+                            transition-colors duration-300'
+            />
+
+            <UserAvatar
                 src={profile}
-                className="rounded-full w-auto h-[80%] m-2 "
+                alt="profile image"
+                name={currentChat.display_name}
+                isOnline={false}
+                size="md2"
+                className='ml-1 m-2'
             />
             <p className="flex flex-col ">
-                <span className="font-bold">{currentChat?.display_name} </span>
-                <br />
-                <span ></span>
+                <span className="font-bold">{currentChat.display_name} </span>
             </p>
 
             <img
@@ -96,7 +110,7 @@ const InputBox = () => {
     )
 }
 
-const fetchMessages = async (userId: number | null) => {
+const fetchMessages = async (userId: string | null) => {
 
     if (!userId) {
         return [];
@@ -108,22 +122,28 @@ const fetchMessages = async (userId: number | null) => {
 
 //find a way to use websocket to send messages
 
+interface ChatContainerProps {
 
-export default function ChatContainer({ isConnected, webSocket }: { isConnected: boolean, webSocket: WebSocket | null }) {
+    userId: string;
+    isConnected: boolean;
+    webSocket: WebSocket | null;
+}
 
-    const { currentChat } = useChat()
+
+export default function ChatContainer({ isConnected, webSocket, userId }: ChatContainerProps) {
+
     const queryClient = useQueryClient();
-    const queryKey = ['messages', currentChat?.id]; // Unique query key for messages of the current chat
+    const queryKey = ['messages', userId]; // Unique query key for messages of the current chat
     const { data: messages } = useQuery<Message[]>({
         queryKey: queryKey,
-        queryFn: async () => fetchMessages(currentChat?.id || null),
-        enabled: !!currentChat, // Only run the query if currentChat is defined
+        queryFn: async () => fetchMessages(userId || null),
+        // enabled: !!currentChat, // Only run the query if currentChat is defined
 
     })
 
     const postMessage = async (payload: SendMessage) => {
         //
-        if (webSocket === null || webSocket.readyState !== WebSocket.OPEN) {
+        if (webSocket === null || webSocket?.readyState !== WebSocket.OPEN) {
             throw new Error("WebSocket is not connected");
         }
         webSocket?.send(JSON.stringify(payload));
@@ -153,49 +173,49 @@ export default function ChatContainer({ isConnected, webSocket }: { isConnected:
 
         const newMessage: SendMessage = {
             content: message,
-            receiver_id: currentChat!.id, // Assuming sender_id is the ID of the current user should not be null i hope so
+            receiver_id: userId, // Assuming userId is the ID of the receiver
         }
         // Call the mutation to send the message
         sendMessageMutation.mutate(newMessage);
         form.reset()
     }
 
-    // Initialize WebSocket connection
-
     useEffect(() => {
-        //TODO: try to reconnect to socket
-        if (webSocket === null)
+        if (webSocket === undefined || webSocket === null)
             return;
+
         webSocket.onmessage = (event) => {
             const data: Message = JSON.parse(event.data); //plz dont fail me
+            console.log("Received message:", data);
             // Update the messages cache with the new message
-            queryClient.setQueryData<Message[]>(['messages', currentChat?.id], (oldMessages) => {
+            queryClient.setQueryData<Message[]>(['messages', userId], (oldMessages) => {
                 if (!oldMessages) return [data];
                 return [data, ...oldMessages];
             });
             toast.success('New message received');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentChat]);
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId, webSocket]); // Re-run effect if userId or webSocket changes
+    const swap = useSwapStore((state) => state.swap);
     return (
 
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+        <div className={`${swap ? "flex" : " hidden md:flex"} flex-col   flex-nowrap rounded-2xl items-center 
                         bg-white-200 h-[97svh] 
-                        col-span-8
-                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+                        md:col-span-8
+            			col-span-14
+                        border-gray-100 border-2 shadow-lg shadow-gray-200`}
         >
             <ChatBanner />
             <div
                 className="flex-1 overflow-y-auto no-scrollbar
                                            flex flex-col-reverse w-full pl-2 pr-2">
-                {messages?.map((message, idx) => <ChatBubble key={idx}  {...message} user_id={currentChat?.id} />)}
+                {messages?.map((message, idx) => <ChatBubble key={idx}  {...message} />)}
             </div>
             <form
                 className="flex flex-row justify-around w-full "
                 onSubmit={SendMessage}
             >
-                {isConnected && currentChat && <InputBox />}
+                {isConnected && userId && <InputBox />}
             </form>
 
         </div>

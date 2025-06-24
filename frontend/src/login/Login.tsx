@@ -1,16 +1,17 @@
 import { Link, useNavigate } from "react-router-dom";
+import endpoint from "@/endpoints.json";
 
-import googleIcon from "../image/google.svg";
-import fortytwoIcon from "../image/42.svg";
-import passwordIcon from "../image/password.svg";
-import userIcon from "../image/user.svg";
+import googleIcon from "@/image/google.svg";
+import fortytwoIcon from "@/image/42.svg";
+import passwordIcon from "@/image/password.svg";
+import userIcon from "@/image/user.svg";
 import { z } from "zod";
 import { toast, Toaster } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
-import api from "../api/api";
+import api from "@/api/api";
 import { AxiosError } from 'axios';
-import { useAuth } from '../context/AuthContext.tsx';
 import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 
 interface ApiError {
@@ -93,28 +94,29 @@ const validateLogin = (data: UserLogin): boolean => {
 
 export default function Login() {
 
-    const { setToken, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    // const {setAuth, isAuthenticated} = useAuthStore((state) => state);
+    const {isAuthenticated, setAuth} = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/friends");
+            navigate("/chat");
         }
     }, [isAuthenticated, navigate]);
+
 
     const LoginMutation = useMutation({
         mutationKey: ["login"],
         mutationFn: async (userData: UserLogin) => {
-            const response = await api.post("/login", userData);
+            const response = await api.post(endpoint.auth.login, userData);
             return response.data;
         },
-        onSuccess: async (data) => {
+        onSuccess: async () => {
             toast.success("Login successful");
-            setToken(data.access_token);
-            localStorage.setItem("access_token", data.access_token);
+            setAuth(true);
+            
         },
         onError: async (error: AxiosError<ApiError>) => {
-
             toast.error(error.response?.data?.message || "500 Internal Server Error");
         },
     });

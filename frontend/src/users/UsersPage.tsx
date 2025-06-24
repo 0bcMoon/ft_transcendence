@@ -1,6 +1,12 @@
 import { useState } from "react";
-import Friends from "./FriendsProfileCard";
+import Friends from "@/users/Friends"
+import { useQuery } from "@tanstack/react-query";
+import { useSearchStore } from "@/state/Store";
+import api from "@/api/api";
+import UsersProfileCard, { UsersProfileCardProps as IUsersProfileCard } from "./UsersProfileCard";
 
+
+type Event = React.FormEvent<HTMLFormElement>
 
 enum SearchOptionEnum {
     FindNewFriends = "Find New Friends",
@@ -20,18 +26,36 @@ interface SearchOptionsProps {
 const SearchOptions = ({ name, searchOption, setSearchOption }: SearchOptionsProps) => {
 
     return (
-        <div
+        <button
             onClick={() => { setSearchOption(name as SearchOptionEnum) }}
             className={`font-semibold flex items-center justify-center text-center
                         ${(searchOption === name) ? 'bg-gray-200' : ''}
                         pl-6 pr-6 border border-gray-100 h-9 text-center 
-                        mr-4 ml-4 rounded-2xl`}>
+                        mr-4 ml-4 rounded-2xl hover:bg-gray-100 transition-colors duration-300`}>
             {name}
-        </div>
+        </button>
     )
 }
 
 
+const FindNewUsers = () => {
+    const searchQuery = useSearchStore(state => state.searchQuery)
+    const { data: users } = useQuery<IUsersProfileCard[]>({
+        queryKey: ["search", searchQuery],
+        queryFn: async () => {
+            const response = await api.get("/users", {
+                params: {
+                    search: searchQuery
+                }
+            })
+            return response.data
+        }
+    })
+
+
+    return users?.map((user) => (<UsersProfileCard {...user} />))
+
+}
 
 const RenderView = ({ searchOption }: { searchOption: SearchOptionEnum }) => {
 
@@ -39,7 +63,7 @@ const RenderView = ({ searchOption }: { searchOption: SearchOptionEnum }) => {
         case SearchOptionEnum.Friends:
             return <Friends />
         case SearchOptionEnum.FindNewFriends:
-            return <div>Find New Friends View</div>;
+            return <FindNewUsers />;
         case SearchOptionEnum.FriendsRequest:
             return <div>Friends Request View</div>;
         case SearchOptionEnum.PendingRequest:
@@ -51,7 +75,7 @@ const RenderView = ({ searchOption }: { searchOption: SearchOptionEnum }) => {
     }
 }
 
-const FriendsPage = () => {
+const UsersPage = () => {
 
     const [searchOption, setSearchOption] = useState<SearchOptionEnum>(SearchOptionEnum.Friends);
 
@@ -62,7 +86,16 @@ const FriendsPage = () => {
         { name: SearchOptionEnum.PendingRequest },
         { name: SearchOptionEnum.Blocked },
     ]
-
+    const setSearchQuery = useSearchStore(state => state.setSearchQuery)
+    const setSearch = (event: Event) => {
+        event.preventDefault()
+        const form = event.currentTarget
+        const formData = new FormData(form)
+        const search = formData.get("search")?.toString().trim();
+        if (search === undefined)
+            return;
+        setSearchQuery(search)
+    }
 
     return (
 
@@ -71,15 +104,23 @@ const FriendsPage = () => {
                         rounded-xl 
                         border-gray-100 border-2 shadow-lg shadow-gray-200"
         >
-            <input
-                name="message"
-                className="shadow-gray-50 bg-gray-100 h-13 w-140
+            <form onSubmit={setSearch}>
+                <input
+                    name="search"
+                    className="shadow-gray-50 bg-gray-100 h-13 w-140
                     rounded-lg m-4
                     placeholder:text-center p-4"
-                placeholder="Search For Anything"
-            >
-            </input>
+                    placeholder="Search For Anything"
+                />
 
+                <button
+                    className="border-gray-100 border-2 shadow-xs shadow-gray-200 
+                                text-gray-500 p-2 h-13 font-semibold rounded-xl w-32"
+                >
+                    Search
+                </button>
+
+            </form>
             <div
                 className="flex-1 overflow-x-auto no-scrollbar whitespace-nowrap bg-white p-4 space-x-4
                                            flex flex-row w-full ">
@@ -98,4 +139,4 @@ const FriendsPage = () => {
     )
 }
 
-export default FriendsPage;
+export default UsersPage;

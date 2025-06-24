@@ -3,13 +3,12 @@ import db from '../../db/db';
 
 
 interface Message {
-
-    user_id: number | undefined, // Assuming user_id is the ID of the current user
-    id?: number,
-    sender_id?: number,
-    receiver_id?: number,
+    user_id: number
+    id: number,
+    sender_id: number,
+    receiver_id: number,
     content: string,
-    created_at?: Date,
+    created_at: Date,
 
 }
 export const messageRepository = {

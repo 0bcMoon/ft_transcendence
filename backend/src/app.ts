@@ -1,9 +1,11 @@
-import jwt from '@fastify/jwt'
+import jwt, { FastifyJWT } from '@fastify/jwt'
 import cors from '@fastify/cors'
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import cookie from '@fastify/cookie'
+import pino from "pino";
+import pretty from "pino-pretty";
 
 
 declare module "@fastify/jwt" {
@@ -11,6 +13,8 @@ declare module "@fastify/jwt" {
         user: {
             id: number,
             username: string
+            iat: number,
+            exp: number
         };
     }
 }
@@ -28,13 +32,27 @@ declare module 'fastify' {
     }
 }
 const fastify = Fastify({
-    logger: true
+    logger: {
+        level: 'debug',
+        transport: {
+            target: 'pino-pretty',
+            options: {
+                colorize: true,
+                translateTime: 'SYS:standard',
+                ignoe: 'pid,hostname,remoteAddress,remotePort',
+            }
+        }
+    },
 })
 
 
 fastify.register(cookie)
 fastify.register(jwt, {
-    secret: process.env.JWT_SECRET!
+    secret: process.env.JWT_SECRET!,
+    cookie: {
+        cookieName: 'access_token',
+        signed: false
+    }
 
 })
 
@@ -44,7 +62,7 @@ fastify.register(wsRouter);
 
 fastify.register(cors, {
     // Configure CORS options
-    origin: true, // Allow any origin for development (restrict this in production!)
+    origin: 'http://localhost:5173', // Allow any origin for development (restrict this in production!)
     methods: ['GET', 'OPTIONS', 'POST', 'HEAD'], // Include both GET and OPTIONS
     allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
     credentials: true,
@@ -52,20 +70,58 @@ fastify.register(cors, {
 });
 
 
+const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
+    const refreshToken = req.cookies.refresh_token;
+    if (!refreshToken) {
+        return reply.code(401).send({ message: 'Unauthorized: Session expired' });
+    }
+
+    console.error('refresh token', refreshToken);
+    try {
+        const decoded = await fastify.jwt.verify(refreshToken) as FastifyJWT['user'];
+        const newAccessToken = fastify.jwt.sign(
+            {
+                id: decoded.id,
+                username: decoded.username,
+            },
+            {
+                expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m', // Token expiration time
+            }
+        );
+
+        reply
+            .setCookie('access_token', newAccessToken, {
+                path: '/',
+                secure: true, // send cookie over HTTPS only
+                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
+                sameSite: true // alternative CSRF protection
+            })
+        req.user = decoded; // Set the user in the request object
+    }
+    catch (error: any) {
+        reply.clearCookie('access_token');
+        reply.clearCookie('refresh_token');
+        return reply.code(401).send({ message: 'Unauthorized: Invalid refresh token' });
+    }
+}
 
 fastify.decorate(
     'authenticate',
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (req: FastifyRequest, reply: FastifyReply) => {
         try {
-            await request.jwtVerify();
+            await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
-            return reply.code(401).send({ message: error.message });
+            console.error('JWT verification error:', error.code);
+            switch (error.code) {
+                case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
+                case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':
+                    refreshAcessToken(req, reply);
+                    break;
+                default:
+                    return reply.code(401).send({ message: error.message });
+            }
         }
     }
 );
 
-fastify.decorate(
-    'wsAuth',
-    
-);
 export default fastify;

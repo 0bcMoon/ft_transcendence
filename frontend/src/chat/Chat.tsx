@@ -1,18 +1,20 @@
 import RecentChat from './RecentChat.tsx';
 import ChatContainer from './ChatContainer.tsx';
-import { useAuth } from '../context/AuthContext.tsx';
 import { useEffect, useRef, useState } from 'react';
-import { useChat } from '../context/ChatContext.tsx';
 import toast from 'react-hot-toast';
+import { useParams } from 'react-router-dom';
+// import { useSwapStore } from '@/state/Store.ts';
 
 
 const StartNewChat = () => {
 
-    return (
 
-        <div className="flex flex-col  flex-nowrap rounded-2xl items-center 
+    return (
+        <div className="hidden md:flex flex-col  flex-nowrap rounded-2xl items-center 
                         bg-white h-[97svh] 
-                        col-span-8 justify-center gap-8
+                        col-span-14
+            			md:col-span-8
+                        justify-center gap-8
                         border-gray-100 border-2 shadow-lg shadow-gray-200"
         >
             <p className="text-gray-900 font-bold text-4xl"> Welcome Back</p>
@@ -23,10 +25,9 @@ const StartNewChat = () => {
 
 export default function Chat() {
 
-    const { token} = useAuth();
-    const { currentChat } = useChat()
     const wsRef = useRef<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState<boolean>(false);
+    const { userId } = useParams<{ userId: string }>();
 
 
     useEffect(() => {
@@ -35,7 +36,7 @@ export default function Chat() {
                 wsRef.current.close();
                 wsRef.current = null;
             }
-            const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+            const ws = new WebSocket("ws://localhost:3000/chat");
             wsRef.current = ws
             ws.onopen = () => {
                 toast.success("Socket connect")
@@ -47,7 +48,6 @@ export default function Chat() {
             };
 
             ws.onclose = () => {
-
                 toast.error("Socket connection has been closed")
                 wsRef.current = null
                 setIsConnected(false);
@@ -62,15 +62,14 @@ export default function Chat() {
             wsRef.current = null; // Ensure the ref is cleared
             setIsConnected(false); // Reset connection status
         };
-
-    }, [token]); // Reconnect if currentChat changes or token changes
+    }, []); // Reconnect if currentChat changes or token changes
 
     return (
         <>
             <RecentChat />
             {
-                currentChat ?
-                    <ChatContainer isConnected={isConnected} webSocket={wsRef.current} /> :
+                userId ?
+                    <ChatContainer userId={userId} isConnected={isConnected} webSocket={wsRef.current} /> :
                     <StartNewChat />
             }
 
