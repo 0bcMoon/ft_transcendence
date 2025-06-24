@@ -30,7 +30,7 @@ const UserAuth = {
             username: user.username,
         },
             {
-                expiresIn: process.env.ACCESS_TOEKN_EXPR || '10m' // Token expiration time
+                expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
             },
         )
 
