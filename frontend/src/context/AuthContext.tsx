@@ -1,4 +1,5 @@
 // AuthContext.tsx
+import api, { deleteCookie } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 interface AuthContextType {
     setAuth: (auth: boolean) => void;
@@ -14,12 +15,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const access_token = document.cookie.includes("access_token")
-        console.log("Access Token Found:", access_token);
-        
         setAuth(access_token)
     }, []);
 
     const logout = () => {
+        deleteCookie('access_token');
+        api.get('/auth/logout')
         setAuth(false);
     };
 
