@@ -16,9 +16,8 @@ const api = axios.create({
 /**
  * Deletes a cookie by its name.
  * @param {string} name The name of the cookie to delete.
- * @param {string} [path] The path of the cookie. Defaults to '/'.
- * @param {string} [domain] The domain of the cookie.
  */
+
 export function deleteCookie(name: string): void {
     document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
@@ -30,6 +29,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401) {
             deleteCookie("access_token");
+            window.location.href = endpoints.auth.login; // Redirect to login page
         }
         return Promise.reject(error);
     }
