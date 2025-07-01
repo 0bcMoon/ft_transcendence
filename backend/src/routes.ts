@@ -19,7 +19,8 @@ export default async function routes(
     fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers)
 
 // /api/users/{userId}/friend-requests
-    fastify.post('/user/friend-requests', { onRequest: fastify.authenticate }, User.friendRequests)
+    fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
+    fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
 
     fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
