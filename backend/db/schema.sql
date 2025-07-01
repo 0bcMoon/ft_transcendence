@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS "requests" (
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES users(id),
     FOREIGN KEY (receiver_id) REFERENCES users(id),
+    UNIQUE(sender_id, receiver_id, request_type)
     PRIMARY KEY("id" AUTOINCREMENT)
 );
 
