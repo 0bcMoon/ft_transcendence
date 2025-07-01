@@ -1,5 +1,3 @@
-
-import { rejects } from 'assert';
 import db from '../../db/db';
 
 export interface User {
@@ -19,25 +17,24 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
     getUserById: async (id: number, userId: number) => {
+        //TODO: check if u.i=sender_id and f.receiver_id = userId
         const sql: string = `
-                    SELECT u.id, u.display_name,
-                    CASE
-                        WHEN b.blocked_user_id is NOT NULL THEN 'blocked'
-                        ELSE 'none'
-                    END AS relation_status 
-                    FROM users u
-                    JOIN blocks b
-                    on u.id = b.blocked_user_id AND b.user_id=$1 AND u.id=$2
-                    UNION
-                    SELECT u.id,
-                    u.display_name,
-                    CASE
-                        WHEN f.sender_id is NOT NULL THEN 'friend'
-                        ELSE 'none'
-                    END AS relation_status
-                    FROM users u
-                    INNER JOIN friends f ON f.receiver_id= u.id and f.sender_id = $1 and u.id=$2
-                `
+                SELECT
+                u.id,
+                u.display_name,
+                CASE
+                    WHEN b.blocked_user_id IS NOT NULL THEN 'blocked'
+                    WHEN f.sender_id IS NOT NULL THEN 'friend'
+                    ELSE 'none'
+                END AS relation_status
+                FROM
+                    users u
+                LEFT JOIN
+                    blocks b ON u.id = b.blocked_user_id AND b.user_id = $1
+                LEFT JOIN
+                    friends f ON u.id = f.receiver_id AND f.sender_id = $1
+                WHERE
+                    u.id = $2;`
         return await db.get(sql, [id, userId]);
     },
     getUserProfile: async (id: number) => {
@@ -94,40 +91,31 @@ export const userRepository = {
         const searchTermWithWildcards = `%${search}%`;
         return await db.all(sql, [searchTermWithWildcards]);
     },
-    //TODO: implement chat requests 
 
+    //TODO: implement chat requests 
     getChatRequests: async (userId: number) => {
         const sql: string = `SELECT * from chat_requests`;
         return await db.all(sql, [userId]);
     },
+
     createFriendRequests: async (senderId: number, receiverId: number) => {
-        const isBlock = await userRepository.isBlocked(senderId, receiverId)
-        if (isBlock.length > 0)
-            return false
-        const isFriend = await userRepository.isFriend(senderId, receiverId)
-        if (isFriend.length > 0)
-            return false
-        const sql: string = `insert into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
+        const sql: string = `INSERT OR IGNORE into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
         const result = await db.run(sql, [senderId, receiverId, 'friend'])
-        console.log(result)
-        return true
-
+        return result.changes > 0 ? 'friend request sent' : 'friend request already exists';
     },
-    isBlocked: async (userX: number, userY: number) => {
+    getFriendRequests: async (userId: number) => {
         const sql: string = `
-                            SELECT id FROM blocks
-                            WHERE (user_id=$1 AND blocked_user_id=$2) 
-                            OR (user_id=$2 AND blocked_user_id=$1)
-                            `
-        return await db.all(sql, [userX, userY])
-    },
-    isFriend: async (userX: number, userY: number) => {
-
-        const sql: string = `
-                            select id from friends
-                            where (sender_id=$1 and receiver_id=$2) or (sender_id=$2 and receiver_id=$1)
-                            `
-        return await db.all(sql, [userX, userY])
-    },
+                            SELECT u.id, u.display_name, r.request_type,
+                            CASE
+                                WHEN u.id = r.receiver_id THEN 'sent'
+                                ELSE 'received'
+                            END AS request_type 
+                            FROM users u
+                            JOIN requests r
+                            ON r.receiver_id=u.id and r.sender_id=$1
+                            WHERE r.request_type = 'friend'
+                            `;
+        return await db.all(sql, [userId]);
+    }
 }
 
