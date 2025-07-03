@@ -3,10 +3,11 @@ import { X, Trophy, Users, Zap } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
+import toast from 'react-hot-toast';
 
 
 interface StartChatProps {
@@ -98,7 +99,7 @@ const BlockUser = () => {
     )
 }
 
-const AddFriend = ({ relation_status }: { relation_status: RelationshipStatus | undefined }) => {
+const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatus | undefined, id: string | undefined }) => {
 
     const display_object: Record<RelationshipStatus, IDisplayObject> = {
 
@@ -124,13 +125,33 @@ const AddFriend = ({ relation_status }: { relation_status: RelationshipStatus | 
         }
     };
 
+    const FriendMutation = useMutation({
+        mutationKey: ["friend-request", id],
+        mutationFn: async () => {
+            const response = await api.post(`/user/requests`, { userId: id, type: "friend" });
+            return response.data;
+        },
+        onSuccess: async () => {
+            toast.success("Friend request sent successfully");
+            // Optionally, you can refetch the user data or update the state
+        },
+        onError: async (error: any) => {
+            toast.error(error.response?.data?.message || "500 Internal Server Error");
+        },
+    });
+
+    const handleClick = () => {
+        FriendMutation.mutate();
+    }
+
+
     return (
         <div className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
         >
             {display_object[relation_status || 'none'].icon}
-            <button className='text-white font-semibold '>
+            <button onClick={handleClick} className='text-white font-semibold '>
                 {display_object[relation_status || 'none'].display_text}
             </button>
         </div>
@@ -222,7 +243,7 @@ const UserProfile = () => {
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
                             <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
-                            <AddFriend relation_status={data?.relation_status} />
+                            <AddFriend id={data?.id} relation_status={data?.relation_status} />
                             <BlockUser />
                         </div>
                     </div>

@@ -59,7 +59,7 @@ const FindNewUsers = () => {
         }
     })
 
-    return users?.map((user) => (<UsersProfileCard {...user} />))
+    return users?.map((user) => (<UsersProfileCard key={user?.id} {...user} />))
 }
 
 const UsersRequestCard = ({ id, display_name, request_type }: IUsersRequestCard) => {
