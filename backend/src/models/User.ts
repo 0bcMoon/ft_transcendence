@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
+import { abort } from "process";
 
 
 const User = {
@@ -57,8 +58,8 @@ const User = {
     },
 
     createRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-
         const { type } = req.body as { userId: number, type: string }
+
         switch (type) {
             case "friend":
                 return User.createFriendRequests(req, reply);
@@ -66,8 +67,12 @@ const User = {
                 return reply.status(400).send({ message: "invalid request type" });
         }
     },
+
     getRequests: async (req: FastifyRequest, reply: FastifyReply) => {
         const { type } = req.query as { type: string };
+        if (!type) {
+            return reply.status(400).send({ message: "type is required" });
+        }
         switch (type) {
             case "friend":
                 const friendRequests = await userRepository.getFriendRequests(req.user.id);
@@ -76,6 +81,11 @@ const User = {
                 return reply.status(400).send({ message: "invalid request type" });
         }
 
+    },
+    deleteRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { reqId } = req.params as { reqId: number };
+        const result = await userRepository.deleteFriendRequest(reqId, req.user.id);
+        return reply.status(200).send({ message: result });
     }
 }
 

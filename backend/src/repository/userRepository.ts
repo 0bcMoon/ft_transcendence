@@ -1,3 +1,4 @@
+import assert from 'assert';
 import db from '../../db/db';
 
 export interface User {
@@ -103,9 +104,15 @@ export const userRepository = {
         const result = await db.run(sql, [senderId, receiverId, 'friend'])
         return result.changes > 0 ? 'friend request sent' : 'friend request already exists';
     },
+    deleteFriendRequest: async (reqId: number, userId: number) => {
+        const sql = `DELETE FROM requests WHERE id=? and sender_id = ?`
+        const result = await db.run(sql, [reqId, userId])
+        assert(result.changes <= 1, "THIS IS BIG PROBLEM")
+        return result.changes > 0 ? 'friends request has been deleted' : 'no friends request found';
+    },
     getFriendRequests: async (userId: number) => {
         const sql: string = `
-                            SELECT u.id, u.display_name, r.request_type,
+                            SELECT r.id req_id, u.id, u.display_name, r.request_type,
                             CASE
                                 WHEN u.id = r.receiver_id THEN 'sent'
                                 ELSE 'received'

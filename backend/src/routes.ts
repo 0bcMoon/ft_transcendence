@@ -18,9 +18,11 @@ export default async function routes(
     fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends)
     fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers)
 
-// /api/users/{userId}/friend-requests
+    // /api/users/{userId}/friend-requests
+    // whit a query parameter to type {friend, message}
     fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
+    fastify.delete('/user/requests/:reqId', { onRequest: fastify.authenticate }, User.deleteRequests)
 
     fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
