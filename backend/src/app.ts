@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
+import routes from './routes'
 import cookie from '@fastify/cookie'
 import pino from "pino";
 import pretty from "pino-pretty";
@@ -32,7 +33,7 @@ declare module 'fastify' {
     }
 }
 const fastify = Fastify({
-    logger: {
+    logger: process.env.NODE_ENV === 'test' ? false : {
         level: 'debug',
         transport: {
             target: 'pino-pretty',
@@ -59,6 +60,7 @@ fastify.register(jwt, {
 fastify.register(websocket)
 
 fastify.register(wsRouter);
+fastify.register(routes);
 
 fastify.register(cors, {
     // Configure CORS options

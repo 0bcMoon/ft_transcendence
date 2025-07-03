@@ -7,7 +7,6 @@ import db from './db'
 db.serialize(async () => {
 
     //truncate the tables
-    db.exec('DELETE FROM users')
     const createUsers = db.prepare('INSERT INTO users (username, display_name, password, email) VALUES ( ?, ?, ?, ?)')
     const insertFriends = db.prepare('INSERT INTO friends (sender_id, receiver_id) VALUES (?, ?)')
     const insertContact = db.prepare('INSERT INTO contacts (user_id, contact_id) VALUES (?, ?)')

@@ -10,16 +10,16 @@ export default async function routes(
     fastify.get('/user', async (request, reply) => {
         return ({ message: 'Hello World! user' })
     })
-
     //TODO: edit userRepository sender <=> receiver in friends
+
     fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)
 
-    // fastify.get('/user/friends/:id', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends)
-    fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers)
 
     // /api/users/{userId}/friend-requests
     // whit a query parameter to type {friend, message}
+    // fastify.get('/user/friends/:id', { onRequest: fastify.authenticate }, User.getContactList)
+
     fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
     fastify.delete('/user/requests/:reqId', { onRequest: fastify.authenticate }, User.deleteRequests)
