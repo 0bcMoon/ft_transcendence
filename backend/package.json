@@ -6,7 +6,7 @@
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
         "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts",
-        "test": "NODE_ENV=test jest --setupFiles dotenv/config"
+        "test": "npm run migrate > /dev/null;NODE_ENV=test jest --setupFiles dotenv/config; npm run migrate > /dev/null"
     },
     "_moduleAliases": {
         "@root": ".",
