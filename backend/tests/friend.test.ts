@@ -19,13 +19,13 @@ describe('GET /users', () => {
         });
     });
 
-    it('should return a list of users with a valid token in a cookie', async () => {
+    it('should return a list of friend with a valid token in a cookie', async () => {
         const response = await supertest(app.server)
             .get('/user/friends')
             .set('Cookie', `access_token=${token}`);
         expect(response.status).toBe(200);
         expect(response.body).toBeDefined();
-        expect(Array.isArray(response.body)).toBe(true); // if expecting an array
+        expect(Array.isArray(response.body)).toBe(true);
     });
 
 });
@@ -33,10 +33,8 @@ describe('GET /users', () => {
 describe('Friend Requests API', () => {
     let token: string;
     const testUser = { id: 1, username: 'hicham' };
-    // Assuming user with ID 2 exists for testing sending requests
-    const otherUser = { id: 10 };
-    // Assuming user with ID 3 exists for testing deletion
-    const anotherUser = { id: 12 };
+    const otherUser = { id: 2 };
+    const anotherUser = { id: 3 };
 
     beforeAll(async () => {
         await app.ready();
@@ -51,8 +49,12 @@ describe('Friend Requests API', () => {
             .post('/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ userId: otherUser.id, type: 'friend' });
+
+        console.log({ userId: otherUser.id, type: 'friend' });
+
         expect(response.status).toBe(200);
         expect(response.body).toEqual({ message: 'friend request sent' });
+
     });
 
     it('should not allow a user to send a friend request to themselves', async () => {
