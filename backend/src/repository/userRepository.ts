@@ -102,13 +102,13 @@ export const userRepository = {
     createFriendRequests: async (senderId: number, receiverId: number) => {
         const sql: string = `INSERT OR IGNORE into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
         const result = await db.run(sql, [senderId, receiverId, 'friend'])
-        return result.changes > 0 ? 'friend request sent' : 'friend request already exists';
+        return result.changes > 0;
     },
     deleteFriendRequest: async (reqId: number, userId: number) => {
         const sql = `DELETE FROM requests WHERE id=? and sender_id = ?`
         const result = await db.run(sql, [reqId, userId])
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
-        return result.changes > 0 ? 'friends request has been deleted' : 'no friends request found';
+        return result.changes > 0;
     },
     getFriendRequests: async (userId: number) => {
         const sql: string = `
@@ -123,6 +123,16 @@ export const userRepository = {
                             WHERE r.request_type = 'friend'
                             `;
         return await db.all(sql, [userId]);
+    },
+    acceptFriendRequest: async (reqId: number, userId: number) => {
+        const result = userRepository.deleteFriendRequest(reqId, userId);
+        if (!result) {
+            return false;
+        }
+        const sql: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
+        const insertResult = await db.run(sql, [reqId]);
+        assert(insertResult.changes <= 1, "THIS IS BIG PROBLEM");
+        return insertResult.changes > 0;
     }
 }
 

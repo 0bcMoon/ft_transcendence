@@ -48,13 +48,15 @@ const User = {
         const friends = await userRepository.getUserById(req.user.id, userId) as { id: number, display_name: string, relation_status: string };
         switch (friends.relation_status) {
             case "friends":
-                return reply.status(200).send({ message: "you are already friends" });
+                return reply.status(400).send({ message: "you are already friends" });
             case "blocked":
                 return reply.status(403).send({ message: "you are blocked by this user" });
         }
-        return {
-            message: await userRepository.createFriendRequests(req.user.id, userId),
+        const result = await userRepository.createFriendRequests(req.user.id, userId);
+        if (!result) {
+            return reply.status(400).send({ message: "friend request already exists" });
         }
+        reply.status(200).send({ message: 'friend request sent' });
     },
 
     createRequests: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -85,7 +87,26 @@ const User = {
     deleteRequests: async (req: FastifyRequest, reply: FastifyReply) => {
         const { reqId } = req.params as { reqId: number };
         const result = await userRepository.deleteFriendRequest(reqId, req.user.id);
-        return reply.status(200).send({ message: result });
+        if (result) {
+            return reply.status(200).send({ message: 'friends request has been deleted' });
+        }
+        return reply.status(404).send({ message: 'no friends request found' });
+    },
+    acceptRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { type } = req.body as { reqId: number, type: string };
+        switch (type) {
+            case "friend":
+                return User.acceptFriendRequest(req, reply);
+            default:
+                return reply.status(400).send({ message: "invalid request type" });
+
+        }
+    },
+
+    acceptFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { reqId } = req.body as { reqId: number, type: string };
+
+        const result = await userRepository.acceptFriendRequest(reqId, req.user.id);
     }
 }
 

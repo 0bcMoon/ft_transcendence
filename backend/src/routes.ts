@@ -21,6 +21,7 @@ export default async function routes(
     // fastify.get('/user/friends/:id', { onRequest: fastify.authenticate }, User.getContactList)
 
     fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
+    fastify.patch('/user/requests', { onRequest: fastify.authenticate }, User.acceptRequests)
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
     fastify.delete('/user/requests/:reqId', { onRequest: fastify.authenticate }, User.deleteRequests)
 
