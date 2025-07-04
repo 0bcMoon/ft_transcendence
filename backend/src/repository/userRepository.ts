@@ -27,7 +27,7 @@ export const userRepository = {
                     WHEN b.blocked_user_id IS NOT NULL THEN 'blocked'
                     WHEN f.sender_id IS NOT NULL THEN 'friend'
                     ELSE 'none'
-                END AS relation_status
+                END AS relation_status 
                 FROM
                     users u
                 LEFT JOIN
@@ -110,6 +110,7 @@ export const userRepository = {
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
+
     getFriendRequests: async (userId: number) => {
         const sql: string = `
                             SELECT r.id req_id, u.id, u.display_name, r.request_type,

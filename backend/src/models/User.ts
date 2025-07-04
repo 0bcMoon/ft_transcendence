@@ -46,6 +46,11 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
         const friends = await userRepository.getUserById(req.user.id, userId) as { id: number, display_name: string, relation_status: string };
+
+        if (!friends) {
+            return reply.status(404).send({ message: "user not found" });
+        }
+
         switch (friends.relation_status) {
             case "friends":
                 return reply.status(400).send({ message: "you are already friends" });
