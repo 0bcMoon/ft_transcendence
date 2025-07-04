@@ -7,6 +7,7 @@ import routes from './routes'
 import cookie from '@fastify/cookie'
 import pino from "pino";
 import pretty from "pino-pretty";
+import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 
 
 declare module "@fastify/jwt" {
@@ -44,7 +45,10 @@ const fastify = Fastify({
             }
         }
     },
-})
+}).withTypeProvider<ZodTypeProvider>()
+
+fastify.setValidatorCompiler(validatorCompiler);
+fastify.setSerializerCompiler(serializerCompiler);
 
 
 fastify.register(cookie)
@@ -104,6 +108,22 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         return reply.code(401).send({ message: 'Unauthorized: Invalid refresh token' });
     }
 }
+fastify.setErrorHandler((error, request, reply) => {
+    // Check if the error is a Zod validation error
+    if (error.validation) {
+        // Return a 400 response with a simplified message
+        reply.status(400).send({
+            statusCode: 400,
+            error: 'Bad Request',
+            // Get the message from the first validation issue
+            message: error.validation[0].message,
+        });
+        return;
+    }
+
+    // For all other errors, use the default handler
+    reply.send(error);
+});
 
 fastify.decorate(
     'authenticate',

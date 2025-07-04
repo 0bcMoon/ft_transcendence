@@ -1,11 +1,11 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import UserAuth from './auth/auth'
-import User from './models/User'
+import { FastifyPluginAsync } from 'fastify';
+import UserAuth from './auth/auth';
+import User from './models/User';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { loginSchema } from './schema/zod-schema';
 
-export default async function routes(
-    fastify: FastifyInstance,
-    _: FastifyPluginOptions
-): Promise<void> {
+const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
+    const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
 
     fastify.get('/user', async (request, reply) => {
         return ({ message: 'Hello World! user' })
@@ -28,9 +28,16 @@ export default async function routes(
     fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
 
-    fastify.post('/auth/login', UserAuth.login)
+
+    fastify.post('/auth/login', {
+        schema: {
+            body: loginSchema
+        }
+    }, UserAuth.login)
     fastify.post('/auth/register', UserAuth.login)
     fastify.get('/auth/logout', UserAuth.logout)
 }
+
+export default routes;
 
 

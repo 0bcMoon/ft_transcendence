@@ -24,9 +24,11 @@
         "@fastify/websocket": "^11.0.2",
         "bcrypt": "^6.0.0",
         "fastify": "^5.3.3",
+        "fastify-type-provider-zod": "^5.0.1",
         "module-alias": "^2.2.3",
         "pino-pretty": "^7.0.0",
-        "sqlite3": "^5.1.7"
+        "sqlite3": "^5.1.7",
+        "zod": "^3.25.74"
     },
     "devDependencies": {
         "@types/bcrypt": "^5.0.2",
