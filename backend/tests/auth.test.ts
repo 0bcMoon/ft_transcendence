@@ -53,7 +53,7 @@ describe('Auth API', () => {
                 });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Invalid username or password');
+            expect(response.body.message).toBe('Username is required');
         });
 
         it('should reject missing password', async () => {
@@ -64,7 +64,7 @@ describe('Auth API', () => {
                 });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Invalid username or password');
+            expect(response.body.message).toBe('Password is required');
         });
 
         it('should reject non-existent user', async () => {
