@@ -10,15 +10,13 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     fastify.get('/user', async (request, reply) => {
         return ({ message: 'Hello World! user' })
     })
-    //TODO: edit userRepository sender <=> receiver in friends
 
     fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)
 
+
+    fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers)
     fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends)
 
-    // /api/users/{userId}/friend-requests
-    // whit a query parameter to type {friend, message}
-    // fastify.get('/user/friends/:id', { onRequest: fastify.authenticate }, User.getContactList)
 
     fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
     fastify.patch('/user/requests', { onRequest: fastify.authenticate }, User.acceptRequests)

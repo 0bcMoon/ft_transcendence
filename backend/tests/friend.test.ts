@@ -33,8 +33,10 @@ describe('GET /users', () => {
 describe('Friend Requests API', () => {
     let token: string;
     const testUser = { id: 1, username: 'hicham' };
-    const otherUser = { id: 2 };
-    const anotherUser = { id: 3 };
+    const friend = { id: 2 };
+    const blocked = { id: 4 };
+    const otherUser = { id: 12 };
+    const anotherUser = { id: 13 };
 
     beforeAll(async () => {
         await app.ready();
@@ -50,10 +52,28 @@ describe('Friend Requests API', () => {
             .set('Cookie', `access_token=${token}`)
             .send({ userId: otherUser.id, type: 'friend' });
 
-        console.log({ userId: otherUser.id, type: 'friend' });
+        expect(response.body).toEqual({ message: 'friend request sent' });
+
+    });
+
+
+    it('relations status should be friend', async () => {
+        const response = await supertest(app.server)
+            .get(`/user/${friend.id}`)
+            .set('Cookie', `access_token=${token}`)
 
         expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'friend request sent' });
+        expect(response.body.relation_status).toEqual('friend');
+
+    });
+
+    it('relations status should be pending', async () => {
+        const response = await supertest(app.server)
+            .get(`/user/${otherUser.id}`)
+            .set('Cookie', `access_token=${token}`)
+
+        expect(response.status).toBe(200);
+        expect(response.body.relation_status).toEqual('pending');
 
     });
 
@@ -65,9 +85,47 @@ describe('Friend Requests API', () => {
 
         expect(response.status).toBe(400);
         expect(response.body).toEqual({ message: 'you cannot send friend request to yourself' });
+
     });
 
-    it('should not send request to existing friend', async () => {
+    it('should not allow a user to send a friend request to existing friend', async () => {
+        const response = await supertest(app.server)
+            .post('/user/requests')
+            .set('Cookie', `access_token=${token}`)
+            .send({ userId: friend.id, type: 'friend' });
+
+        console.log(response.body);
+        
+
+        
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({ message: "you are already friends" });
+
+    });
+
+    it('should not allow a user to send a friend request to blocked users', async () => {
+        const response = await supertest(app.server)
+            .post('/user/requests')
+            .set('Cookie', `access_token=${token}`)
+            .send({ userId: blocked.id, type: 'friend' });
+
+        expect(response.status).toBe(403);
+        expect(response.body).toEqual({ message: "you are blocked by this user" });
+
+    });
+
+    it('should not allow a user to send a friend request to non existing user', async () => {
+        const response = await supertest(app.server)
+            .post('/user/requests')
+            .set('Cookie', `access_token=${token}`)
+            .send({ userId: 9999, type: 'friend' });
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ message: 'user does not exists' });
+
+    });
+
+    it('should not send request to non existing users', async () => {
         const response = await supertest(app.server)
             .delete('/user/requests/9999') // Assuming 9999 is a non-existent request ID
             .set('Cookie', `access_token=${token}`);
@@ -114,5 +172,70 @@ describe('Friend Requests API', () => {
         expect(response.body).toEqual({ message: 'no friends request found' });
     });
 
+    it('should allow a user to accept a friend request', async () => {
+        // User 15 sends a friend request to User 1 (hicham)
+        const requesterToken = app.jwt.sign({ id: 15, username: 'user15' });
+        await supertest(app.server)
+            .post('/user/requests')
+            .set('Cookie', `access_token=${requesterToken}`)
+            .send({ userId: testUser.id, type: 'friend' });
+
+        // User 1 (hicham) needs to find the request ID.
+        // We fetch it from the sender's point of view since we can't get received requests.
+        const getRequestsResponse = await supertest(app.server)
+            .get('/user/requests?type=friend')
+            .set('Cookie', `access_token=${requesterToken}`);
+
+        const request = getRequestsResponse.body.find((r: any) => r.id === testUser.id);
+        expect(request).toBeDefined();
+        const reqId = request.req_id;
+
+        // User 1 (hicham) accepts the request
+        const response = await supertest(app.server)
+            .patch('/user/requests')
+            .set('Cookie', `access_token=${token}`) // token for user 1
+            .send({ reqId: reqId, type: 'friend', action: true });
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ message: 'friends request has been accepted' });
+    });
+
+    it('should allow a user to deny a friend request', async () => {
+        // User 16 sends a friend request to User 1 (hicham)
+        const requesterToken = app.jwt.sign({ id: 16, username: 'user16' });
+        await supertest(app.server)
+            .post('/user/requests')
+            .set('Cookie', `access_token=${requesterToken}`)
+            .send({ userId: testUser.id, type: 'friend' });
+
+        // User 1 (hicham) needs to find the request ID.
+        const getRequestsResponse = await supertest(app.server)
+            .get('/user/requests?type=friend')
+            .set('Cookie', `access_token=${requesterToken}`);
+
+        const request = getRequestsResponse.body.find((r: any) => r.id === testUser.id);
+        expect(request).toBeDefined();
+        const reqId = request.req_id;
+
+        // User 1 (hicham) denies the request
+        const response = await supertest(app.server)
+            .patch('/user/requests')
+            .set('Cookie', `access_token=${token}`) // token for user 1
+            .send({ reqId: reqId, type: 'friend', action: false });
+        
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ message: 'friends request has been deleted' });
+    });
+
+    it('should return 404 when trying to accept a non-existent request', async () => {
+        const response = await supertest(app.server)
+            .patch('/user/requests')
+            .set('Cookie', `access_token=${token}`)
+            .send({ reqId: 9999, type: 'friend', action: true });
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ message: 'no friends request found' });
+    });
+
 
 });
+
