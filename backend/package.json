@@ -6,7 +6,8 @@
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
         "migrate": "rm  $DB_PATH; ts-node  db/seed.ts",
-        "test": "sh test.sh"
+        "test": "sh test.sh",
+        "test:debug": "DB_PATH=/tmp/test.db NODE_ENV=test node --inspect-brk=0.0.0.0:9229 -r dotenv/config ./node_modules/.bin/jest --runInBand --no-cache"
     },
     "_moduleAliases": {
         "@root": ".",

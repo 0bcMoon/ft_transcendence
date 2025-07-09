@@ -5,7 +5,6 @@ describe('Auth API', () => {
     beforeAll(async () => {
         await app.ready();
     });
-
     describe('POST /auth/login', () => {
         it('should login with valid credentials', async () => {
             const response = await supertest(app.server)
@@ -14,7 +13,6 @@ describe('Auth API', () => {
                     username: 'hicham',
                     password: 'password'
                 });
-
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Login successful');
             expect(response.headers['set-cookie']).toBeDefined();
