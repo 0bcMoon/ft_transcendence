@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
+import { assert } from "console";
 
 
 const User = {
@@ -111,11 +112,13 @@ const User = {
         return reply.status(404).send({ message: 'no friends request found' });
     },
 
-    acceptRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+    HandelRequests: async (req: FastifyRequest, reply: FastifyReply) => {
         const { type } = req.body as { reqId: number, type: string, action: boolean };
+        console.log("req Body ", req.body);
+        
         switch (type) {
             case "friend":
-                return User.acceptFriendRequest(req, reply);
+                return User.HandelFriendRequest(req, reply);
             case "chat":
                 throw new Error("chat accept requests not implemented yet");
             default:
@@ -123,7 +126,7 @@ const User = {
         }
     },
 
-    acceptFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
+    HandelFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
         const { reqId, action } = req.body as { reqId: number, type: string, action: boolean };
 
         switch (action) {
