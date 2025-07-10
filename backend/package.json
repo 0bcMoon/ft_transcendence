@@ -6,7 +6,7 @@
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
         "migrate": "rm  $DB_PATH; ts-node  db/seed.ts",
-        "test": "sh test.sh"
+        "test": "DB_PATH=/tmp/test.db jest  --setupFiles dotenv/config "
     },
     "_moduleAliases": {
         "@root": ".",
