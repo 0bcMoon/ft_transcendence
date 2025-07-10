@@ -139,6 +139,7 @@ export const userRepository = {
                             FROM users u
                             JOIN requests r
                             ON r.receiver_id=u.id and r.sender_id=$1
+                            OR r.sender_id=u.id and r.receiver_id=$1
                             WHERE r.request_type = 'friend'
                             `;
         return await db.all(sql, [userId]);
