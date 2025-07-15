@@ -13,6 +13,7 @@ describe('GET /users', () => {
     beforeAll(async () => {
         await app.ready();
         // Generate a token
+        console.log('Generating token for test user', process.env.DB_PATH);
         token = app.jwt.sign({
             id: testUser.id,
             username: testUser.username,
@@ -49,8 +50,6 @@ describe('Friend Requests API', () => {
             .post('/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ userId: otherUser.id, type: 'friend' });
-
-        console.log({ userId: otherUser.id, type: 'friend' });
 
         expect(response.status).toBe(200);
         expect(response.body).toEqual({ message: 'friend request sent' });
