@@ -95,12 +95,11 @@ const validateLogin = (data: UserLogin): boolean => {
 export default function Login() {
 
     const navigate = useNavigate();
-    // const {setAuth, isAuthenticated} = useAuthStore((state) => state);
     const {isAuthenticated, setAuth} = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/chat");
+            navigate("/friends");
         }
     }, [isAuthenticated, navigate]);
 

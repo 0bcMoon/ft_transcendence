@@ -1,11 +1,12 @@
 import Friends from "@/users/Friends"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCancelRequest, useAcceptRequest, useDenyRequest } from "@/api/mutations";
 import { useSearchStore, useUsersOption } from "@/state/Store";
 import UsersProfileCard, { IUsersProfileCard } from "@/users/UsersProfileCard";
 import api from "@/api/api";
 import UserAvatar from "@/component/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import profile from "@/image/profile.svg";
+import toast from "react-hot-toast";
 
 
 type Event = React.FormEvent<HTMLFormElement>
@@ -19,6 +20,7 @@ enum UsersOptionEnum {
 }
 
 interface IUsersRequestCard {
+    req_id: number;
     id: string;
     display_name: string;
     request_type: string;
@@ -62,43 +64,25 @@ const FindNewUsers = () => {
     return users?.map((user) => (<UsersProfileCard key={user?.id} {...user} />))
 }
 
-const UsersRequestCard = ({ id, display_name, request_type }: IUsersRequestCard) => {
+const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequestCard) => {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
 
     const handleNavigate = () => {
         navigate(`/users/${id}`);
     }
 
-    const { mutate: cancelRequest } = useMutation({
-        mutationFn: () => api.delete(`/user/requests/cancel/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-        }
-    });
-
-    const { mutate: acceptRequest } = useMutation({
-        mutationFn: () => api.post(`/user/friends/accept/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-        }
-    });
-
-    const { mutate: denyRequest } = useMutation({
-        mutationFn: () => api.delete(`/user/requests/deny/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-        }
-    });
+    const { mutate: cancelRequest } = useCancelRequest();
+    const { mutate: acceptRequest } = useAcceptRequest();
+    const { mutate: denyRequest } = useDenyRequest();
 
     const handleAccept = (e: React.MouseEvent) => {
         e.stopPropagation();
-        acceptRequest();
+        // acceptRequest();
     }
 
     const handleDeny = (e: React.MouseEvent) => {
         e.stopPropagation();
-        denyRequest();
+        // denyRequest();
     }
 
     const handleCancel = (e: React.MouseEvent) => {
@@ -184,7 +168,7 @@ const FriendsRequest = () => {
         }
     })
 
-    return users?.map((user) => (<UsersRequestCard {...user} />))
+    return users?.map((user) => (<UsersRequestCard key={user.id} {...user} />))
 }
 
 const RenderView = () => {

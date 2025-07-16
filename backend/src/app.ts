@@ -69,7 +69,7 @@ fastify.register(routes);
 fastify.register(cors, {
     // Configure CORS options
     origin: 'http://localhost:5173', // Allow any origin for development (restrict this in production!)
-    methods: ['GET', 'OPTIONS', 'POST', 'HEAD'], // Include both GET and OPTIONS
+    methods: ['GET', 'OPTIONS', 'POST', 'HEAD', 'DELETE', 'PATCH'], // Include both GET and OPTIONS
     allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
     credentials: true,
     preflightContinue: true // Important for WebSocket connections
