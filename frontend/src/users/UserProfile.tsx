@@ -1,17 +1,18 @@
-import { X, Trophy, Users, Zap } from 'lucide-react';
+import { X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
 // import { useParams } from "react-router-dom";
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
 import toast from 'react-hot-toast';
+import { useCancelRequest } from '@/api/mutations';
 
 
 interface StartChatProps {
-    id?: string;
+    id?: number;
     display_name?: string;
     profilePicture?: string;
 }
@@ -99,7 +100,7 @@ const BlockUser = () => {
     )
 }
 
-const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatus | undefined, id: string | undefined }) => {
+const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatus | undefined, id: number | undefined }) => {
 
     const display_object: Record<RelationshipStatus, IDisplayObject> = {
 
@@ -125,6 +126,8 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
         }
     };
 
+    const queryClient = useQueryClient();
+
     const FriendMutation = useMutation({
         mutationKey: ["friend-request", id],
         mutationFn: async () => {
@@ -133,25 +136,47 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
         },
         onSuccess: async () => {
             toast.success("Friend request sent successfully");
-            // Optionally, you can refetch the user data or update the state
+
+            //TODO: invalidate the specific user query to refetch updated data now it invalid all user 
+
+            // Invalidate the specific user query to refetch updated data
+            // queryClient.invalidateQueries({ queryKey: ['users', id] });
+            // Also invalidate all users queries in case this affects other user lists
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            //console.log('Invalidated queries for user:', id);
         },
         onError: async (error: any) => {
             toast.error(error.response?.data?.message || "500 Internal Server Error");
         },
     });
 
-    const handleClick = () => {
-        FriendMutation.mutate();
+    const { mutate: cancelRequest } = useCancelRequest();
+
+    const handleClick = (relation_status: string) => {
+
+        switch (relation_status) {
+            case 'friend':
+                // Unfriend
+                toast.success("Unfriended successfully");
+                break;
+            case 'pending':
+                cancelRequest({ req_id: 0, user_id: id! }); // Assuming req_id is not needed for canceling friend request
+                break
+            case 'none':
+                FriendMutation.mutate();
+                break;
+        }
     }
 
 
+    // TODO: if usres if blocked  disable some actions like add friend, start chat, play pingpong
     return (
         <div className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
         >
             {display_object[relation_status || 'none'].icon}
-            <button onClick={handleClick} className='text-white font-semibold '>
+            <button onClick={() => handleClick(relation_status || 'none')} className='text-white font-semibold '>
                 {display_object[relation_status || 'none'].display_text}
             </button>
         </div>
@@ -164,7 +189,7 @@ const fetchUsersById = async (userId: string) => {
 }
 interface User {
 
-    id: string;
+    id: number;
     relation_status: RelationshipStatus
     username?: string;
     display_name: string;
@@ -175,12 +200,18 @@ interface User {
 const UserProfile = () => {
 
     const { userId } = useParams<{ userId: string }>();
+    const navigate = useNavigate();
 
     const { data } = useQuery<User>({
         queryKey: ['users', userId],
         queryFn: () => fetchUsersById(userId!),
         enabled: !!userId,
     })
+
+    const handleGoBack = () => {
+        navigate(-1);
+    }
+
     const ProfileStatusData = [
         {
             value: 22,
@@ -211,13 +242,26 @@ const UserProfile = () => {
             className: 'w-6 h-6 text-purple-500'
         }
     ]
-    console.log(data);
     return (
         <div
             className="flex flex-col items-center col-span-13  
                         h-[97svh] rounded-xl 
             border-gray-100 border-t-2 shadow-lg shadow-gray-200"
         >
+            {/* Back Arrow */}
+            <div className="w-full px-4 pt-4">
+                <button
+                    onClick={handleGoBack}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-500 
+                              hover:text-gray-800  
+                              transition-all duration-200 transform hover:scale-105
+                              "
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span className="text-sm font-medium">Back</span>
+                </button>
+            </div>
+
             <div
                 className="flex flex-col rounded-xl  w-250 h-120 mt-4"
             >

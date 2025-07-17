@@ -38,10 +38,10 @@ const NavigationItem = ({ label, icon: Icon, isActive, link }: NavigationItemPro
 }
 
 const Logout = () => {
-    const {logout} = useAuth();
+    const { logout } = useAuth();
 
     return (
-        <Link onClick={logout} to="/login" className="w-full mt-auto">
+        <Link onClick={logout} to="/login" className="mt-auto md:w-full">
             <li className="list-none">
                 <button
                     className={`flex flex-col items-center justify-center p-3 rounded-lg transition-colors 
@@ -67,22 +67,19 @@ const NavigationBar = () => {
     ];
 
     return (
-        <div
-            className="hidden md:flex flex-col flex-nowrap rounded-2xl items-center 
-                       bg-white h-[97svh]   justify-center 
-                       gap-4 
-                       col-span-1
-                       border-gray-100 border-2 shadow-lg shadow-gray-200 p-2 
-                       "
+        <nav
+            className="flex flex-row items-center justify-around bg-white shadow-lg fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-100 p-2
+                       md:flex-col md:justify-center md:gap-4 md:relative md:z-auto md:border-2 md:rounded-2xl md:h-[97svh] md:col-span-1"
         >
             {/* Main navigation items */}
             {navItemsData.map((item) => {
                 const isActive = location.pathname.startsWith(item.link); // Basic active state check
                 return <NavigationItem key={item.label} {...item} isActive={isActive} />
+
             })}
 
             <Logout />
-        </div>
+        </nav>
     )
 }
 

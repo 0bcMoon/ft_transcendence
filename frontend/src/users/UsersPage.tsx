@@ -7,6 +7,7 @@ import UserAvatar from "@/component/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import profile from "@/image/profile.svg";
 import toast from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 
 
 type Event = React.FormEvent<HTMLFormElement>
@@ -21,7 +22,7 @@ enum UsersOptionEnum {
 
 interface IUsersRequestCard {
     req_id: number;
-    id: string;
+    id: number;
     display_name: string;
     request_type: string;
 }
@@ -72,8 +73,8 @@ const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequ
     }
 
     const { mutate: cancelRequest } = useCancelRequest();
-    const { mutate: acceptRequest } = useAcceptRequest();
-    const { mutate: denyRequest } = useDenyRequest();
+    // const { mutate: acceptRequest } = useAcceptRequest();
+    // const { mutate: denyRequest } = useDenyRequest();
 
     const handleAccept = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -87,7 +88,7 @@ const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequ
 
     const handleCancel = (e: React.MouseEvent) => {
         e.stopPropagation();
-        cancelRequest();
+        cancelRequest({ req_id, user_id: id });
     }
 
     return (
