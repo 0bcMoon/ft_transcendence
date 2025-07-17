@@ -42,6 +42,13 @@ db.serialize(async () => {
         await bcrypt.hash('password', salt),
         "microb@mail.com"
     )
+
+    createUsers.run(
+        'test',
+        faker.person.fullName(),
+        await bcrypt.hash('password', salt),
+        faker.internet.email()
+    )
     for (let i = 0; i < 20; i++) {
         createUsers.run(
             faker.internet.username(),
@@ -50,6 +57,7 @@ db.serialize(async () => {
             faker.internet.email()
         )
     }
+
     insertContact.run(1, 2)
     insertContact.run(1, 3)
     insertContact.run(2, 3)
