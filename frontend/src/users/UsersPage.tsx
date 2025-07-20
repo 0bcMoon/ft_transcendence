@@ -6,7 +6,6 @@ import api from "@/api/api";
 import UserAvatar from "@/component/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import profile from "@/image/profile.svg";
-import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 
 
@@ -16,7 +15,6 @@ enum UsersOptionEnum {
     FindNewFriends = "Find New Friends",
     Friends = "Friends",
     FriendsRequest = "Friends Request",
-    PendingRequest = "Pending Request",
     Blocked = "Blocked"
 }
 
@@ -73,17 +71,17 @@ const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequ
     }
 
     const { mutate: cancelRequest } = useCancelRequest();
-    // const { mutate: acceptRequest } = useAcceptRequest();
-    // const { mutate: denyRequest } = useDenyRequest();
+    const { mutate: acceptRequest } = useAcceptRequest();
+    const { mutate: denyRequest } = useDenyRequest();
 
     const handleAccept = (e: React.MouseEvent) => {
         e.stopPropagation();
-        // acceptRequest();
+        acceptRequest({ req_id, user_id: id });
     }
 
     const handleDeny = (e: React.MouseEvent) => {
         e.stopPropagation();
-        // denyRequest();
+        denyRequest(({ req_id, user_id: id }));
     }
 
     const handleCancel = (e: React.MouseEvent) => {
@@ -183,8 +181,6 @@ const RenderView = () => {
             return <FindNewUsers />;
         case UsersOptionEnum.FriendsRequest:
             return <FriendsRequest />;
-        case UsersOptionEnum.PendingRequest:
-            return <div>Pending Request View</div>;
         case UsersOptionEnum.Blocked:
             return <div>Blocked View</div>;
         default:
@@ -198,7 +194,6 @@ const UsersPage = () => {
         { name: UsersOptionEnum.Friends },
         { name: UsersOptionEnum.FindNewFriends },
         { name: UsersOptionEnum.FriendsRequest },
-        { name: UsersOptionEnum.PendingRequest },
         { name: UsersOptionEnum.Blocked },
     ]
     const setSearchQuery = useSearchStore(state => state.setSearchQuery)

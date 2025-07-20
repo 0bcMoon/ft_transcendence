@@ -21,7 +21,7 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     fastify.post('/user/requests', { onRequest: fastify.authenticate }, User.createRequests)
     fastify.patch('/user/requests', { onRequest: fastify.authenticate }, User.HandelRequests)
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
-    fastify.delete('/user/requests/:reqId', { onRequest: fastify.authenticate }, User.deleteRequests)
+    fastify.delete('/user/requests/:req_id', { onRequest: fastify.authenticate }, User.deleteRequests)
 
     fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)

@@ -1,5 +1,4 @@
 import { X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
-// import { useParams } from "react-router-dom";
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
@@ -9,6 +8,7 @@ import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import { useCancelRequest } from '@/api/mutations';
+import Loader from '@/vendor/loader';
 
 
 interface StartChatProps {
@@ -18,7 +18,7 @@ interface StartChatProps {
 }
 
 
-type RelationshipStatus = 'friend' | 'pending' | 'blocked' | 'none';
+type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocked' | 'none';
 
 interface IDisplayObject {
     display_text: string;
@@ -100,7 +100,7 @@ const BlockUser = () => {
     )
 }
 
-const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatus | undefined, id: number | undefined }) => {
+const FriendOption = ({ req_id, relation_status, id }: User) => {
 
     const display_object: Record<RelationshipStatus, IDisplayObject> = {
 
@@ -114,7 +114,14 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
             icon: <AddFriendIcon />,
             bgColor: 'bg-yellow-600 hover:bg-yellow-700'
         },
+        // add  dislay none to friend option
         'blocked': {
+            display_text: 'Unblock',
+            icon: <AddFriendIcon />,
+            bgColor: 'bg-green-600 hover:bg-green-700'
+        },
+
+        'waiting': {
             display_text: 'Unblock',
             icon: <AddFriendIcon />,
             bgColor: 'bg-green-600 hover:bg-green-700'
@@ -131,7 +138,7 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
     const FriendMutation = useMutation({
         mutationKey: ["friend-request", id],
         mutationFn: async () => {
-            const response = await api.post(`/user/requests`, { userId: id, type: "friend" });
+            const response = await api.post(`/user/requests`, { user_id: id, type: "friend" });
             return response.data;
         },
         onSuccess: async () => {
@@ -160,7 +167,7 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
                 toast.success("Unfriended successfully");
                 break;
             case 'pending':
-                cancelRequest({ req_id: 0, user_id: id! }); // Assuming req_id is not needed for canceling friend request
+                cancelRequest({ req_id: req_id, user_id: id }); // Assuming req_id is not needed for canceling friend request
                 break
             case 'none':
                 FriendMutation.mutate();
@@ -183,33 +190,49 @@ const AddFriend = ({ relation_status, id }: { relation_status: RelationshipStatu
     )
 }
 
-const fetchUsersById = async (userId: string) => {
-    const response = await api.get(`/user/${userId}`);
+const fetchUsersById = async (user_id: string) => {
+    const response = await api.get(`/user/${user_id}`);
     return response.data;
 }
 interface User {
 
     id: number;
-    relation_status: RelationshipStatus
+    req_id: number | null;
+    relation_status?: RelationshipStatus
     username?: string;
-    display_name: string;
-    profilePicture: string;
-    status?: string;
+    display_name?: string;
+    profilePicture?: string;
 }
 
 const UserProfile = () => {
 
-    const { userId } = useParams<{ userId: string }>();
+    const { user_id } = useParams<{ user_id: string }>();
     const navigate = useNavigate();
 
-    const { data } = useQuery<User>({
-        queryKey: ['users', userId],
-        queryFn: () => fetchUsersById(userId!),
-        enabled: !!userId,
+    const { data, isLoading, isError } = useQuery<User>({
+        queryKey: ['users', user_id],
+        queryFn: () => fetchUsersById(user_id!),
+        enabled: !!user_id,
     })
 
     const handleGoBack = () => {
         navigate(-1);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200">
+                <Loader />
+            </div>
+        );
+    }
+
+    if (isError || !data) {
+        return (
+            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200">
+                <p className="text-red-500 text-lg">Error fetching user profile.</p>
+            </div>
+        );
     }
 
     const ProfileStatusData = [
@@ -287,7 +310,7 @@ const UserProfile = () => {
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
                             <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
-                            <AddFriend id={data?.id} relation_status={data?.relation_status} />
+                            <FriendOption {...data} />
                             <BlockUser />
                         </div>
                     </div>

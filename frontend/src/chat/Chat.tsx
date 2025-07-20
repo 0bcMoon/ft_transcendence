@@ -27,7 +27,7 @@ export default function Chat() {
 
     const wsRef = useRef<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState<boolean>(false);
-    const { userId } = useParams<{ userId: string }>();
+    const { user_id } = useParams<{ user_id: string }>();
 
 
     useEffect(() => {
@@ -68,8 +68,8 @@ export default function Chat() {
         <>
             <RecentChat />
             {
-                userId ?
-                    <ChatContainer userId={userId} isConnected={isConnected} webSocket={wsRef.current} /> :
+                user_id ?
+                    <ChatContainer user_id={user_id} isConnected={isConnected} webSocket={wsRef.current} /> :
                     <StartNewChat />
             }
 
