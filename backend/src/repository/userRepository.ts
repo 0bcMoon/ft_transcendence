@@ -18,8 +18,8 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
-    getUserById: async (id: number, userId: number) => {
-        //TODO: check if u.i=sender_id and f.receiver_id = userId
+    getUserById: async (id: number, user_id: number) => {
+        //TODO: check if u.i=sender_id and f.receiver_id = user_id
         const sql: string = `
                         SELECT
                             u.id,
@@ -29,8 +29,8 @@ export const userRepository = {
                             CASE
                                 WHEN b.user_id IS NOT NULL THEN 'blocked'
                                 WHEN f.sender_id IS NOT NULL THEN 'friend'
-                                WHEN r.sender_id = 1 THEN 'pending'
-                                WHEN r.receiver_id = 1 THEN 'waiting'
+                                WHEN r.sender_id = $1 THEN 'pending'
+                                WHEN r.receiver_id = $1 THEN 'waiting'
                                 ELSE 'none'
                             END AS relation_status
                         FROM
@@ -47,7 +47,7 @@ export const userRepository = {
                         WHERE
                             u.id = $2;
                             `
-        return await db.get(sql, [id, userId]);
+        return await db.get(sql, [id, user_id]);
     },
 
     getUserProfile: async (id: number) => {
@@ -55,11 +55,11 @@ export const userRepository = {
     },
 
     // get last message for each contact
-    getContactList: async (userId: number) => {
+    getContactList: async (user_id: number) => {
         const sql: string = `SELECT users.id, users.display_name, users.username 
                             from contacts 
                             INNER JOIN users on contacts.contact_id = users.id and contacts.user_id = ?`;
-        return await db.all(sql, [userId]);
+        return await db.all(sql, [user_id]);
     },
 
     getMessages: async (senderId: number, receiverId: number) => {
@@ -69,7 +69,7 @@ export const userRepository = {
         return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
     },
 
-    getFriends: async (userId: number) => {
+    getFriends: async (user_id: number) => {
         const sql: string = `SELECT u.id,
                             u.display_name
                             from users u
@@ -82,10 +82,10 @@ export const userRepository = {
                             inner join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1
                             `;
-        return await db.all(sql, [userId]);
+        return await db.all(sql, [user_id]);
     },
 
-    findFriends: async (userId: number, search: string) => {
+    findFriends: async (user_id: number, search: string) => {
         const sql: string = `SELECT u.id,
                             u.display_name
                             from users u
@@ -99,7 +99,7 @@ export const userRepository = {
                             WHERE f.sender_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
                             `;
         const searchTermWithWildcards = `%${search}%`;
-        return await db.all(sql, [userId, searchTermWithWildcards]);
+        return await db.all(sql, [user_id, searchTermWithWildcards]);
 
     },
 
@@ -110,9 +110,9 @@ export const userRepository = {
     },
 
     //TODO: implement chat requests 
-    getChatRequests: async (userId: number) => {
+    getChatRequests: async (user_id: number) => {
         const sql: string = `SELECT * from chat_requests`;
-        return await db.all(sql, [userId]);
+        return await db.all(sql, [user_id]);
     },
 
     createFriendRequests: async (senderId: number, receiverId: number) => {
@@ -121,22 +121,22 @@ export const userRepository = {
         return result.changes > 0;
     },
 
-    cancelFriendRequest: async (reqId: number, userId: number) => {
+    cancelFriendRequest: async (req_id: number, user_id: number) => {
         const sql = `DELETE FROM requests WHERE id=? and sender_id = ?`
-        const result = await db.run(sql, [reqId, userId])
+        const result = await db.run(sql, [req_id, user_id])
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
-    deleteFriendRequest: async (reqId: number, userId: number) => {
+    deleteFriendRequest: async (req_id: number, user_id: number) => {
         const sql = `DELETE FROM requests WHERE id=? and receiver_id = ?`
-        const result = await db.run(sql, [reqId, userId])
+        const result = await db.run(sql, [req_id, user_id])
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
 
-    getFriendRequests: async (userId: number) => {
+    getFriendRequests: async (user_id: number) => {
         const sql: string = `
                             SELECT r.id req_id, u.id, u.display_name, r.request_type,
                             CASE
@@ -149,18 +149,18 @@ export const userRepository = {
                             OR r.sender_id=u.id and r.receiver_id=$1
                             WHERE r.request_type = 'friend'
                             `;
-        return await db.all(sql, [userId]);
+        return await db.all(sql, [user_id]);
     },
 
-    acceptFriendRequest: async (reqId: number, userId: number, otherUserId: number) => {
+    acceptFriendRequest: async (req_id: number, user_id: number, other_user_id: number) => {
 
-        const result = await userRepository.deleteFriendRequest(reqId, userId);
+        const result = await userRepository.deleteFriendRequest(req_id, user_id);
         if (!result) {
             return false;
         }
 
         const sql: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
-        const insertResult = await db.run(sql, [otherUserId, userId]);
+        const insertResult = await db.run(sql, [other_user_id, user_id]);
         assert(insertResult.changes <= 1, "THIS IS BIG PROBLEM");
         return insertResult.changes > 0;
     }
