@@ -44,11 +44,12 @@ db.serialize(async () => {
     )
 
     createUsers.run(
-        'test',
-        faker.person.fullName(),
+        "hmouda",
+        "Mohammed El Bouazizi",
         await bcrypt.hash('password', salt),
         faker.internet.email()
     )
+
     for (let i = 0; i < 20; i++) {
         createUsers.run(
             faker.internet.username(),
