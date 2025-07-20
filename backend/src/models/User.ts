@@ -1,7 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
-import { assert } from "console";
 
+interface RequestHandlerBody {
+    req_id: number;
+    other_user_id: number;
+    type: string;
+    action: boolean;
+}
 
 const User = {
 
@@ -47,12 +52,12 @@ const User = {
     },
 
     createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { userId } = req.body as { userId: number, type: number }
-        if (userId === req.user.id) {
+        const { user_id } = req.body as { user_id: number, type: number }
+        if (user_id === req.user.id) {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const friends = await userRepository.getUserById(req.user.id, userId) as { id: number, display_name: string, relation_status: string };
+        const friends = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
         if (!friends) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -64,7 +69,7 @@ const User = {
                 return reply.status(403).send({ message: "you are blocked by this user" });
         }
 
-        const result = await userRepository.createFriendRequests(req.user.id, userId);
+        const result = await userRepository.createFriendRequests(req.user.id, user_id);
         if (!result) {
             return reply.status(400).send({ message: "friend request already exists" });
         }
@@ -104,8 +109,8 @@ const User = {
 
     },
     deleteRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { reqId } = req.params as { reqId: number };
-        const result = await userRepository.cancelFriendRequest(reqId, req.user.id);
+        const { req_id } = req.params as { req_id: number };
+        const result = await userRepository.cancelFriendRequest(req_id, req.user.id);
         if (result) {
             return reply.status(200).send({ message: 'friends request has been deleted' });
         }
@@ -113,7 +118,7 @@ const User = {
     },
 
     HandelRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { type } = req.body as { reqId: number, type: string, action: boolean };
+        const { type } = req.body as RequestHandlerBody;
         
         switch (type) {
             case "friend":
@@ -127,17 +132,17 @@ const User = {
 
 
     HandelFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { reqId, action, otherUserId } = req.body as { reqId: number, otherUserId: number ,  type: string, action: boolean };
+        const { req_id, action, other_user_id } = req.body as RequestHandlerBody;
 
         switch (action) {
             case true:
-                const result = await userRepository.acceptFriendRequest(reqId, req.user.id, otherUserId);
+                const result = await userRepository.acceptFriendRequest(req_id, req.user.id, other_user_id);
                 if (!result) {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
                 return reply.status(200).send({ message: 'friends request has been accepted' });
             case false:
-                const deleteResult = await userRepository.deleteFriendRequest(reqId, req.user.id);
+                const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
                 if (!deleteResult) {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
