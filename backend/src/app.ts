@@ -113,9 +113,6 @@ fastify.setErrorHandler((error, request, reply) => {
     if (error.validation) {
         // Return a 400 response with a simplified message
         reply.status(400).send({
-            statusCode: 400,
-            error: 'Bad Request',
-            // Get the message from the first validation issue
             message: error.validation[0].message,
         });
         return;
@@ -134,9 +131,12 @@ fastify.decorate(
             switch (error.code) {
                 case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
                 case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':
+                case 'FST_JWT_INVALID_AUTHORIZATION_IN_COOKIE':
                     refreshAcessToken(req, reply);
                     break;
                 default:
+                    reply.clearCookie('access_token');
+                    reply.clearCookie('refresh_token');
                     return reply.code(401).send({ message: error.message });
             }
         }

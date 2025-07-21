@@ -1,11 +1,20 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
 
-interface RequestHandlerBody {
+interface IRequestHandlerBody {
     req_id: number;
-    other_user_id: number;
+    user_id: number;
     type: string;
     action: boolean;
+}
+
+interface IBlockHandlerBody {
+    user_id: number;
+    action: boolean; // true for block, false for unblock
+}
+interface ICreateRequestBody {
+    user_id: number;
+    type: 'friend' | 'chat'
 }
 
 const User = {
@@ -57,15 +66,16 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const friends = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
-        if (!friends) {
+        const user = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
+        if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
 
-        switch (friends.relation_status) {
+        switch (user.relation_status) {
             case "friend":
                 return reply.status(400).send({ message: "you are already friends" });
-            case "blocked":
+            case "blocking":
+            case "blocked_by":
                 return reply.status(403).send({ message: "you are blocked by this user" });
         }
 
@@ -78,7 +88,7 @@ const User = {
     },
 
     createRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { type } = req.body as { userId: number, type: string }
+        const { type } = req.body as ICreateRequestBody;
 
         switch (type) {
             case "friend":
@@ -108,7 +118,7 @@ const User = {
         }
 
     },
-    deleteRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+    deleteRequest: async (req: FastifyRequest, reply: FastifyReply) => {
         const { req_id } = req.params as { req_id: number };
         const result = await userRepository.cancelFriendRequest(req_id, req.user.id);
         if (result) {
@@ -118,8 +128,8 @@ const User = {
     },
 
     HandelRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { type } = req.body as RequestHandlerBody;
-        
+        const { type } = req.body as IRequestHandlerBody;
+
         switch (type) {
             case "friend":
                 return User.HandelFriendRequest(req, reply);
@@ -132,11 +142,11 @@ const User = {
 
 
     HandelFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { req_id, action, other_user_id } = req.body as RequestHandlerBody;
+        const { req_id, action, user_id } = req.body as IRequestHandlerBody;
 
         switch (action) {
             case true:
-                const result = await userRepository.acceptFriendRequest(req_id, req.user.id, other_user_id);
+                const result = await userRepository.acceptFriendRequest(req_id, req.user.id, user_id);
                 if (!result) {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
@@ -148,8 +158,67 @@ const User = {
                 }
                 return reply.status(200).send({ message: 'friends request has been deleted' });
         }
+    },
+
+    handelBlock: async (req: FastifyRequest, reply: FastifyReply) => {
+        // action: true for block, false for unblock
+        const { user_id, action } = req.body as IBlockHandlerBody;
+
+
+        const user = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
+        if (!user) {
+            return reply.status(404).send({ message: "user does not exists" });
+        }
+        switch (user.relation_status) {
+            case "blocking":
+                if (action) {
+                    return reply.status(400).send({ message: "you have already blocked this user" });
+                }
+                const unblockResult = await userRepository.unblockUser(req.user.id, user_id);
+                if (unblockResult) {
+                    return reply.status(200).send({ message: 'user has been unblocked' });
+                }
+                break;
+            case "blocked_by":
+                if (!action) {
+                    return reply.status(400).send({ message: "you have already blocked this user" });
+                }
+                const blockResult = await userRepository.blockUser(req.user.id, user_id);
+                if (blockResult) {
+                    return reply.status(200).send({ message: 'user has been blocked' });
+                }
+                break;
+            case "friend":
+                if (action) {
+                    await userRepository.deleteFriendship(req.user.id, user_id);
+                    const blockResult = await userRepository.blockUser(req.user.id, user_id);
+                    if (blockResult) {
+                        return reply.status(200).send({ message: 'user has been blocked' });
+                    }
+                } else {
+                    return reply.status(400).send({ message: "user is not blocked" });
+                }
+            case "pending":
+            case "waiting":
+                if (!action) {
+                    return reply.status(400).send({ message: "user is not blocked" });
+                }
+                await userRepository.deleteRequests(req.user.id, user_id);
+                const result = await userRepository.blockUser(req.user.id, user_id);
+                if (result) {
+                    return reply.status(200).send({ message: 'user has been blocked' });
+                }
+                return reply.status(400).send({ message: 'user has not been blocked' });
+            case "none":
+                if (action) {
+                    const blockResult = await userRepository.blockUser(req.user.id, user_id);
+                    if (blockResult) {
+                        return reply.status(200).send({ message: 'user has been blocked' });
+                    }
+                }
+                return reply.status(400).send({ message: "user is not blocked" });
+        }
     }
 }
-
 
 export default User;

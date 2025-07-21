@@ -7,7 +7,7 @@ import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
 import toast from 'react-hot-toast';
-import { useCancelRequest } from '@/api/mutations';
+import { useBlockUser, useCancelRequest, useUnBlockUser } from '@/api/mutations';
 import Loader from '@/vendor/loader';
 
 
@@ -87,16 +87,35 @@ const PlayPingPong = () => {
     )
 }
 
-const BlockUser = () => {
+const BlockUser = ({ id, relation_status }: User) => {
+    const { mutate: blockUser } = useBlockUser();
+    const { mutate: unBlockUser } = useUnBlockUser();
+
+    const handelBlock = (relation_status: string) => {
+        switch (relation_status) {
+            case 'blocking':
+            case 'block_by':
+                // Unblock user
+                unBlockUser({ user_id: id });
+                break;
+            case 'friend':
+            case 'pending':
+            case 'waiting':
+            case 'none':
+                // Block user
+                blockUser({ user_id: id });
+                break;
+        }
+    }
 
     return (
-        <div className="p-5 flex flex-row items-center gap-3 justify-center
+        <button onClick={() => handelBlock(relation_status || 'none')} className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
             duration-300"
         >
             <BlockIcon />
-            <button className="font-semibold text-white">Block</button>
-        </div>
+            <p className="font-semibold text-white">Block</p>
+        </button>
     )
 }
 
@@ -122,7 +141,7 @@ const FriendOption = ({ req_id, relation_status, id }: User) => {
         },
 
         'waiting': {
-            display_text: 'Unblock',
+            display_text: 'Waiting to accepte',
             icon: <AddFriendIcon />,
             bgColor: 'bg-green-600 hover:bg-green-700'
         },
@@ -167,7 +186,7 @@ const FriendOption = ({ req_id, relation_status, id }: User) => {
                 toast.success("Unfriended successfully");
                 break;
             case 'pending':
-                cancelRequest({ req_id: req_id, user_id: id }); // Assuming req_id is not needed for canceling friend request
+                cancelRequest({ req_id: req_id, user_id: id });
                 break
             case 'none':
                 FriendMutation.mutate();
@@ -175,18 +194,17 @@ const FriendOption = ({ req_id, relation_status, id }: User) => {
         }
     }
 
-
-    // TODO: if usres if blocked  disable some actions like add friend, start chat, play pingpong
+    // TODO: if user is blocked  disable some actions like add friend, start chat, play pingpong
     return (
-        <div className="p-5 flex flex-row items-center gap-3 justify-center
+        <button onClick={() => handleClick(relation_status || 'none')} className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
         >
             {display_object[relation_status || 'none'].icon}
-            <button onClick={() => handleClick(relation_status || 'none')} className='text-white font-semibold '>
+            <p className='text-white font-semibold '>
                 {display_object[relation_status || 'none'].display_text}
-            </button>
-        </div>
+            </p>
+        </button>
     )
 }
 
@@ -311,7 +329,7 @@ const UserProfile = () => {
                             <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
                             <FriendOption {...data} />
-                            <BlockUser />
+                            <BlockUser {...data}/>
                         </div>
                     </div>
                 </div>

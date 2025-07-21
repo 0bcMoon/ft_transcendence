@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS "requests" (
     "id" INTEGER,
     "sender_id" INT NOT NULL,
     "receiver_id" INT NOT NULL,
-    "request_type" TEXT NOT NULL CHECK(request_type IN ('message', 'friend')),
+    "request_type" TEXT NOT NULL CHECK(request_type IN ('chat', 'friend')),
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES users(id),
     FOREIGN KEY (receiver_id) REFERENCES users(id),
@@ -65,3 +65,4 @@ CREATE TABLE IF NOT EXISTS "blocks" (
     FOREIGN KEY (blocked_user_id) REFERENCES users(id),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+

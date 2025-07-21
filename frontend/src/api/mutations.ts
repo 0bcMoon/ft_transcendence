@@ -32,7 +32,7 @@ export const useCancelRequest = () => {
 export const useAcceptRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, other_user_id: user_id, action: true, type: 'friend' }),
+        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: true, type: 'friend' }),
         onSuccess: () => {
             toast.success("Request accepted successfully");
             queryClient.invalidateQueries({ queryKey: ["search"] });
@@ -48,7 +48,7 @@ export const useAcceptRequest = () => {
 export const useDenyRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, other_user_id: user_id, action: false, type: 'friend' }),
+        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: false, type: 'friend' }),
         onSuccess: () => {
             toast.success("Request has been deny successfully");
             queryClient.invalidateQueries({ queryKey: ["search"] });
@@ -60,3 +60,34 @@ export const useDenyRequest = () => {
     });
 };
 
+
+
+export const useBlockUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ user_id }: { user_id: number }) => api.post("/user/block", { user_id, action: true }),
+        onSuccess: () => {
+            toast.success("User has been blocked successfully");
+            queryClient.invalidateQueries({ queryKey: ["users"] });
+        },
+
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Error: Could not block user");
+        }
+    });
+};
+
+export const useUnBlockUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ user_id }: { user_id: number }) => api.patch("/user/block", { user_id, action: false }),
+        onSuccess: () => {
+            toast.success("Request has been deny successfully");
+            queryClient.invalidateQueries({ queryKey: ["search"] });
+        },
+
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Error: Could not unblock user");
+        }
+    });
+};
