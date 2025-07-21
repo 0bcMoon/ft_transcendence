@@ -1,22 +1,24 @@
-import { X, Trophy, Users, Zap } from 'lucide-react';
-// import { useParams } from "react-router-dom";
+import { X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
+import toast from 'react-hot-toast';
+import { useCancelRequest } from '@/api/mutations';
+import Loader from '@/vendor/loader';
 
 
 interface StartChatProps {
-    id?: string;
+    id?: number;
     display_name?: string;
     profilePicture?: string;
 }
 
 
-type RelationshipStatus = 'friend' | 'pending' | 'blocked' | 'none';
+type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocked' | 'none';
 
 interface IDisplayObject {
     display_text: string;
@@ -98,7 +100,7 @@ const BlockUser = () => {
     )
 }
 
-const AddFriend = ({ relation_status }: { relation_status: RelationshipStatus | undefined }) => {
+const FriendOption = ({ req_id, relation_status, id }: User) => {
 
     const display_object: Record<RelationshipStatus, IDisplayObject> = {
 
@@ -112,7 +114,14 @@ const AddFriend = ({ relation_status }: { relation_status: RelationshipStatus | 
             icon: <AddFriendIcon />,
             bgColor: 'bg-yellow-600 hover:bg-yellow-700'
         },
+        // add  dislay none to friend option
         'blocked': {
+            display_text: 'Unblock',
+            icon: <AddFriendIcon />,
+            bgColor: 'bg-green-600 hover:bg-green-700'
+        },
+
+        'waiting': {
             display_text: 'Unblock',
             icon: <AddFriendIcon />,
             bgColor: 'bg-green-600 hover:bg-green-700'
@@ -124,42 +133,108 @@ const AddFriend = ({ relation_status }: { relation_status: RelationshipStatus | 
         }
     };
 
+    const queryClient = useQueryClient();
+
+    const FriendMutation = useMutation({
+        mutationKey: ["friend-request", id],
+        mutationFn: async () => {
+            const response = await api.post(`/user/requests`, { user_id: id, type: "friend" });
+            return response.data;
+        },
+        onSuccess: async () => {
+            toast.success("Friend request sent successfully");
+
+            //TODO: invalidate the specific user query to refetch updated data now it invalid all user 
+
+            // Invalidate the specific user query to refetch updated data
+            // queryClient.invalidateQueries({ queryKey: ['users', id] });
+            // Also invalidate all users queries in case this affects other user lists
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            //console.log('Invalidated queries for user:', id);
+        },
+        onError: async (error: any) => {
+            toast.error(error.response?.data?.message || "500 Internal Server Error");
+        },
+    });
+
+    const { mutate: cancelRequest } = useCancelRequest();
+
+    const handleClick = (relation_status: string) => {
+
+        switch (relation_status) {
+            case 'friend':
+                // Unfriend
+                toast.success("Unfriended successfully");
+                break;
+            case 'pending':
+                cancelRequest({ req_id: req_id, user_id: id }); // Assuming req_id is not needed for canceling friend request
+                break
+            case 'none':
+                FriendMutation.mutate();
+                break;
+        }
+    }
+
+
+    // TODO: if usres if blocked  disable some actions like add friend, start chat, play pingpong
     return (
         <div className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
         >
             {display_object[relation_status || 'none'].icon}
-            <button className='text-white font-semibold '>
+            <button onClick={() => handleClick(relation_status || 'none')} className='text-white font-semibold '>
                 {display_object[relation_status || 'none'].display_text}
             </button>
         </div>
     )
 }
 
-const fetchUsersById = async (userId: string) => {
-    const response = await api.get(`/user/${userId}`);
+const fetchUsersById = async (user_id: string) => {
+    const response = await api.get(`/user/${user_id}`);
     return response.data;
 }
 interface User {
 
-    id: string;
-    relation_status: RelationshipStatus
+    id: number;
+    req_id: number | null;
+    relation_status?: RelationshipStatus
     username?: string;
-    display_name: string;
-    profilePicture: string;
-    status?: string;
+    display_name?: string;
+    profilePicture?: string;
 }
 
 const UserProfile = () => {
 
-    const { userId } = useParams<{ userId: string }>();
+    const { user_id } = useParams<{ user_id: string }>();
+    const navigate = useNavigate();
 
-    const { data } = useQuery<User>({
-        queryKey: ['users', userId],
-        queryFn: () => fetchUsersById(userId!),
-        enabled: !!userId,
+    const { data, isLoading, isError } = useQuery<User>({
+        queryKey: ['users', user_id],
+        queryFn: () => fetchUsersById(user_id!),
+        enabled: !!user_id,
     })
+
+    const handleGoBack = () => {
+        navigate(-1);
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200">
+                <Loader />
+            </div>
+        );
+    }
+
+    if (isError || !data) {
+        return (
+            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200">
+                <p className="text-red-500 text-lg">Error fetching user profile.</p>
+            </div>
+        );
+    }
+
     const ProfileStatusData = [
         {
             value: 22,
@@ -190,13 +265,26 @@ const UserProfile = () => {
             className: 'w-6 h-6 text-purple-500'
         }
     ]
-    console.log(data);
     return (
         <div
             className="flex flex-col items-center col-span-13  
                         h-[97svh] rounded-xl 
             border-gray-100 border-t-2 shadow-lg shadow-gray-200"
         >
+            {/* Back Arrow */}
+            <div className="w-full px-4 pt-4">
+                <button
+                    onClick={handleGoBack}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-500 
+                              hover:text-gray-800  
+                              transition-all duration-200 transform hover:scale-105
+                              "
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span className="text-sm font-medium">Back</span>
+                </button>
+            </div>
+
             <div
                 className="flex flex-col rounded-xl  w-250 h-120 mt-4"
             >
@@ -222,7 +310,7 @@ const UserProfile = () => {
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
                             <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
                             <PlayPingPong />
-                            <AddFriend relation_status={data?.relation_status} />
+                            <FriendOption {...data} />
                             <BlockUser />
                         </div>
                     </div>

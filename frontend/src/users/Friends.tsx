@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import endpoints from '@/endpoints.json';
-import UsersProfileCard, { UsersProfileCardProps } from '@/users/UsersProfileCard';
+import UsersProfileCard, { IUsersProfileCard } from '@/users/UsersProfileCard';
 import { useSearchStore } from '@/state/Store';
 const Friends = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)
-    const { data: friendsProfileCards, error } = useQuery<UsersProfileCardProps[]>({
+    const { data: friendsProfileCards, error } = useQuery<IUsersProfileCard[]>({
         queryKey: ["friends", searchQuery],
         queryFn: async () => {
             const result = await api.get(endpoints.user.friends, {

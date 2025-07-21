@@ -3,7 +3,7 @@ import profile from '@/image/profile.svg'
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from '@/component/UserAvatar';
 
-export interface UsersProfileCardProps {
+export interface IUsersProfileCard {
 
     id: string;
     display_name: string;
@@ -11,11 +11,11 @@ export interface UsersProfileCardProps {
 }
 
 
-const UsersProfileCard = ({ id, display_name, status }: UsersProfileCardProps) => {
+const UsersProfileCard = ({ id, display_name, status }: IUsersProfileCard) => {
 
     const navigate = useNavigate();
-    const handleClick = () => {
 
+    const handleClick = () => {
         navigate(`/users/${id}`);
     }
     return (

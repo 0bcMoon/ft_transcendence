@@ -7,7 +7,6 @@ import db from './db'
 db.serialize(async () => {
 
     //truncate the tables
-    db.exec('DELETE FROM users')
     const createUsers = db.prepare('INSERT INTO users (username, display_name, password, email) VALUES ( ?, ?, ?, ?)')
     const insertFriends = db.prepare('INSERT INTO friends (sender_id, receiver_id) VALUES (?, ?)')
     const insertContact = db.prepare('INSERT INTO contacts (user_id, contact_id) VALUES (?, ?)')
@@ -43,6 +42,14 @@ db.serialize(async () => {
         await bcrypt.hash('password', salt),
         "microb@mail.com"
     )
+
+    createUsers.run(
+        "hmouda",
+        "Mohammed El Bouazizi",
+        await bcrypt.hash('password', salt),
+        faker.internet.email()
+    )
+
     for (let i = 0; i < 20; i++) {
         createUsers.run(
             faker.internet.username(),
@@ -51,6 +58,7 @@ db.serialize(async () => {
             faker.internet.email()
         )
     }
+
     insertContact.run(1, 2)
     insertContact.run(1, 3)
     insertContact.run(2, 3)

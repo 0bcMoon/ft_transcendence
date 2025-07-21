@@ -24,10 +24,10 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <App /> },
             { path: 'home', element: <Home /> },
-            { path: 'users/:userId', element: <UserProfile /> },
+            { path: 'users/:user_id', element: <UserProfile /> },
             { path: 'friends', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
-            { path: 'chat/:userId', element: <Chat /> },
+            { path: 'chat/:user_id', element: <Chat /> },
 
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],

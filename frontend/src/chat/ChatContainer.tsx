@@ -32,9 +32,9 @@ interface SendMessage {
 
 
 const ChatBubble = ({ receiver_id, content }: Message) => {
-    const { userId } = useParams<{ userId: string }>();
+    const { user_id: user_id_param } = useParams<{ user_id: string }>();
 
-    const user_id = parseInt(userId!, 10);
+    const user_id = parseInt(user_id_param!, 10);
 
     const sender: boolean = receiver_id === user_id;
     return (
@@ -64,7 +64,7 @@ const ChatBanner = () => {
         <div
             className="flex items-center flex-row w-full gap-4 p-4 border-b border-gray-100 h-18"
         >
-            <MoveLeft 
+            <MoveLeft
                 onClick={() => setSwap(false)}
                 className=' md:hidden w-4 text-gray-500 hover:hover:text-gray-800
                             transition-colors duration-300'
@@ -110,12 +110,12 @@ const InputBox = () => {
     )
 }
 
-const fetchMessages = async (userId: string | null) => {
+const fetchMessages = async (user_id: string | null) => {
 
-    if (!userId) {
+    if (!user_id) {
         return [];
     }
-    const response = await api.get<Message[]>(`/chat/${userId}/messages`);
+    const response = await api.get<Message[]>(`/chat/${user_id}/messages`);
     return response.data;
 
 }
@@ -124,19 +124,19 @@ const fetchMessages = async (userId: string | null) => {
 
 interface ChatContainerProps {
 
-    userId: string;
+    user_id: string;
     isConnected: boolean;
     webSocket: WebSocket | null;
 }
 
 
-export default function ChatContainer({ isConnected, webSocket, userId }: ChatContainerProps) {
+export default function ChatContainer({ isConnected, webSocket, user_id }: ChatContainerProps) {
 
     const queryClient = useQueryClient();
-    const queryKey = ['messages', userId]; // Unique query key for messages of the current chat
+    const queryKey = ['messages', user_id]; // Unique query key for messages of the current chat
     const { data: messages } = useQuery<Message[]>({
         queryKey: queryKey,
-        queryFn: async () => fetchMessages(userId || null),
+        queryFn: async () => fetchMessages(user_id || null),
         // enabled: !!currentChat, // Only run the query if currentChat is defined
 
     })
@@ -173,7 +173,7 @@ export default function ChatContainer({ isConnected, webSocket, userId }: ChatCo
 
         const newMessage: SendMessage = {
             content: message,
-            receiver_id: userId, // Assuming userId is the ID of the receiver
+            receiver_id: user_id, // Assuming user_id is the ID of the receiver
         }
         // Call the mutation to send the message
         sendMessageMutation.mutate(newMessage);
@@ -188,14 +188,14 @@ export default function ChatContainer({ isConnected, webSocket, userId }: ChatCo
             const data: Message = JSON.parse(event.data); //plz dont fail me
             console.log("Received message:", data);
             // Update the messages cache with the new message
-            queryClient.setQueryData<Message[]>(['messages', userId], (oldMessages) => {
+            queryClient.setQueryData<Message[]>(['messages', user_id], (oldMessages) => {
                 if (!oldMessages) return [data];
                 return [data, ...oldMessages];
             });
             toast.success('New message received');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId, webSocket]); // Re-run effect if userId or webSocket changes
+    }, [user_id, webSocket]); // Re-run effect if user_id or webSocket changes
     const swap = useSwapStore((state) => state.swap);
     return (
 
@@ -215,7 +215,7 @@ export default function ChatContainer({ isConnected, webSocket, userId }: ChatCo
                 className="flex flex-row justify-around w-full "
                 onSubmit={SendMessage}
             >
-                {isConnected && userId && <InputBox />}
+                {isConnected && user_id && <InputBox />}
             </form>
 
         </div>

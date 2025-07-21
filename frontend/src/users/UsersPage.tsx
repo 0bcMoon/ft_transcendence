@@ -1,42 +1,50 @@
-import { useState } from "react";
 import Friends from "@/users/Friends"
-import { useQuery } from "@tanstack/react-query";
-import { useSearchStore } from "@/state/Store";
+import { useCancelRequest, useAcceptRequest, useDenyRequest } from "@/api/mutations";
+import { useSearchStore, useUsersOption } from "@/state/Store";
+import UsersProfileCard, { IUsersProfileCard } from "@/users/UsersProfileCard";
 import api from "@/api/api";
-import UsersProfileCard, { UsersProfileCardProps as IUsersProfileCard } from "./UsersProfileCard";
+import UserAvatar from "@/component/UserAvatar";
+import { useNavigate } from "react-router-dom";
+import profile from "@/image/profile.svg";
+import { useQuery } from "@tanstack/react-query";
 
 
 type Event = React.FormEvent<HTMLFormElement>
 
-enum SearchOptionEnum {
+enum UsersOptionEnum {
     FindNewFriends = "Find New Friends",
     Friends = "Friends",
     FriendsRequest = "Friends Request",
-    PendingRequest = "Pending Request",
     Blocked = "Blocked"
 }
 
-interface SearchOptionsProps {
-    name: string
-    searchOption?: SearchOptionEnum
-    setSearchOption: (option: SearchOptionEnum) => void
-
+interface IUsersRequestCard {
+    req_id: number;
+    id: number;
+    display_name: string;
+    request_type: string;
 }
 
-const SearchOptions = ({ name, searchOption, setSearchOption }: SearchOptionsProps) => {
+
+
+const SearchOptions = ({ name }: { name: string }) => {
+
+    const { setUsersOption, usersOption } = useUsersOption(state => state)
+    const handleClick = () => {
+        setUsersOption(name as UsersOptionEnum)
+    }
 
     return (
         <button
-            onClick={() => { setSearchOption(name as SearchOptionEnum) }}
+            onClick={handleClick}
             className={`font-semibold flex items-center justify-center text-center
-                        ${(searchOption === name) ? 'bg-gray-200' : ''}
+                        ${(usersOption === name) ? 'bg-gray-200' : ''}
                         pl-6 pr-6 border border-gray-100 h-9 text-center 
                         mr-4 ml-4 rounded-2xl hover:bg-gray-100 transition-colors duration-300`}>
             {name}
         </button>
     )
 }
-
 
 const FindNewUsers = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)
@@ -52,23 +60,128 @@ const FindNewUsers = () => {
         }
     })
 
-
-    return users?.map((user) => (<UsersProfileCard {...user} />))
-
+    return users?.map((user) => (<UsersProfileCard key={user?.id} {...user} />))
 }
 
-const RenderView = ({ searchOption }: { searchOption: SearchOptionEnum }) => {
+const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequestCard) => {
+    const navigate = useNavigate();
+
+    const handleNavigate = () => {
+        navigate(`/users/${id}`);
+    }
+
+    const { mutate: cancelRequest } = useCancelRequest();
+    const { mutate: acceptRequest } = useAcceptRequest();
+    const { mutate: denyRequest } = useDenyRequest();
+
+    const handleAccept = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        acceptRequest({ req_id, user_id: id });
+    }
+
+    const handleDeny = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        denyRequest(({ req_id, user_id: id }));
+    }
+
+    const handleCancel = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        cancelRequest({ req_id, user_id: id });
+    }
+
+    return (
+        <div
+            className=" border flex flex-col p-2 gap-2
+                        rounded-xl  border-gray-100 col-span-1 h-auto hover:bg-gray-200
+                        "
+        >
+            <div onClick={handleNavigate} className="flex p-2 gap-4 cursor-pointer">
+                <div >
+                    <UserAvatar
+                        src={profile}
+                        alt="profile image"
+                        name={display_name}
+                        isOnline={true}
+                        size="lg"
+                    />
+                </div>
+
+                <div className="flex flex-col justify-center ">
+                    <div className="text-lg font-semibold text-gray-800">
+                        {display_name}
+                    </div>
+                    <div className="text-sm text-gray-800">
+                        {request_type === "sent" ? "Request Sent" : "Request Received"}
+                    </div>
+                </div>
+            </div>
+            <div className="flex justify-end gap-2 px-2 pb-2">
+                {request_type === 'sent' ? (
+                    <>
+                        <button
+                            disabled
+                            className="bg-gray-200 text-gray-500 font-semibold py-1 px-3 rounded-lg text-sm cursor-not-allowed"
+                        >
+                            Pending
+                        </button>
+                        <button
+                            onClick={handleCancel}
+                            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg text-sm"
+                        >
+                            Cancel
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            onClick={handleAccept}
+                            className="bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-3 rounded-lg text-sm"
+                        >
+                            Accept
+                        </button>
+                        <button
+                            onClick={handleDeny}
+                            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg text-sm"
+                        >
+                            Deny
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    )
+}
+
+const FriendsRequest = () => {
+    const searchQuery = useSearchStore(state => state.searchQuery)
+    const { data: users } = useQuery<IUsersRequestCard[]>({
+        queryKey: ["search", searchQuery],
+        queryFn: async () => {
+            const response = await api.get("/user/requests", {
+                params: {
+                    search: searchQuery,
+                    type: 'friend'
+                }
+            })
+            return response.data
+        }
+    })
+
+    return users?.map((user) => (<UsersRequestCard key={user.id} {...user} />))
+}
+
+const RenderView = () => {
+
+    const searchOption = useUsersOption(state => state.usersOption)
 
     switch (searchOption) {
-        case SearchOptionEnum.Friends:
+        case UsersOptionEnum.Friends:
             return <Friends />
-        case SearchOptionEnum.FindNewFriends:
+        case UsersOptionEnum.FindNewFriends:
             return <FindNewUsers />;
-        case SearchOptionEnum.FriendsRequest:
-            return <div>Friends Request View</div>;
-        case SearchOptionEnum.PendingRequest:
-            return <div>Pending Request View</div>;
-        case SearchOptionEnum.Blocked:
+        case UsersOptionEnum.FriendsRequest:
+            return <FriendsRequest />;
+        case UsersOptionEnum.Blocked:
             return <div>Blocked View</div>;
         default:
             return <div>Select an option</div>;
@@ -77,14 +190,11 @@ const RenderView = ({ searchOption }: { searchOption: SearchOptionEnum }) => {
 
 const UsersPage = () => {
 
-    const [searchOption, setSearchOption] = useState<SearchOptionEnum>(SearchOptionEnum.Friends);
-
     const searchOptions = [
-        { name: SearchOptionEnum.Friends },
-        { name: SearchOptionEnum.FindNewFriends },
-        { name: SearchOptionEnum.FriendsRequest },
-        { name: SearchOptionEnum.PendingRequest },
-        { name: SearchOptionEnum.Blocked },
+        { name: UsersOptionEnum.Friends },
+        { name: UsersOptionEnum.FindNewFriends },
+        { name: UsersOptionEnum.FriendsRequest },
+        { name: UsersOptionEnum.Blocked },
     ]
     const setSearchQuery = useSearchStore(state => state.setSearchQuery)
     const setSearch = (event: Event) => {
@@ -125,14 +235,14 @@ const UsersPage = () => {
                 className="flex-1 overflow-x-auto no-scrollbar whitespace-nowrap bg-white p-4 space-x-4
                                            flex flex-row w-full ">
                 {searchOptions.map((option, index) => (
-                    <SearchOptions key={index} setSearchOption={setSearchOption} searchOption={searchOption} {...option} />
+                    <SearchOptions key={index}   {...option} />
                 ))}
             </div>
 
             <div
                 className="p-4 grid lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 gap-4"
             >
-                <RenderView searchOption={searchOption} />
+                <RenderView />
             </div>
 
         </div>

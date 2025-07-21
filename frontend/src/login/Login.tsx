@@ -95,12 +95,11 @@ const validateLogin = (data: UserLogin): boolean => {
 export default function Login() {
 
     const navigate = useNavigate();
-    // const {setAuth, isAuthenticated} = useAuthStore((state) => state);
     const {isAuthenticated, setAuth} = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/chat");
+            navigate("/friends");
         }
     }, [isAuthenticated, navigate]);
 
@@ -159,7 +158,7 @@ export default function Login() {
             </div>
 
             <div className=" flex flex-col items-center justify-center h-screen w-screen bg-gray-100 m-0 p-0">
-                <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded gap-4 shadow-md h-155 w-120  border border-gray-200">
+                <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded-2xl gap-4 shadow-md h-155 w-120  border border-gray-200">
                     <div className="gap-4 w-full text-center mt-8">
                         <p className="m-2 font-extrabold text-2xl"> Welcome back</p>
                         <p className=" text-balance text-muted-foreground">

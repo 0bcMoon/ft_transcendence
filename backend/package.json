@@ -5,7 +5,9 @@
     "scripts": {
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
-        "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts"
+        "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts",
+        "test": "sh test.sh",
+        "test:debug": "DB_PATH=/tmp/test.db NODE_ENV=test node --inspect-brk=0.0.0.0:9229 -r dotenv/config ./node_modules/.bin/jest --runInBand --no-cache"
     },
     "_moduleAliases": {
         "@root": ".",
@@ -23,16 +25,23 @@
         "@fastify/websocket": "^11.0.2",
         "bcrypt": "^6.0.0",
         "fastify": "^5.3.3",
+        "fastify-type-provider-zod": "^5.0.1",
         "module-alias": "^2.2.3",
         "pino-pretty": "^7.0.0",
-        "sqlite3": "^5.1.7"
+        "sqlite3": "^5.1.7",
+        "zod": "^3.25.74"
     },
     "devDependencies": {
         "@types/bcrypt": "^5.0.2",
+        "@types/jest": "^30.0.0",
         "@types/node": "^22.15.18",
+        "@types/supertest": "^6.0.3",
         "@types/ws": "^8.18.1",
         "dotenv": "^16.5.0",
+        "jest": "^30.0.4",
         "nodemon": "^3.1.10",
+        "supertest": "^7.1.1",
+        "ts-jest": "^29.4.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3"
     }

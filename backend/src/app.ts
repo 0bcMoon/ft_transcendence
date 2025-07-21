@@ -3,9 +3,11 @@ import cors from '@fastify/cors'
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
+import routes from './routes'
 import cookie from '@fastify/cookie'
 import pino from "pino";
 import pretty from "pino-pretty";
+import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 
 
 declare module "@fastify/jwt" {
@@ -32,7 +34,7 @@ declare module 'fastify' {
     }
 }
 const fastify = Fastify({
-    logger: {
+    logger: process.env.NODE_ENV === 'test' ? false : {
         level: 'debug',
         transport: {
             target: 'pino-pretty',
@@ -43,7 +45,10 @@ const fastify = Fastify({
             }
         }
     },
-})
+}).withTypeProvider<ZodTypeProvider>()
+
+fastify.setValidatorCompiler(validatorCompiler);
+fastify.setSerializerCompiler(serializerCompiler);
 
 
 fastify.register(cookie)
@@ -59,11 +64,12 @@ fastify.register(jwt, {
 fastify.register(websocket)
 
 fastify.register(wsRouter);
+fastify.register(routes);
 
 fastify.register(cors, {
     // Configure CORS options
-    origin: 'http://localhost:5173', // Allow any origin for development (restrict this in production!)
-    methods: ['GET', 'OPTIONS', 'POST', 'HEAD'], // Include both GET and OPTIONS
+    origin: true, // Allow any origin for development (restrict this in production!)
+    methods: ['GET', 'OPTIONS', 'POST', 'HEAD', 'DELETE', 'PATCH'], // Include both GET and OPTIONS
     allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
     credentials: true,
     preflightContinue: true // Important for WebSocket connections
@@ -75,8 +81,6 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
     if (!refreshToken) {
         return reply.code(401).send({ message: 'Unauthorized: Session expired' });
     }
-
-    console.error('refresh token', refreshToken);
     try {
         const decoded = await fastify.jwt.verify(refreshToken) as FastifyJWT['user'];
         const newAccessToken = fastify.jwt.sign(
@@ -104,6 +108,22 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         return reply.code(401).send({ message: 'Unauthorized: Invalid refresh token' });
     }
 }
+fastify.setErrorHandler((error, request, reply) => {
+    // Check if the error is a Zod validation error
+    if (error.validation) {
+        // Return a 400 response with a simplified message
+        reply.status(400).send({
+            statusCode: 400,
+            error: 'Bad Request',
+            // Get the message from the first validation issue
+            message: error.validation[0].message,
+        });
+        return;
+    }
+
+    // For all other errors, use the default handler
+    reply.send(error);
+});
 
 fastify.decorate(
     'authenticate',
@@ -111,7 +131,6 @@ fastify.decorate(
         try {
             await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
-            console.error('JWT verification error:', error.code);
             switch (error.code) {
                 case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
                 case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':

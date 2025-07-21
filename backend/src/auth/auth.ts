@@ -48,7 +48,7 @@ const UserAuth = {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                sameSite: true // alternative CSRF protection
+                sameSite: true, // alternative CSRF protection
             })
 
         reply
@@ -56,6 +56,7 @@ const UserAuth = {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 httpOnly: true,
+                maxAge: parseInt(process.env.REFRESH_TOEKN_EXPR || '600', 10), // set max age for the cookie
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
                 sameSite: true // alternative CSRF protection
             })
@@ -68,20 +69,10 @@ const UserAuth = {
     },
 
     register: async (req: FastifyRequest, reply: FastifyReply) => {
-        // const { username, password } = req.body;
-        //
-        // if (!username || !password) {
-        //     return reply.status(400).send({ error: 'Username and password are required' });
-        // }
-        // const user = await UserModel.getUserByUsername(username);
-        // if (!user) {
-        //     return reply.status(401).send({ error: 'Invalid username or password' });
-        // }
-        // console.log(user)
-        // return reply.status(200).send({ message: 'Login successful', user });
+
     },
+
     logout: async (req: FastifyRequest, reply: FastifyReply) => {
-        console.log('logout')
         return reply
             .clearCookie('access_token')
             .clearCookie('refresh_token')

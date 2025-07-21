@@ -1,21 +1,31 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
 
+interface RequestHandlerBody {
+    req_id: number;
+    other_user_id: number;
+    type: string;
+    action: boolean;
+}
 
 const User = {
+
     getContactList: async (req: FastifyRequest, reply: FastifyReply) => {
         const contacts = await userRepository.getContactList(req.user.id);
         return reply.status(200).send(contacts);
     },
+
     getMessages: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
         const messages = await userRepository.getMessages(req.user.id, id);
         return reply.status(200).send(messages.reverse());
     },
+
     getChatRequests: async (req: FastifyRequest, reply: FastifyReply) => {
         const chatRequests = await userRepository.getChatRequests(req.user.id);
         return reply.status(200).send(chatRequests);
     },
+
     getFriends: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
         if (search) {
@@ -25,11 +35,13 @@ const User = {
         const friends = await userRepository.getFriends(req.user.id);
         return reply.status(200).send(friends);
     },
+
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
         const friends = await userRepository.getUserById(req.user.id, id);
         return reply.status(200).send(friends);
     },
+
     findUsers: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
         if (!search)
@@ -38,17 +50,103 @@ const User = {
         return reply.status(200).send(users);
 
     },
-    friendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        const { userId } = req.body as { userId: number }
-        const status = await userRepository.createFriendRequests(req.user.id, userId)
-        if (status)
-            return {
-                message: "friends request has been send"
-            }
+    createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { user_id } = req.body as { user_id: number, type: number }
+        if (user_id === req.user.id) {
+            return reply.status(400).send({ message: "you cannot send friend request to yourself" });
+        }
 
-        return {
-            message: "faild to send friends request"
+        const friends = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
+        if (!friends) {
+            return reply.status(404).send({ message: "user does not exists" });
+        }
+
+        switch (friends.relation_status) {
+            case "friend":
+                return reply.status(400).send({ message: "you are already friends" });
+            case "blocked":
+                return reply.status(403).send({ message: "you are blocked by this user" });
+        }
+
+        const result = await userRepository.createFriendRequests(req.user.id, user_id);
+        if (!result) {
+            return reply.status(400).send({ message: "friend request already exists" });
+        }
+
+        return reply.status(200).send({ message: 'friend request sent' });
+    },
+
+    createRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { type } = req.body as { userId: number, type: string }
+
+        switch (type) {
+            case "friend":
+                return User.createFriendRequests(req, reply);
+            case "chat":
+                throw new Error("chat create requests not implemented yet");
+            default:
+                return reply.status(400).send({ message: "invalid request type" });
+        }
+    },
+
+    getRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+
+        const { type } = req.query as { type: string };
+        if (!type) {
+            return reply.status(400).send({ message: "type is required" });
+        }
+
+        switch (type) {
+            case "friend":
+                const friendRequests = await userRepository.getFriendRequests(req.user.id);
+                return reply.status(200).send(friendRequests);
+            case "chat":
+                throw new Error("chat requests not implemented yet");
+            default:
+                return reply.status(400).send({ message: "invalid request type" });
+        }
+
+    },
+    deleteRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { req_id } = req.params as { req_id: number };
+        const result = await userRepository.cancelFriendRequest(req_id, req.user.id);
+        if (result) {
+            return reply.status(200).send({ message: 'friends request has been deleted' });
+        }
+        return reply.status(404).send({ message: 'no friends request found' });
+    },
+
+    HandelRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { type } = req.body as RequestHandlerBody;
+        
+        switch (type) {
+            case "friend":
+                return User.HandelFriendRequest(req, reply);
+            case "chat":
+                throw new Error("chat accept requests not implemented yet");
+            default:
+                return reply.status(400).send({ message: "invalid request type" });
+        }
+    },
+
+
+    HandelFriendRequest: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { req_id, action, other_user_id } = req.body as RequestHandlerBody;
+
+        switch (action) {
+            case true:
+                const result = await userRepository.acceptFriendRequest(req_id, req.user.id, other_user_id);
+                if (!result) {
+                    return reply.status(404).send({ message: 'no friends request found' });
+                }
+                return reply.status(200).send({ message: 'friends request has been accepted' });
+            case false:
+                const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
+                if (!deleteResult) {
+                    return reply.status(404).send({ message: 'no friends request found' });
+                }
+                return reply.status(200).send({ message: 'friends request has been deleted' });
         }
     }
 }

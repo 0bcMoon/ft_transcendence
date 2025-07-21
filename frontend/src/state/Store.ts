@@ -39,3 +39,24 @@ export const useSearchStore = create<SearchStoreState>((set) => ({
     setSearchQuery: (option: string) => set({ searchQuery: option }),
 }));
 
+
+enum UsersOptionEnum {
+    FindNewFriends = "Find New Friends",
+    Friends = "Friends",
+    FriendsRequest = "Friends Request",
+    PendingRequest = "Pending Request",
+    Blocked = "Blocked"
+}
+
+
+interface UsersOptionState {
+    usersOption: UsersOptionEnum;
+    setUsersOption: (option: UsersOptionEnum) => void;
+
+}
+
+export const useUsersOption = create<UsersOptionState>((set) => ({
+    usersOption: UsersOptionEnum.Friends,
+    setUsersOption: (option: UsersOptionEnum) => set({ usersOption: option })
+}));
+
