@@ -70,23 +70,23 @@ const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequ
         navigate(`/users/${id}`);
     }
 
-    const { mutate: cancelRequest } = useCancelRequest();
-    const { mutate: acceptRequest } = useAcceptRequest();
-    const { mutate: denyRequest } = useDenyRequest();
+    const { mutate: cancelRequest } = useCancelRequest({ req_id, user_id: id });
+    const { mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
+    const { mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
 
     const handleAccept = (e: React.MouseEvent) => {
         e.stopPropagation();
-        acceptRequest({ req_id, user_id: id });
+        acceptRequest();
     }
 
     const handleDeny = (e: React.MouseEvent) => {
         e.stopPropagation();
-        denyRequest(({ req_id, user_id: id }));
+        denyRequest();
     }
 
     const handleCancel = (e: React.MouseEvent) => {
         e.stopPropagation();
-        cancelRequest({ req_id, user_id: id });
+        cancelRequest();
     }
 
     return (
@@ -155,7 +155,7 @@ const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequ
 const FriendsRequest = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)
     const { data: users } = useQuery<IUsersRequestCard[]>({
-        queryKey: ["search", searchQuery],
+        queryKey: ["search", "friend", searchQuery],
         queryFn: async () => {
             const response = await api.get("/user/requests", {
                 params: {

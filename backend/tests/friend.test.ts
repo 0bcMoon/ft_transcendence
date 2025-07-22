@@ -1,6 +1,9 @@
 import app from '../src/app';
 import supertest from 'supertest';
 
+
+// TODO: add tests for friend requests, if request from both side
+
 describe('GET /users', () => {
     let token: string;
     const testUser = {

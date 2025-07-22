@@ -66,7 +66,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
+        const user = await userRepository.getUserById(req.user.id, user_id) 
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -88,7 +88,11 @@ const User = {
     },
 
     createRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { type } = req.body as ICreateRequestBody;
+        const { type, user_id } = req.body as ICreateRequestBody;
+
+        if (user_id === req.user.id) {
+            return reply.status(400).send({ message: "you cannot send request to yourself" });
+        }
 
         switch (type) {
             case "friend":
@@ -164,8 +168,11 @@ const User = {
         // action: true for block, false for unblock
         const { user_id, action } = req.body as IBlockHandlerBody;
 
+        if (user_id === req.user.id) {
+            return reply.status(400).send({ message: "you cannot block yourself" });
+        }
 
-        const user = await userRepository.getUserById(req.user.id, user_id) as { id: number, display_name: string, relation_status: string };
+        const user = await userRepository.getUserById(req.user.id, user_id)
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -218,6 +225,28 @@ const User = {
                 }
                 return reply.status(400).send({ message: "user is not blocked" });
         }
+    },
+    unFriends: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { user_id } = req.params as { user_id: number };
+
+        if (user_id === req.user.id) {
+            return reply.status(400).send({ message: "you cannot unfriend yourself" });
+        }
+
+        const user = await userRepository.getUserById(req.user.id, user_id);
+        if (!user) {
+            return reply.status(404).send({ message: "user does not exists" });
+        }
+
+        if (user.relation_status !== "friend") {
+            return reply.status(400).send({ message: "you are not friends with this user" });
+        }
+        const result = await userRepository.deleteFriendship(req.user.id, user_id);
+        if (result) {
+            return reply.status(200).send({ message: 'you have unfriended this user' });
+        }
+        return reply.status(400).send({ message: 'you have not unfriended this user' });
+
     }
 }
 

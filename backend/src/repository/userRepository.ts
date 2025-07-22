@@ -2,12 +2,12 @@ import assert from 'assert';
 import db from '../../db/db';
 
 export interface User {
-    id: string,
+    relation_status: 'none' | 'friend' | 'pending' | 'waiting' | 'blocking' | 'blocked_by',
+    id: number,
     username: string,
     display_name: string,
     password: string | undefined,
     email: string,
-    token: string | undefined | null,
     created_at: Date,
 }
 export type UserResponse = Omit<User, 'password'>;
@@ -18,7 +18,7 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
-    getUserById: async (id: number, user_id: number) => {
+    getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
         //TODO: check if u.i=sender_id and f.receiver_id = user_id
         const sql: string = `
                         SELECT

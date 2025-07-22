@@ -17,10 +17,12 @@ export const useSwapStore = create<SwapStoreState>((set) => ({
 interface ChatStoreState {
     display_name: string;
     profile_image: string,
+    id?: number;
     setChat?: ({ display_name, profile_image }: ChatStoreState) => void;
 }
 
 export const useChatStore = create<ChatStoreState>((set) => ({
+    id: undefined,
     display_name: '',
     profile_image: '',
     setChat: ({ display_name, profile_image }: ChatStoreState) =>
@@ -56,7 +58,7 @@ interface UsersOptionState {
 }
 
 export const useUsersOption = create<UsersOptionState>((set) => ({
-    usersOption: UsersOptionEnum.Friends,
+    usersOption: UsersOptionEnum.FindNewFriends,
     setUsersOption: (option: UsersOptionEnum) => set({ usersOption: option })
 }));
 

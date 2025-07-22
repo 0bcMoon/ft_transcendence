@@ -5,22 +5,19 @@ import toast from "react-hot-toast";
 
 interface IRequest {
 
-    req_id: number | null;
+    req_id?: number | null;
     user_id: number;
 }
 
-export const useCancelRequest = () => {
+export const useCancelRequest = ({ req_id, user_id }: IRequest) => {
     const queryClient = useQueryClient(); // should only call in a component or hook (cause it uses React context)
     return useMutation({
-        mutationFn: ({ req_id }: IRequest) => api.delete(`/user/requests/${req_id}`),
+        mutationFn: () => api.delete(`/user/requests/${req_id}`),
         // unused variables parameter is removed, as it was not being used in the original code
-        onSuccess: (_, variables) => {
-            const { user_id } = variables; // destructure variables to get req_id and user_id
-
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["search"] });
             queryClient.invalidateQueries({ queryKey: ['users', user_id] });
 
-            queryClient.invalidateQueries({ queryKey: ['users'] });
             toast.success("Request cancelled successfully");
         },
         onError: (error: any) => {
@@ -29,13 +26,14 @@ export const useCancelRequest = () => {
     });
 };
 
-export const useAcceptRequest = () => {
+export const useAcceptRequest = ({ req_id, user_id }: IRequest) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: true, type: 'friend' }),
+        mutationFn: () => api.patch("/user/requests", { req_id, user_id, action: true, type: 'friend' }),
         onSuccess: () => {
             toast.success("Request accepted successfully");
             queryClient.invalidateQueries({ queryKey: ["search"] });
+            queryClient.invalidateQueries({ queryKey: ["users", user_id] });
         },
 
         onError: (error: any) => {
@@ -45,13 +43,15 @@ export const useAcceptRequest = () => {
 };
 
 
-export const useDenyRequest = () => {
+export const useDenyRequest = ({ req_id, user_id }: IRequest) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: false, type: 'friend' }),
+        mutationFn: () => api.patch("/user/requests", { req_id, user_id, action: false, type: 'friend' }),
         onSuccess: () => {
             toast.success("Request has been deny successfully");
+            // TODO: maybe use searchStore to update the search results
             queryClient.invalidateQueries({ queryKey: ["search"] });
+            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
         },
 
         onError: (error: any) => {
@@ -62,32 +62,60 @@ export const useDenyRequest = () => {
 
 
 
-export const useBlockUser = () => {
+export const useBlockUser = ({ user_id }: IRequest) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ user_id }: { user_id: number }) => api.post("/user/block", { user_id, action: true }),
-        onSuccess: () => {
-            toast.success("User has been blocked successfully");
-            queryClient.invalidateQueries({ queryKey: ["users"] });
+        mutationFn: ({ action }: { action: boolean }) => api.post("/user/block", { user_id, action }),
+        onSuccess: (_, variables) => {
+            const action = variables.action; // true for block, false for unblock
+            toast.success(
+                action
+                    ? 'User has been blocked successfully'
+                    : 'User has been unblocked successfully'
+            );
+            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
         },
-
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Error: Could not block user");
+            toast.error(error.response?.data?.message || "Error: Could not Do this Action ");
         }
     });
 };
 
-export const useUnBlockUser = () => {
+// TODO: may be make this a generic function to send requests
+
+export const useSendRequest = ({ user_id }: { user_id: number }) => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ user_id }: { user_id: number }) => api.patch("/user/block", { user_id, action: false }),
-        onSuccess: () => {
-            toast.success("Request has been deny successfully");
-            queryClient.invalidateQueries({ queryKey: ["search"] });
+        mutationKey: ["friend-request", user_id],
+        mutationFn: async () => {
+            const response = await api.post(`/user/requests`, { user_id, type: "friend" });
+            return response.data;
         },
-
-        onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Error: Could not unblock user");
-        }
-    });
+        onSuccess: async () => {
+            toast.success("Friend request sent successfully");
+            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+        },
+        onError: async (error: any) => {
+            toast.error(error.response?.data?.message || "Internal Server Error");
+        },
+    })
 };
+
+
+export const useUnFriend = ({ user_id }: { user_id: number }) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async () => {
+            const response = await api.delete(`/user/friends/${user_id}`);
+            return response.data;
+        },
+        onSuccess: async (data) => {
+            toast.success(data.message || "Unfriended successfully");
+            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+        },
+        onError: async (error: any) => {
+            toast.error(error.response?.data?.message || "Internal Server Error");
+        },
+    })
+};
+

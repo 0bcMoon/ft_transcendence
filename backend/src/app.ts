@@ -81,6 +81,7 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
     if (!refreshToken) {
         return reply.code(401).send({ message: 'Unauthorized: Session expired' });
     }
+
     try {
         const decoded = await fastify.jwt.verify(refreshToken) as FastifyJWT['user'];
         const newAccessToken = fastify.jwt.sign(
@@ -128,6 +129,7 @@ fastify.decorate(
         try {
             await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
+            console.error("Auth Error", error.code, error.message);
             switch (error.code) {
                 case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
                 case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':

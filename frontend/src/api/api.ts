@@ -28,6 +28,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
+            alert (error.response.data.message || "Unauthorized access. Please log in again.");
             deleteCookie("access_token");
             window.location.href = endpoints.auth.login; // Redirect to login page
         }
