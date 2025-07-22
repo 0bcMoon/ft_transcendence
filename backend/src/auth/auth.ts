@@ -13,6 +13,7 @@ interface LoginBody {
 const UserAuth = {
 
     login: async (req: FastifyRequest, reply: FastifyReply) => {
+
         const { username, password } = req.body as LoginBody;
         if (!username || !password) {
             return reply.status(400).send({ message: 'Invalid username or password' });
@@ -48,15 +49,17 @@ const UserAuth = {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
+                maxAge: 30 * 24 * 60 * 60, // 30 days
                 sameSite: true, // alternative CSRF protection
             })
+
 
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
                 httpOnly: true,
-                maxAge: parseInt(process.env.REFRESH_TOEKN_EXPR || '600', 10), // set max age for the cookie
+                maxAge: 30 * 24 * 60 * 60, // 30 days
                 domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
                 sameSite: true // alternative CSRF protection
             })

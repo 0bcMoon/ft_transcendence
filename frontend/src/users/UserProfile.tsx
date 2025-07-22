@@ -1,52 +1,58 @@
-import { X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
+import { User, Check, X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
 import { ReactNode } from 'react';
-import toast from 'react-hot-toast';
-import { useCancelRequest } from '@/api/mutations';
+import {
+    useAcceptRequest,
+    useBlockUser,
+    useCancelRequest,
+    useDenyRequest,
+    useSendRequest,
+    useUnFriend
+} from '@/api/mutations';
 import Loader from '@/vendor/loader';
 
 
-interface StartChatProps {
-    id?: number;
-    display_name?: string;
-    profilePicture?: string;
-}
 
 
-type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocked' | 'none';
+type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocking' | 'block_by' | 'none';
 
 interface IDisplayObject {
     display_text: string;
     icon: ReactNode;
-    bgColor: string;
+    action: () => void;
 }
 
-const StartChat = ({ id, display_name, profilePicture }: StartChatProps) => {
-    const navigate = useNavigate();
 
+const StartChat = ({ relation_status, id, display_name, profilePicture }: User) => {
+
+    switch (relation_status) {
+        case 'blocking':
+        case 'block_by':
+            return;
+    }
+
+    const navigate = useNavigate();
     const setChat = useChatStore((state) => state.setChat)!;
 
-    const handleClick = () => {
-        if (!id) {
-            return;
-        }
+    //TODO: on start chat add user to contact list if not already present
+    const startChat = () => {
         setChat({
+            id: id,
             display_name: display_name!,
             profile_image: profilePicture ?? profile,
         });
         navigate(`/chat/${id}`);
-
     }
     return (
         <div className="w-auto p-5 flex flex-row items-center gap-3
             justify-center h-8 rounded-xl bg-white hover:bg-gray-400
             transition-colors duration-300"
-            onClick={handleClick}
+            onClick={startChat}
         >
             <ChatIcons />
             <button className="font-semibold ">Start Chat</button>
@@ -74,7 +80,13 @@ const ProfileStatus = ({ value, icon: Icon, text, className, bgColor }: ProfileS
         </div>
     )
 }
-const PlayPingPong = () => {
+const PlayPingPong = ({ relation_status }: User) => {
+
+    switch (relation_status) {
+        case 'blocking':
+        case 'block_by':
+            return
+    }
 
     return (
         <div
@@ -87,113 +99,132 @@ const PlayPingPong = () => {
     )
 }
 
-const BlockUser = () => {
+const BlockAction = ({ id, relation_status }: User) => {
+    const { mutate: blockAction } = useBlockUser({ user_id: id });
+    switch (relation_status) {
+        case 'blocking':
+            relation_status = 'blocking';
+            break;
+        default:
+            relation_status = undefined;
+    }
+
+    const display_object: Record<string, IDisplayObject> = {
+
+        'blocking': {
+            display_text: 'Unblock',
+            icon: <BlockIcon />,
+            action: () => blockAction({ action: false })
+        },
+        'else': {
+            display_text: 'Block',
+            icon: <BlockIcon />,
+            action: () => blockAction({ action: true })
+        }
+    };
 
     return (
-        <div className="p-5 flex flex-row items-center gap-3 justify-center
+        <button
+            onClick={display_object[relation_status || 'else'].action}
+            className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
             duration-300"
         >
-            <BlockIcon />
-            <button className="font-semibold text-white">Block</button>
-        </div>
+            {display_object[relation_status || 'else'].icon}
+            <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
+        </button>
     )
 }
 
-const FriendOption = ({ req_id, relation_status, id }: User) => {
 
-    const display_object: Record<RelationshipStatus, IDisplayObject> = {
+const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
+
+    const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
+    const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
+
+    return (
+        <>
+            <button
+                disabled={isPendingAccept || isPendingDeny}
+                onClick={() => acceptRequest()} // TODO: implement accept request
+                className="p-5 flex flex-row items-center gap-3 justify-center
+            h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
+            duration-300"
+            >
+                <Check className='text-white' />
+                <p className="font-semibold text-white">Accept</p>
+            </button>
+            <button
+                disabled={isPendingAccept || isPendingDeny}
+                onClick={() => denyRequest()} // TODO: implement deny request
+                className="p-5 flex flex-row items-center gap-3 justify-center
+            h-8 rounded-xl bg-white hover:bg-gray-400 transition-colors
+            duration-300"
+            >
+                <X className='text-black' />
+                <p className="font-semibold text-black">Deny</p>
+            </button>
+
+        </>
+    )
+}
+const FriendRequestAction = (data: User) => {
+
+    switch (data.relation_status) {
+        case 'friend':
+        case 'pending':
+        case 'none':
+            return <FriendAction {...data} />
+        case 'waiting':
+            return <FriendRequestDenyOrAccept {...data} />
+        default:
+    }
+}
+
+
+const FriendAction = ({ req_id, relation_status, id }: User) => {
+
+    const { mutate: cancelRequest } = useCancelRequest({ req_id, user_id: id });
+    const { mutate: sendRequest } = useSendRequest({ user_id: id });
+    const { mutate: unfriend } = useUnFriend({ user_id: id });
+
+    const display_object: Record<string, IDisplayObject> = {
 
         'friend': {
             display_text: 'Unfriend',
             icon: <UserXLineIcon />,
-            bgColor: 'bg-red-600 hover:bg-red-700'
+            action: unfriend
         },
         'pending': {
             display_text: 'Cancel Request',
-            icon: <AddFriendIcon />,
-            bgColor: 'bg-yellow-600 hover:bg-yellow-700'
-        },
-        // add  dislay none to friend option
-        'blocked': {
-            display_text: 'Unblock',
-            icon: <AddFriendIcon />,
-            bgColor: 'bg-green-600 hover:bg-green-700'
-        },
-
-        'waiting': {
-            display_text: 'Unblock',
-            icon: <AddFriendIcon />,
-            bgColor: 'bg-green-600 hover:bg-green-700'
+            icon: <X className='text-white' />,
+            action: cancelRequest
         },
         'none': {
             display_text: 'Add Friend',
             icon: <AddFriendIcon />,
-            bgColor: 'bg-blue-600 hover:bg-blue-700'
+            action: sendRequest
         }
     };
 
-    const queryClient = useQueryClient();
-
-    const FriendMutation = useMutation({
-        mutationKey: ["friend-request", id],
-        mutationFn: async () => {
-            const response = await api.post(`/user/requests`, { user_id: id, type: "friend" });
-            return response.data;
-        },
-        onSuccess: async () => {
-            toast.success("Friend request sent successfully");
-
-            //TODO: invalidate the specific user query to refetch updated data now it invalid all user 
-
-            // Invalidate the specific user query to refetch updated data
-            // queryClient.invalidateQueries({ queryKey: ['users', id] });
-            // Also invalidate all users queries in case this affects other user lists
-            queryClient.invalidateQueries({ queryKey: ['users'] });
-            //console.log('Invalidated queries for user:', id);
-        },
-        onError: async (error: any) => {
-            toast.error(error.response?.data?.message || "500 Internal Server Error");
-        },
-    });
-
-    const { mutate: cancelRequest } = useCancelRequest();
-
-    const handleClick = (relation_status: string) => {
-
-        switch (relation_status) {
-            case 'friend':
-                // Unfriend
-                toast.success("Unfriended successfully");
-                break;
-            case 'pending':
-                cancelRequest({ req_id: req_id, user_id: id }); // Assuming req_id is not needed for canceling friend request
-                break
-            case 'none':
-                FriendMutation.mutate();
-                break;
-        }
-    }
-
-
-    // TODO: if usres if blocked  disable some actions like add friend, start chat, play pingpong
     return (
-        <div className="p-5 flex flex-row items-center gap-3 justify-center
+        <button onClick={display_object[relation_status || 'none'].action} className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
         >
             {display_object[relation_status || 'none'].icon}
-            <button onClick={() => handleClick(relation_status || 'none')} className='text-white font-semibold '>
+            <p className='text-white font-semibold '>
                 {display_object[relation_status || 'none'].display_text}
-            </button>
-        </div>
+            </p>
+        </button>
     )
 }
 
-const fetchUsersById = async (user_id: string) => {
+const fetchUsersById = async (user_id: number) => {
     const response = await api.get(`/user/${user_id}`);
     return response.data;
 }
+
 interface User {
 
     id: number;
@@ -206,8 +237,10 @@ interface User {
 
 const UserProfile = () => {
 
-    const { user_id } = useParams<{ user_id: string }>();
+    const { user_id: s_user_id } = useParams<{ user_id: string }>();
+
     const navigate = useNavigate();
+    const user_id = s_user_id ? parseInt(s_user_id, 10) : undefined;
 
     const { data, isLoading, isError } = useQuery<User>({
         queryKey: ['users', user_id],
@@ -265,6 +298,7 @@ const UserProfile = () => {
             className: 'w-6 h-6 text-purple-500'
         }
     ]
+
     return (
         <div
             className="flex flex-col items-center col-span-13  
@@ -300,18 +334,19 @@ const UserProfile = () => {
                     />
 
                     <div className="flex flex-col w-full h-full">
-                        <div className="w-full h-1/2 p-8 gap-4">
-                            <p className="font-semibold text-2xl text-white">{data?.display_name}</p>
+                        <div className="w-full h-1/2 gap-4 p-6">
+                            <p className="font-semibold text-2xl text-white">{data.display_name}</p>
                             <div className='flex items-center gap-2'>
                                 <p className="w-3 h-3 bg-green-500 rounded-full"></p>
                                 <p className="text-gray-500">Online Now</p>
                             </div>
+
                         </div>
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
-                            <StartChat id={data?.id} display_name={data?.display_name} profilePicture={data?.profilePicture} />
-                            <PlayPingPong />
-                            <FriendOption {...data} />
-                            <BlockUser />
+                            <StartChat {...data} />
+                            <PlayPingPong {...data} />
+                            <FriendRequestAction {...data} />
+                            <BlockAction {...data} />
                         </div>
                     </div>
                 </div>

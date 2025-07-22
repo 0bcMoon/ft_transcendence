@@ -2,12 +2,12 @@ import assert from 'assert';
 import db from '../../db/db';
 
 export interface User {
-    id: string,
+    relation_status: 'none' | 'friend' | 'pending' | 'waiting' | 'blocking' | 'blocked_by',
+    id: number,
     username: string,
     display_name: string,
     password: string | undefined,
     email: string,
-    token: string | undefined | null,
     created_at: Date,
 }
 export type UserResponse = Omit<User, 'password'>;
@@ -18,7 +18,7 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
-    getUserById: async (id: number, user_id: number) => {
+    getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
         //TODO: check if u.i=sender_id and f.receiver_id = user_id
         const sql: string = `
                         SELECT
@@ -27,10 +27,11 @@ export const userRepository = {
                             u.username,
                             r.id req_id,
                             CASE
-                                WHEN b.user_id IS NOT NULL THEN 'blocked'
-                                WHEN f.sender_id IS NOT NULL THEN 'friend'
-                                WHEN r.sender_id = $1 THEN 'pending'
-                                WHEN r.receiver_id = $1 THEN 'waiting'
+                                WHEN b.user_id = $1 THEN 'blocking'
+                                WHEN b.user_id = $2 THEN 'blocked_by'
+                                WHEN f.sender_id IS NOT NULL THEN 'friend' -- friendship is bidirectional
+                                WHEN r.sender_id = $1 THEN 'pending' -- request sent by the user
+                                WHEN r.receiver_id = $1 THEN 'waiting' -- request received by the user
                                 ELSE 'none'
                             END AS relation_status
                         FROM
@@ -158,11 +159,40 @@ export const userRepository = {
         if (!result) {
             return false;
         }
-
         const sql: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
         const insertResult = await db.run(sql, [other_user_id, user_id]);
-        assert(insertResult.changes <= 1, "THIS IS BIG PROBLEM");
+        assert(insertResult.changes == 1, "THIS IS BIG PROBLEM");
         return insertResult.changes > 0;
+    },
+    unblockUser: async (user_id: number, blocked_user_id: number) => {
+        const sql: string = `DELETE FROM blocks WHERE user_id = ? AND blocked_user_id = ?`;
+        const result = await db.run(sql, [user_id, blocked_user_id]);
+        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is deleted and will get removed in production
+        return result.changes > 0;
+    },
+    blockUser: async (user_id: number, blocked_user_id: number) => {
+        const sql: string = `INSERT INTO blocks (user_id, blocked_user_id) VALUES (?, ?)`;
+        const result = await db.run(sql, [user_id, blocked_user_id]);
+        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is inserted and will get removed in production
+        return result.changes > 0;
+    },
+    deleteFriendship: async (user_id: number, friend_id: number) => {
+        const sql: string = `DELETE FROM friends WHERE (sender_id = $1 AND receiver_id = $2) 
+                                                        OR (sender_id = $2 AND receiver_id = $1)`;
+
+        const result = await db.run(sql, [user_id, friend_id]);
+        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that at most one row is deleted and will get removed in production
+        return result.changes > 0;
+    },
+    deleteRequests: async (user_id: number, block_user_id: number) => {
+        /// Deletes both sent and received requests between two users include chat requests
+        const sql: string = `DELETE FROM requests 
+                            WHERE (sender_id = $1 AND receiver_id = $2)
+                            OR (sender_id = $2 AND receiver_id = $1)`;
+        const result = await db.run(sql, [user_id, block_user_id]);
+        assert(result.changes >= 1, "Failed to delete requests between the specified users. Expected at least one row to be deleted.");
+        return result.changes > 0;
     }
+
 }
 

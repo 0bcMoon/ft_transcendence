@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setAuth] = useState<boolean >(false);
 
     useEffect(() => {
-        const access_token = document.cookie.includes("access_token")
+        const access_token = document.cookie.includes("access_token") 
         setAuth(access_token)
     }, []);
 

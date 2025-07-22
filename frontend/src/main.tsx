@@ -16,6 +16,7 @@ import UsersPage from '@/users/UsersPage';
 import UserProfile from '@/users/UserProfile';
 
 
+// TODO: for daynamic routes validate the user_id to be a number
 
 const router = createBrowserRouter([
     {
@@ -37,7 +38,7 @@ const router = createBrowserRouter([
 
 ])
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 
 createRoot(document.getElementById('root')!).render(

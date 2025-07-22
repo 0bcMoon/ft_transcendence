@@ -1,6 +1,9 @@
 import app from '../src/app';
 import supertest from 'supertest';
 
+
+// TODO: add tests for friend requests, if request from both side
+
 describe('GET /users', () => {
     let token: string;
     const testUser = {
@@ -175,7 +178,6 @@ describe('Friend Requests API - Accepting Requests', () => {
     beforeAll(async () => {
         await app.ready();
 
-
         denyToken = app.jwt.sign({
             id: denyUser.id,
             username: denyUser.username,
@@ -243,7 +245,7 @@ describe('Friend Requests API - Accepting Requests', () => {
         const acceptResponse = await supertest(app.server)
             .patch('/user/requests')
             .set('Cookie', `access_token=${accepteToken}`) // token for user 2
-            .send({ req_id: req_id, other_user_id: testUser.id ,type: 'friend', action: true });
+            .send({ req_id: req_id, user_id: testUser.id, type: 'friend', action: true });
         expect(acceptResponse.status).toBe(200);
         expect(acceptResponse.body).toEqual({ message: 'friends request has been accepted' });
         // Check if the relation status is now 'friend'
@@ -289,7 +291,7 @@ describe('Friend Requests API - Accepting Requests', () => {
         const denyResponse = await supertest(app.server)
             .patch('/user/requests')
             .set('Cookie', `access_token=${denyToken}`) // token for user 2
-            .send({ req_id: req_id,  type: 'friend', action: false });
+            .send({ req_id: req_id, user_id: request.id, type: 'friend', action: false });
 
         expect(denyResponse.status).toBe(200);
         expect(denyResponse.body).toEqual({ message: 'friends request has been deleted' });
@@ -305,7 +307,7 @@ describe('Friend Requests API - Accepting Requests', () => {
         const response = await supertest(app.server)
             .patch('/user/requests')
             .set('Cookie', `access_token=${token}`)
-            .send({ req_id: 9999, type: 'friend', action: true });
+            .send({ req_id: 9999, user_id: 2, type: 'friend', action: true });
         expect(response.status).toBe(404);
         expect(response.body).toEqual({ message: 'no friends request found' });
     });
