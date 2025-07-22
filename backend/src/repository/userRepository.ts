@@ -190,7 +190,7 @@ export const userRepository = {
                             WHERE (sender_id = $1 AND receiver_id = $2)
                             OR (sender_id = $2 AND receiver_id = $1)`;
         const result = await db.run(sql, [user_id, block_user_id]);
-        assert(result.changes >= 1, "THIS IS BIG PROBLEM");
+        assert(result.changes >= 1, "Failed to delete requests between the specified users. Expected at least one row to be deleted.");
         return result.changes > 0;
     }
 
