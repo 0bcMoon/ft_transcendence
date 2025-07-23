@@ -27,7 +27,7 @@ const router = createBrowserRouter([
             { index: true, element: <App /> },
             { path: 'home', element: <Home /> },
             { path: 'users/:user_id', element: <UserProfile /> },
-            { path: 'friends', element: <UsersPage /> },
+            { path: 'users', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
             {path: 'settings', element: <Settings /> },

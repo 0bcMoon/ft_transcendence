@@ -1,12 +1,12 @@
 import React from 'react';
 import { User, Camera, Upload } from 'lucide-react';
 
-interface ProfilePictureProps {
+interface ProfilePhotoProps {
     profileImage: string | null;
     handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-function ProfilePicture({ profileImage, handleImageUpload }: ProfilePictureProps) {
+function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-6">
@@ -47,4 +47,4 @@ function ProfilePicture({ profileImage, handleImageUpload }: ProfilePictureProps
     );
 }
 
-export default ProfilePicture;
+export default ProfilePhoto;

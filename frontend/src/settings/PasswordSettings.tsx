@@ -1,16 +1,16 @@
+import React from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import { FormData, ValidationErrors } from './Settings';
+import { FormData, ValidationErrors } from './types';
 
-interface ChangePasswordProps {
+interface PasswordSettingsProps {
     formData: FormData;
-    errors: ValidationErrors;
-    showPasswords: { current: boolean; new: boolean; confirm: boolean };
     handleInputChange: (field: keyof FormData, value: string) => void;
+    errors: ValidationErrors;
+    showPasswords: { current: boolean; new: boolean; confirm: boolean; };
     togglePasswordVisibility: (field: 'current' | 'new' | 'confirm') => void;
 }
 
-function ChangePassword({ formData, errors, showPasswords, handleInputChange, togglePasswordVisibility }: ChangePasswordProps) {
-
+function PasswordSettings({ formData, handleInputChange, errors, showPasswords, togglePasswordVisibility }: PasswordSettingsProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -103,4 +103,4 @@ function ChangePassword({ formData, errors, showPasswords, handleInputChange, to
     );
 }
 
-export default ChangePassword;
+export default PasswordSettings;
