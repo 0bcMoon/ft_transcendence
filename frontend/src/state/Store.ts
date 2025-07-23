@@ -15,7 +15,7 @@ export const useSwapStore = create<SwapStoreState>((set) => ({
 
 
 interface ChatStoreState {
-    display_name: string;
+    display_name: string | undefined;
     profile_image: string,
     id?: number;
     setChat?: ({ display_name, profile_image }: ChatStoreState) => void;
@@ -23,7 +23,7 @@ interface ChatStoreState {
 
 export const useChatStore = create<ChatStoreState>((set) => ({
     id: undefined,
-    display_name: '',
+    display_name: undefined,
     profile_image: '',
     setChat: ({ display_name, profile_image }: ChatStoreState) =>
         set({ display_name, profile_image }),

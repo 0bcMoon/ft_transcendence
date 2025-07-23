@@ -73,6 +73,7 @@ export const useBlockUser = ({ user_id }: IRequest) => {
                     ? 'User has been blocked successfully'
                     : 'User has been unblocked successfully'
             );
+            queryClient.invalidateQueries({ queryKey: ['search'] });
             queryClient.invalidateQueries({ queryKey: ['users', user_id] });
         },
         onError: (error: any) => {

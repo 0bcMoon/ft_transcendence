@@ -192,6 +192,14 @@ export const userRepository = {
         const result = await db.run(sql, [user_id, block_user_id]);
         assert(result.changes >= 1, "THIS IS BIG PROBLEM");
         return result.changes > 0;
+    },
+    getBlockedUsers(user_id: number): Promise<User[] | undefined> {
+
+        const sql: string = `SELECT u.id, u.display_name, u.username 
+                            FROM users u
+                            JOIN blocks b ON u.id = b.blocked_user_id
+                            WHERE b.user_id = $1`;
+        return db.all(sql, [user_id]);
     }
 
 }

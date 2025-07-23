@@ -19,6 +19,8 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     fastify.delete('/user/friends/:user_id', { onRequest: fastify.authenticate }, User.unFriends) // unfriend
 
 
+    fastify.get('/user/block', { onRequest: fastify.authenticate }, User.getBlockedUsers)
+
     fastify.post('/user/block', {
         onRequest: fastify.authenticate,
         schema: {

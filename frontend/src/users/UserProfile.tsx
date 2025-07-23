@@ -43,7 +43,7 @@ const StartChat = ({ relation_status, id, display_name, profilePicture }: User) 
     const startChat = () => {
         setChat({
             id: id,
-            display_name: display_name!,
+            display_name: display_name,
             profile_image: profilePicture ?? profile,
         });
         navigate(`/chat/${id}`);
@@ -68,6 +68,7 @@ interface ProfileStatusProps {
     bgColor: string;
 
 }
+
 const ProfileStatus = ({ value, icon: Icon, text, className, bgColor }: ProfileStatusProps) => {
 
     return (
@@ -80,6 +81,7 @@ const ProfileStatus = ({ value, icon: Icon, text, className, bgColor }: ProfileS
         </div>
     )
 }
+
 const PlayPingPong = ({ relation_status }: User) => {
 
     switch (relation_status) {
@@ -93,7 +95,9 @@ const PlayPingPong = ({ relation_status }: User) => {
             className="border border-gray-500 w-auto p-5 flex flex-row items-center gap-3 
                 justify-center h-8 rounded-xl hover:bg-gray-600 transition-colors duration-300 "
         >
+
             <PingPongFillIcon />
+
             <button className="font-semibold text-white">Play PingPong</button>
         </div>
     )
@@ -130,8 +134,10 @@ const BlockAction = ({ id, relation_status }: User) => {
             h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
             duration-300"
         >
+
             {display_object[relation_status || 'else'].icon}
             <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
+
         </button>
     )
 }

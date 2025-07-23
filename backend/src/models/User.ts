@@ -247,6 +247,11 @@ const User = {
         }
         return reply.status(400).send({ message: 'you have not unfriended this user' });
 
+    },
+
+    getBlockedUsers: async (req: FastifyRequest, reply: FastifyReply) => {
+        const blockedUsers = await userRepository.getBlockedUsers(req.user.id);
+        return reply.status(200).send(blockedUsers);
     }
 }
 
