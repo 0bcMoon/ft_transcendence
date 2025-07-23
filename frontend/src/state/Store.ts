@@ -41,14 +41,13 @@ export const useSearchStore = create<SearchStoreState>((set) => ({
     setSearchQuery: (option: string) => set({ searchQuery: option }),
 }));
 
-
 enum UsersOptionEnum {
-    FindNewFriends = "Find New Friends",
+    FindNewFriends = "Search For Users",
     Friends = "Friends",
     FriendsRequest = "Friends Request",
-    PendingRequest = "Pending Request",
     Blocked = "Blocked"
 }
+
 
 
 interface UsersOptionState {

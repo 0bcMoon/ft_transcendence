@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 type Event = React.FormEvent<HTMLFormElement>
 
 enum UsersOptionEnum {
-    FindNewFriends = "Find New Friends",
+    FindNewFriends = "Search For Users",
     Friends = "Friends",
     FriendsRequest = "Friends Request",
     Blocked = "Blocked"
