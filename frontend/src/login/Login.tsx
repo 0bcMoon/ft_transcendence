@@ -9,18 +9,10 @@ import { z } from "zod";
 import { toast, Toaster } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import api from "@/api/api";
-import { AxiosError } from 'axios';
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 
-interface ApiError {
-    message: string;
-}
-
-interface LogoProps {
-    source: string;
-}
 
 interface InputProps {
     type: string;
@@ -34,7 +26,7 @@ interface UserLogin {
     username: string;
     password: string;
 }
-const Logo = ({ source }: LogoProps) => {
+const Logo = ({ source }: { source: string }) => {
     return (
         <div className="border  border-gray-200 rounded-xl w-[40%] h-[70%] text-center">
             <img src={source} alt="logo" className="w-full h-full" />
@@ -73,39 +65,38 @@ const validateLogin = (data: UserLogin): boolean => {
             .max(24, 'Password cannot exceed 24 characters')
             .regex(/^\S+$/, 'Password cannot contain whitespace'),
     });
+
     const result = userSchema.safeParse(data);
-    if (!result.success) {
-        for (const issue of result.error.issues) {
-            toast.error(
-                issue.message,
-                {
-                    duration: 5000,
-                    position: "top-right",
-                    style: {
-                        width: "300px",
-                    },
-                }
-            );
-        }
-        return false;
+    if (result.success) {
+        return true;
     }
-    return true;
+
+    for (const issue of result.error.issues) {
+        toast.error(
+            issue.message, {
+            duration: 5000,
+            position: "top-right",
+            style: {
+                width: "300px",
+            },
+        });
+    }
+    return false;
 }
 
 export default function Login() {
 
     const navigate = useNavigate();
-    const {isAuthenticated, setAuth} = useAuth();
+    const { isAuthenticated, setAuth } = useAuth();
 
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/friends");
+            navigate("/home");
         }
     }, [isAuthenticated, navigate]);
 
 
-    const LoginMutation = useMutation({
-        mutationKey: ["login"],
+    const { mutate: Login, isPending } = useMutation({
         mutationFn: async (userData: UserLogin) => {
             const response = await api.post(endpoint.auth.login, userData);
             return response.data;
@@ -113,10 +104,10 @@ export default function Login() {
         onSuccess: async () => {
             toast.success("Login successful");
             setAuth(true);
-            
+
         },
-        onError: async (error: AxiosError<ApiError>) => {
-            toast.error(error.response?.data?.message || "500 Internal Server Error");
+        onError: async (error: any) => {
+            toast.error(error.response?.data?.message || "Internal Server Error");
         },
     });
 
@@ -131,15 +122,9 @@ export default function Login() {
         };
 
         if (validateLogin(userData)) {
-            LoginMutation.mutate(userData);
-            if (LoginMutation.isPending) {
-                toast.loading("Loading...", {
-                    duration: 5000,
-                    position: "top-right",
-                    style: {
-                        width: "300px",
-                    },
-                });
+            Login(userData);
+            if (isPending) {
+                toast.loading("Loading...");
             }
         }
     }

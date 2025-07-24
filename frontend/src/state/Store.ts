@@ -61,3 +61,42 @@ export const useUsersOption = create<UsersOptionState>((set) => ({
     setUsersOption: (option: UsersOptionEnum) => set({ usersOption: option })
 }));
 
+
+export interface ValidationErrors {
+    current_password?: string,
+    new_password?: string,
+    confirm_password?: string,
+    display_name?: string;
+    profile_picture?: string;
+
+    setDisplayNameError: (error: string) => void
+    setCurrentPasswordError: (error: string) => void
+    setNewPasswordError: (error: string) => void
+    setConfirmPasswordError: (error: string) => void
+    clearErrors: () => void;
+}
+
+
+
+export const useValidationStore = create<ValidationErrors>((set) => ({
+    current_password: undefined,
+    new_password: undefined,
+    confirm_password: undefined,
+    display_name: undefined,
+    profile_picture: undefined,
+
+    setDisplayNameError: (error: string) => set({ display_name: error }),
+    setCurrentPasswordError: (error: string) => set({ current_password: error }),
+    setNewPasswordError: (error: string) => set({ new_password: error }),
+    setConfirmPasswordError: (error: string) => set({ confirm_password: error }),
+    clearErrors: () => set({
+        current_password: undefined,
+        new_password: undefined,
+        confirm_password: undefined,
+        display_name: undefined,
+        profile_picture: undefined,
+    }),
+}));
+
+
+

@@ -1,14 +1,9 @@
-import React from 'react';
+import { useValidationStore } from '@/state/Store';
 import { User } from 'lucide-react';
-import { FormData, ValidationErrors } from './types';
 
-interface PersonalInformationProps {
-    formData: FormData;
-    handleInputChange: (field: keyof FormData, value: string) => void;
-    errors: ValidationErrors;
-}
 
-function PersonalInformation({ formData, handleInputChange, errors }: PersonalInformationProps) {
+function PersonalInformation() {
+    const display_name = useValidationStore((state) => state.display_name);
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -21,15 +16,14 @@ function PersonalInformation({ formData, handleInputChange, errors }: PersonalIn
                     Display Name
                 </label>
                 <input
+                    name="display_name"
                     type="text"
-                    value={formData.displayName}
-                    onChange={(e) => handleInputChange('displayName', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.displayName ? 'border-red-300' : 'border-gray-300'
-                        }`}
+                    defaultValue={"TODO: use global user"}
+                    className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                     placeholder="Enter your display name"
                 />
-                {errors.displayName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>
+                {display_name && (
+                    <p className="mt-1 text-sm text-red-600">{display_name}</p>
                 )}
             </div>
         </div>

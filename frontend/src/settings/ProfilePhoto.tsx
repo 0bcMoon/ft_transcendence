@@ -7,6 +7,7 @@ interface ProfilePhotoProps {
 }
 
 function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-6">
@@ -35,6 +36,7 @@ function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
                         <Upload className="w-4 h-4" />
                         Upload new photo
                         <input
+                            name="profile_image"
                             type="file"
                             accept="image/*"
                             onChange={handleImageUpload}
