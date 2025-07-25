@@ -8,6 +8,9 @@ import cookie from '@fastify/cookie'
 import pino from "pino";
 import pretty from "pino-pretty";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
+// This import is essential. It loads the types from the plugin.
+import '@fastify/multipart';
+
 
 
 declare module "@fastify/jwt" {
@@ -64,6 +67,8 @@ fastify.register(jwt, {
 fastify.register(websocket)
 
 fastify.register(wsRouter);
+
+fastify.register(require('@fastify/multipart'));
 fastify.register(routes);
 
 fastify.register(cors, {

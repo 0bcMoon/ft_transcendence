@@ -8,14 +8,25 @@ export interface IFormData {
     new_password: string,
     confirm_password: string,
     display_name: string;
-    profile_picture: string;
+    profile_picture: File;
 }
 
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const imageSchema = z.any()
+    .refine((file) => file instanceof File, "Image is required.")
+    .refine((file) => file.size <= MAX_FILE_SIZE, `Max image size is 2MB.`)
+    .refine(
+        (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+        "Only .jpg, .jpeg, .png and .webp formats are supported."
+    );
 
 
 const updateProfile = (formData: IFormData): boolean => {
 
-    const { display_name } = formData;
+    const { display_name, profile_picture } = formData;
     const { current_password, new_password, confirm_password } = formData;
     const errors = useValidationStore.getState();
     errors.clearErrors();
@@ -61,10 +72,19 @@ const updateProfile = (formData: IFormData): boolean => {
         result = false; // Display name validation failed
     }
 
+    if (profile_picture && profile_picture.size > 0) {
+        const imageValidationResult = imageSchema.safeParse(profile_picture);
+        if (!imageValidationResult.success) {
+            const fieldErrors = imageValidationResult.error.flatten().formErrors;
+            errors.setProfilePictureError(fieldErrors[0]);
+            result = false;
+        }
+    }
+
     if (!current_password && !new_password && !confirm_password) {
-        // If no password fields are provided, skip password validation
         return result;
     }
+
     const changePasswordResult = changePasswordSchema.safeParse({
         current_password,
         new_password,

@@ -44,6 +44,7 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
         User.HandelRequests
     )
 
+    fastify.patch('/user/profile', { onRequest: fastify.authenticate }, User.updateUser)
 
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
 

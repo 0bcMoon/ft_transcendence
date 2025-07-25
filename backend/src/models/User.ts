@@ -66,7 +66,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id) 
+        const user = await userRepository.getUserById(req.user.id, user_id)
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -252,6 +252,13 @@ const User = {
     getBlockedUsers: async (req: FastifyRequest, reply: FastifyReply) => {
         const blockedUsers = await userRepository.getBlockedUsers(req.user.id);
         return reply.status(200).send(blockedUsers);
+    },
+    updateUser: async (req: FastifyRequest, reply: FastifyReply) => {
+
+
+        const data = await req.file()
+
+        console.log(data?.file) // stream
     }
 }
 

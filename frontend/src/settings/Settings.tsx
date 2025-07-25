@@ -7,6 +7,7 @@ import PersonalInformation from './PersonalInformation';
 import PasswordSettings from './PasswordSettings';
 import updateProfile, { IFormData } from '@/zod/zod-schema';
 import { useValidationStore } from '@/state/Store';
+import { useUpdateUserProfile } from '@/api/mutations';
 // import SecuritySettings from './SecuritySettings';
 
 function Settings() {
@@ -25,8 +26,7 @@ function Settings() {
     });
 
 
-    const [profileImage, setProfileImage] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [profileImage, setProfileImage] = useState<File | null>(null);
     const [successMessage, setSuccessMessage] = useState('');
 
 
@@ -35,26 +35,23 @@ function Settings() {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setProfileImage(e.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+            setProfileImage(file);
         }
     };
 
+
+    const {mutate: updateUserProfile, isPending} = useUpdateUserProfile();
     const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         const formdata = new FormData(e.currentTarget);
         const data = Object.fromEntries(formdata.entries()) as unknown as IFormData;
 
-
         const result = updateProfile(data)
         if (!result) {
             return;
         }
-        console.log("Form data is valid:", data);
+        updateUserProfile(data)
     }
 
 
@@ -84,7 +81,7 @@ function Settings() {
 
                 <form onSubmit={submitForm} className="space-y-6">
                     <ProfilePhoto
-                        profileImage={profileImage}
+                        profileImage={profileImage ? URL.createObjectURL(profileImage) : null}
                         handleImageUpload={handleImageUpload}
                     />
 
@@ -99,16 +96,16 @@ function Settings() {
                     <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isPending}
                             className='px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2
                                         focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2
                                         transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed '
                         >
-                            {isLoading ? (
+                            {isPending ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     Saving...
-                                </>
+                                </> 
                             ) : (
                                 'Save Changes'
                             )}

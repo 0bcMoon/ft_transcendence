@@ -73,6 +73,7 @@ export interface ValidationErrors {
     setCurrentPasswordError: (error: string) => void
     setNewPasswordError: (error: string) => void
     setConfirmPasswordError: (error: string) => void
+    setProfilePictureError: (error: string) => void
     clearErrors: () => void;
 }
 
@@ -89,6 +90,7 @@ export const useValidationStore = create<ValidationErrors>((set) => ({
     setCurrentPasswordError: (error: string) => set({ current_password: error }),
     setNewPasswordError: (error: string) => set({ new_password: error }),
     setConfirmPasswordError: (error: string) => set({ confirm_password: error }),
+    setProfilePictureError: (error: string) => set({ profile_picture: error }),
     clearErrors: () => set({
         current_password: undefined,
         new_password: undefined,

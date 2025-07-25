@@ -1,5 +1,6 @@
+import { useValidationStore } from '@/state/Store';
 import React from 'react';
-import { User, Camera, Upload } from 'lucide-react';
+import { User, Upload } from 'lucide-react';
 
 interface ProfilePhotoProps {
     profileImage: string | null;
@@ -7,7 +8,7 @@ interface ProfilePhotoProps {
 }
 
 function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
-
+    const { profile_picture } = useValidationStore();
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-6">
@@ -19,30 +20,28 @@ function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
                             <User className="w-12 h-12 text-gray-400" />
                         )}
                     </div>
-                    <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
-                        <Camera className="w-4 h-4 text-white" />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                        />
-                    </label>
                 </div>
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">Profile Picture</h3>
                     <p className="text-sm text-gray-600 mb-3">Update your profile photo</p>
-                    <label className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer">
+                    <label className="inline-flex items-center
+                                    gap-2 px-4 py-2 text-sm font-medium 
+                                    text-blue-600 bg-blue-50 rounded-lg
+                                    hover:bg-blue-100 transition-colors cursor-pointer"
+                        htmlFor="profile_picture"
+                    >
                         <Upload className="w-4 h-4" />
                         Upload new photo
                         <input
-                            name="profile_image"
+                            name="profile_picture"
+                            id="profile_picture"
                             type="file"
+                            className="hidden"
                             accept="image/*"
                             onChange={handleImageUpload}
-                            className="hidden"
                         />
                     </label>
+                    {profile_picture && <p className="text-sm text-red-500 mt-2">{profile_picture}</p>}
                 </div>
             </div>
         </div>

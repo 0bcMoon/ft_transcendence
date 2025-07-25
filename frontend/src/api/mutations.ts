@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 import toast from "react-hot-toast";
+import { IFormData } from "@/zod/zod-schema";
 
 
 interface IRequest {
@@ -120,3 +121,19 @@ export const useUnFriend = ({ user_id }: { user_id: number }) => {
     })
 };
 
+export const useUpdateUserProfile = () => {
+
+    return useMutation({
+        mutationFn: async (formData: IFormData) => {
+            const response = await api.patch("/user/profile", formData);
+            return response.data;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Profile updated successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    });
+
+}
