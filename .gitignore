@@ -27,3 +27,4 @@ db.sqlite
 .env
 OpenCode.md
 .opencode/
+.backend/public

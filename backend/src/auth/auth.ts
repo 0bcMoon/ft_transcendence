@@ -53,7 +53,6 @@ const UserAuth = {
                 sameSite: true, // alternative CSRF protection
             })
 
-
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
@@ -67,6 +66,13 @@ const UserAuth = {
         return reply.status(200).send(
             {
                 message: 'Login successful',
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    display_name: user.display_name,
+                    profile_picture: user.profile_picture,
+                },
             }
         );
     },

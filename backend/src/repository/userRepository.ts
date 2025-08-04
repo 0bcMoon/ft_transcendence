@@ -6,20 +6,24 @@ export interface User {
     id: number,
     username: string,
     display_name: string,
-    password: string | undefined,
+    password: string,
     email: string,
+    profile_picture: string | null,
     created_at: Date,
 }
-export type UserResponse = Omit<User, 'password'>;
+
 
 export const userRepository = {
 
-    getUserByUsername: async (username: string) => {
+    getUserByUsername: async (username: string): Promise<User | undefined> => {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
+    getCurrentUserById: async (id: number) => {
+        return await db.get('SELECT * FROM users WHERE id = ?', [id]);
+    },
+
     getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
-        //TODO: check if u.i=sender_id and f.receiver_id = user_id
         const sql: string = `
                         SELECT
                             u.id,
@@ -200,6 +204,17 @@ export const userRepository = {
                             JOIN blocks b ON u.id = b.blocked_user_id
                             WHERE b.user_id = $1`;
         return db.all(sql, [user_id]);
+    },
+    updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
+
+        const user = await userRepository.getCurrentUserById(user_id);
+        if (!user) {
+            return undefined; // User not found
+        }
+
+        const sql: string = `UPDATE users SET profile_picture = ? WHERE id = ?`;
+        await db.run(sql, [picture_url, user_id]);
+        return user?.profile_picture;
     }
 
 }
