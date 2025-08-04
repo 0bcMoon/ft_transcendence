@@ -1,3 +1,4 @@
+import { User } from '@/types/types';
 import { create } from 'zustand';
 
 
@@ -96,9 +97,19 @@ export const useValidationStore = create<ValidationErrors>((set) => ({
         new_password: undefined,
         confirm_password: undefined,
         display_name: undefined,
-        profile_picture: undefined,
     }),
 }));
 
 
 
+
+export interface UserState {
+    user: User | null;
+    setUser: (user: User | null) => void;
+}
+
+
+export const useUserStore = create<UserState>((set) => ({
+    user: null,
+    setUser: (user: User | null) => set({ user }),
+}));

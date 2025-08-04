@@ -125,7 +125,28 @@ export const useUpdateUserProfile = () => {
 
     return useMutation({
         mutationFn: async (formData: IFormData) => {
-            const response = await api.patch("/user/profile", formData);
+            const response = await api.patch("/user/update/p", formData);
+            return response.data;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Profile updated successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    });
+
+}
+
+export const useUpdateProfilePicture = () => {
+
+    return useMutation({
+        mutationFn: async (form: FormData) => {
+            const response = await api.patch("/user/update/profile_picture", form, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
             return response.data;
         },
         onSuccess: (data) => {
