@@ -1,5 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
+import path from "path";
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
 
 interface IRequestHandlerBody {
     req_id: number;
@@ -253,12 +258,39 @@ const User = {
         const blockedUsers = await userRepository.getBlockedUsers(req.user.id);
         return reply.status(200).send(blockedUsers);
     },
-    updateUser: async (req: FastifyRequest, reply: FastifyReply) => {
 
-
+    updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
         const data = await req.file()
+        if (!data) {
+            return reply.status(400).send({ message: 'No file uploaded' });
+        }
 
-        console.log(data?.file) // stream
+        const extension = path.extname(data.filename);
+        const uniqueFilename = `${randomUUID()}${extension}`;
+
+        // Define the path where the file will be saved
+        const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+        const filePath = path.join(uploadDir, uniqueFilename);
+        console.log(uploadDir, filePath)
+
+        // Ensure the upload directory exists
+
+        // Securely stream the file to the filesystem
+        await pipeline(data.file, createWriteStream(filePath));
+        const result = await userRepository.updateProfilePicture(req.user.id, uniqueFilename);
+        if (result === undefined) {
+            await fs.unlink(filePath); // Clean up the file if the update fails
+            return reply.status(400).send({ message: 'Failed to update profile image' });
+        }
+        if (result) {
+            try {
+                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result)); // Clean up the file if the update fails
+            } catch (error) {
+                console.error('Error deleting old profile image:', error);
+            }
+
+        }
+        reply.send({ message: 'Profile image Updated successfully' });
     }
 }
 

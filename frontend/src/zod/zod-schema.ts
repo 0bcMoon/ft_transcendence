@@ -23,10 +23,21 @@ const imageSchema = z.any()
         "Only .jpg, .jpeg, .png and .webp formats are supported."
     );
 
+export const profilePictureValidate = (file: File | null): boolean => {
+    const errors = useValidationStore.getState();
+    errors.setProfilePictureError(""); // Clear previous errors
+    const imageValidationResult = imageSchema.safeParse(file);
+    if (!imageValidationResult.success) {
+        const fieldErrors = imageValidationResult.error.flatten().formErrors;
+        errors.setProfilePictureError(fieldErrors[0]);
+        return false; // Image validation failed
+    }
+    return true; // Image validation passed
+}
 
 const updateProfile = (formData: IFormData): boolean => {
 
-    const { display_name, profile_picture } = formData;
+    const { display_name } = formData;
     const { current_password, new_password, confirm_password } = formData;
     const errors = useValidationStore.getState();
     errors.clearErrors();
@@ -72,14 +83,6 @@ const updateProfile = (formData: IFormData): boolean => {
         result = false; // Display name validation failed
     }
 
-    if (profile_picture && profile_picture.size > 0) {
-        const imageValidationResult = imageSchema.safeParse(profile_picture);
-        if (!imageValidationResult.success) {
-            const fieldErrors = imageValidationResult.error.flatten().formErrors;
-            errors.setProfilePictureError(fieldErrors[0]);
-            result = false;
-        }
-    }
 
     if (!current_password && !new_password && !confirm_password) {
         return result;

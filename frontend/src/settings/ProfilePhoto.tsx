@@ -8,7 +8,9 @@ interface ProfilePhotoProps {
 }
 
 function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
+
     const { profile_picture } = useValidationStore();
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-6">
@@ -24,23 +26,25 @@ function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">Profile Picture</h3>
                     <p className="text-sm text-gray-600 mb-3">Update your profile photo</p>
-                    <label className="inline-flex items-center
-                                    gap-2 px-4 py-2 text-sm font-medium 
-                                    text-blue-600 bg-blue-50 rounded-lg
-                                    hover:bg-blue-100 transition-colors cursor-pointer"
-                        htmlFor="profile_picture"
-                    >
-                        <Upload className="w-4 h-4" />
-                        Upload new photo
-                        <input
-                            name="profile_picture"
-                            id="profile_picture"
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                        />
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <label className="inline-flex items-center
+                                        gap-2 px-4 py-2 text-sm font-medium 
+                                        text-blue-600 bg-blue-50 rounded-lg
+                                        hover:bg-blue-100 transition-colors cursor-pointer"
+                            htmlFor="profile_picture"
+                        >
+                            <Upload className="w-4 h-4" />
+                            Upload new photo
+                            <input
+                                name="profile_picture"
+                                id="profile_picture"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                            />
+                        </label>
+                    </div>
                     {profile_picture && <p className="text-sm text-red-500 mt-2">{profile_picture}</p>}
                 </div>
             </div>

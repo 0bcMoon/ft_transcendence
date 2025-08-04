@@ -11,6 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import api from "@/api/api";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { User } from "@/types/types";
 
 
 
@@ -22,7 +23,7 @@ interface InputProps {
     placeholder: string;
 
 }
-interface UserLogin {
+interface IUserLoginInfo {
     username: string;
     password: string;
 }
@@ -51,7 +52,7 @@ const Input = ({ type, label, name, placeholder }: InputProps) => {
         </div >
     )
 }
-const validateLogin = (data: UserLogin): boolean => {
+const validateLogin = (data: IUserLoginInfo): boolean => {
 
     const userSchema = z.object({
         username: z
@@ -86,25 +87,28 @@ const validateLogin = (data: UserLogin): boolean => {
 
 export default function Login() {
 
+    const { isAuthenticated, isLoading, setAuth } = useAuth();
     const navigate = useNavigate();
-    const { isAuthenticated, setAuth } = useAuth();
-
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && !isLoading) {
             navigate("/home");
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, isLoading]);
+
+    if (isLoading) {
+        return null
+    }
 
 
     const { mutate: Login, isPending } = useMutation({
-        mutationFn: async (userData: UserLogin) => {
+        mutationFn: async (userData: IUserLoginInfo) => {
             const response = await api.post(endpoint.auth.login, userData);
             return response.data;
         },
-        onSuccess: async () => {
-            toast.success("Login successful");
+        onSuccess: async (response: { message: string, user: User }) => {
+            toast.success(response.message);
             setAuth(true);
-
+            // login(response.user);
         },
         onError: async (error: any) => {
             toast.error(error.response?.data?.message || "Internal Server Error");
@@ -116,7 +120,7 @@ export default function Login() {
 
         const formData = new FormData(e.currentTarget);
         const data = Object.fromEntries(formData.entries());
-        const userData: UserLogin = {
+        const userData: IUserLoginInfo = {
             username: data["username"] as string,
             password: data["password"] as string,
         };
