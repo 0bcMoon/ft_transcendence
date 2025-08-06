@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
 // import TwoFactorModal from './TwoFactorModal';
 import ProfilePhoto from './ProfilePhoto';
 import PersonalInformation from './PersonalInformation';
@@ -94,6 +93,7 @@ function Settings() {
                 {/* )} */}
 
                 <form onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
+
                     <ProfilePhoto
                         profileImage={profileImage ? URL.createObjectURL(profileImage) : null}
                         handleImageUpload={handleImageUpload}

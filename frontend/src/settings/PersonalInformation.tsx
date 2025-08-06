@@ -1,9 +1,11 @@
+import { useAuthStore } from '@/state/authStore';
 import { useValidationStore } from '@/state/Store';
 import { User } from 'lucide-react';
 
 
 function PersonalInformation() {
     const display_name = useValidationStore((state) => state.display_name);
+    const user = useAuthStore(state => state.user)
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -18,7 +20,7 @@ function PersonalInformation() {
                 <input
                     name="display_name"
                     type="text"
-                    defaultValue={"TODO: use global user"}
+                    defaultValue= {user?.display_name || ''}
                     className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                     placeholder="Enter your display name"
                 />

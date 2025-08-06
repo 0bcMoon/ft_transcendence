@@ -95,12 +95,9 @@ export default function Login() {
         }
     }, [isAuthenticated, navigate, isLoading]);
 
-    if (isLoading) {
-        return null
-    }
 
 
-    const { mutate: Login, isPending } = useMutation({
+    const { mutate: login } = useMutation({
         mutationFn: async (userData: IUserLoginInfo) => {
             const response = await api.post(endpoint.auth.login, userData);
             return response.data;
@@ -108,7 +105,6 @@ export default function Login() {
         onSuccess: async (response: { message: string, user: User }) => {
             toast.success(response.message);
             setAuth(true);
-            // login(response.user);
         },
         onError: async (error: any) => {
             toast.error(error.response?.data?.message || "Internal Server Error");
@@ -126,11 +122,12 @@ export default function Login() {
         };
 
         if (validateLogin(userData)) {
-            Login(userData);
-            if (isPending) {
-                toast.loading("Loading...");
-            }
+            login(userData);
         }
+    }
+
+    if (isLoading) {
+        return null
     }
     return (
         <>

@@ -238,7 +238,7 @@ interface User {
     relation_status?: RelationshipStatus
     username?: string;
     display_name?: string;
-    profilePicture?: string;
+    profile_picture?: string;
 }
 
 const UserProfile = () => {
@@ -334,7 +334,7 @@ const UserProfile = () => {
                                 border-t rounded-t-xl "
                 >
                     <img
-                        src={profile}
+                        src={data.profile_picture}
                         alt="profile"
                         className="w-32 h-32 m-4 rounded-full object-cover "
                     />

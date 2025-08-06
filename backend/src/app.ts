@@ -131,7 +131,7 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         return reply.code(401).send({ message: 'Unauthorized: Invalid refresh token' });
     }
 }
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _, reply) => {
     // Check if the error is a Zod validation error
     if (error.validation) {
         // Return a 400 response with a simplified message
@@ -150,7 +150,7 @@ fastify.decorate(
         try {
             await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
-            console.error("Auth Error", error.code, error.message);
+            console.debug('JWT verification failed:', error);
             switch (error.code) {
                 case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
                 case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':
