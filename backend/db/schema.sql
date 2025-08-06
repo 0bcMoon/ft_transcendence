@@ -1,10 +1,10 @@
-
 CREATE TABLE IF NOT EXISTS "users" (
 	"id"	INTEGER,
 	"username"	VARCHAR(64) NOT NULL UNIQUE,
     "display_name" VARCHAR(64) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
-    "profile_picture" TEXT,
+    "profile_picture" TEXT DEFAULT 'default.jpg',
+    "image_src" TEXT NOT NULL,
     "email" VARCHAR(255) UNIQUE NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)

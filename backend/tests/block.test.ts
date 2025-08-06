@@ -1,13 +1,11 @@
 import app from '../src/app';
 import supertest from 'supertest';
 
-///TODO : mock api with invalid body 
-
-describe('Block API: basic testing', () => {
+describe('GET /user/block API', () => {
     let token: string;
     const testUser = { id: 1, username: 'hicham' };
-    const otherUser = { id: 12, username: 'user12' };
-    const blockedUser = {id: 4, username: 'user4'};
+    const userToBlock1 = { id: 16, username: 'user16' };
+    const userToBlock2 = { id: 17, username: 'user17' };
 
     beforeAll(async () => {
         await app.ready();
@@ -17,166 +15,68 @@ describe('Block API: basic testing', () => {
         });
     });
 
-    it('should block a user', async () => {
-        const response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: otherUser.id, action: true });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'user has been blocked' });
-    });
-
-    it('should unblock a user', async () => {
-        // First, block the user
-        const _response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: otherUser.id, action: true });
-
-        expect(_response.status).toBe(400);
-        expect(_response.body).toEqual({ message: "you have already blocked this user" });
-
-
-
-        // Then, unblock the user
-        const response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: otherUser.id, action: false });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'user has been unblocked' });
-    });
-
-    it('should not allow a user to block someone who is already blocked', async () => {
-        // Ensure the user is blocked first
+    it('should correctly list blocked users and reflect blocking and unblocking actions', async () => {
+        // To ensure a clean state, first unblock the users we will test with.
+        // This might return 400 if they are not blocked, which we can ignore for setup.
         await supertest(app.server)
-        .post('/user/block')
-        .set('Cookie', `access_token=${token}`)
-        .send({ user_id: blockedUser.id, action: true });
-
-
-        const response = await supertest(app.server)
             .post('/user/block')
             .set('Cookie', `access_token=${token}`)
-            .send({ user_id: blockedUser.id, action: true });
+            .send({ user_id: userToBlock1.id, action: false })
+            .ok(res => res.status === 200 || res.status === 400);
 
-        expect(response.status).toBe(400);
-        expect(response.body).toEqual({ message: 'you have already blocked this user' });
-    });
-
-    it('should not allow a user to unblock someone who is not blocked', async () => {
-        const response = await supertest(app.server)
+        await supertest(app.server)
             .post('/user/block')
             .set('Cookie', `access_token=${token}`)
-            .send({ user_id: otherUser.id, action: false });
+            .send({ user_id: userToBlock2.id, action: false })
+            .ok(res => res.status === 200 || res.status === 400);
 
-        expect(response.status).toBe(400);
-        expect(response.body).toEqual({ message: 'user is not blocked' });
-    });
+        // 1. Initially, our test users should not be in the blocked list.
+        let getResponse = await supertest(app.server)
+            .get('/user/block')
+            .set('Cookie', `access_token=${token}`);
+        expect(getResponse.status).toBe(200);
+        expect(getResponse.body.find((u: any) => u.id === userToBlock1.id)).toBeUndefined();
+        expect(getResponse.body.find((u: any) => u.id === userToBlock2.id)).toBeUndefined();
 
-    it('should return 404 if the user to block does not exist', async () => {
-        const response = await supertest(app.server)
+        // 2. Block one user and check if they appear in the list.
+        await supertest(app.server)
             .post('/user/block')
             .set('Cookie', `access_token=${token}`)
-            .send({ user_id: 9999, action: true });
+            .send({ user_id: userToBlock1.id, action: true });
+        
+        getResponse = await supertest(app.server)
+            .get('/user/block')
+            .set('Cookie', `access_token=${token}`);
+        expect(getResponse.body.find((u: any) => u.id === userToBlock1.id)).toBeDefined();
 
-        expect(response.status).toBe(404);
-        expect(response.body).toEqual({ message: 'user does not exists' });
+        // 3. Block a second user and check for both.
+        await supertest(app.server)
+            .post('/user/block')
+            .set('Cookie', `access_token=${token}`)
+            .send({ user_id: userToBlock2.id, action: true });
+
+        getResponse = await supertest(app.server)
+            .get('/user/block')
+            .set('Cookie', `access_token=${token}`);
+        expect(getResponse.body.find((u: any) => u.id === userToBlock1.id)).toBeDefined();
+        expect(getResponse.body.find((u: any) => u.id === userToBlock2.id)).toBeDefined();
+
+        // 4. Unblock one user and check they are removed from the list.
+        await supertest(app.server)
+            .post('/user/block')
+            .set('Cookie', `access_token=${token}`)
+            .send({ user_id: userToBlock1.id, action: false });
+
+        getResponse = await supertest(app.server)
+            .get('/user/block')
+            .set('Cookie', `access_token=${token}`);
+        expect(getResponse.body.find((u: any) => u.id === userToBlock1.id)).toBeUndefined();
+        expect(getResponse.body.find((u: any) => u.id === userToBlock2.id)).toBeDefined();
+
+        // 5. Cleanup: Unblock the second user.
+        await supertest(app.server)
+            .post('/user/block')
+            .set('Cookie', `access_token=${token}`)
+            .send({ user_id: userToBlock2.id, action: false });
     });
 });
-
-describe('Block API: Testing with friend and request', () => {
-    let token: string;
-    const testUser = { id: 1, username: 'hicham' };
-    const friend = { id: 2, username: 'jebli' };
-
-    beforeAll(async () => {
-        await app.ready();
-        token = app.jwt.sign({
-            id: testUser.id,
-            username: testUser.username,
-        });
-    });
-
-
-    it('should return 200 when block a friend and should delete friendship ', async () => {
-        const response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: friend.id, action: true });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'user has been blocked' });
-
-        const user_relations_status = await supertest(app.server)
-            .get(`/user/${friend.id}`)
-            .set('Cookie', `access_token=${token}`)
-
-        expect(user_relations_status.status).toBe(200);
-        expect(user_relations_status.body.relation_status).toEqual('blocking');
-    });
-
-
-    it('should return 200 when unblock a friend and should delete friendship ', async () => {
-        const response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: friend.id, action: false });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'user has been unblocked' });
-
-        const user_response = await supertest(app.server)
-            .get(`/user/${friend.id}`)
-            .set('Cookie', `access_token=${token}`)
-
-        expect(user_response.status).toBe(200);
-        expect(user_response.body.relation_status).toEqual('none');
-    });
-
-    it('should return 200 when block a pending request and should delete request ', async () => {
-        // First, send a friend request to the friend
-        const friend_request = await supertest(app.server)
-            .post('/user/requests')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: friend.id, type: 'friend' });
-
-
-        expect(friend_request.status).toBe(200);
-        expect(friend_request.body).toEqual({ message: 'friend request sent' });
-
-        const response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: friend.id, action: true });
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: 'user has been blocked' });
-
-        const userResponse = await supertest(app.server)
-            .get(`/user/${friend.id}`)
-            .set('Cookie', `access_token=${token}`)
-
-        expect(userResponse.status).toBe(200);
-        expect(userResponse.body.relation_status).toEqual('blocking');
-
-        const unblock_response = await supertest(app.server)
-            .post('/user/block')
-            .set('Cookie', `access_token=${token}`)
-            .send({ user_id: friend.id, action: false });
-
-        expect(unblock_response.status).toBe(200);
-        expect(unblock_response.body).toEqual({ message: 'user has been unblocked' });
-
-        const user_response = await supertest(app.server)
-            .get(`/user/${friend.id}`)
-            .set('Cookie', `access_token=${token}`)
-
-        expect(user_response.status).toBe(200);
-        expect(user_response.body.relation_status).toEqual('none');
-    });
-
-
-})

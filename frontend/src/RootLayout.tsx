@@ -6,13 +6,20 @@ import { useAuth } from "./context/AuthContext";
 
 export default function RootLayout() {
 
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isAuthenticated && !isLoading) {
             navigate("/login");
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, isLoading]);
+
+
+    if (isLoading ) {
+        return null
+    }
+    
+
     return (
         <>
             <div>

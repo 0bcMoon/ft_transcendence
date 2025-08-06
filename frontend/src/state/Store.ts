@@ -1,3 +1,4 @@
+import { User } from '@/types/types';
 import { create } from 'zustand';
 
 
@@ -15,7 +16,7 @@ export const useSwapStore = create<SwapStoreState>((set) => ({
 
 
 interface ChatStoreState {
-    display_name: string;
+    display_name: string | undefined;
     profile_image: string,
     id?: number;
     setChat?: ({ display_name, profile_image }: ChatStoreState) => void;
@@ -23,7 +24,7 @@ interface ChatStoreState {
 
 export const useChatStore = create<ChatStoreState>((set) => ({
     id: undefined,
-    display_name: '',
+    display_name: undefined,
     profile_image: '',
     setChat: ({ display_name, profile_image }: ChatStoreState) =>
         set({ display_name, profile_image }),
@@ -41,14 +42,13 @@ export const useSearchStore = create<SearchStoreState>((set) => ({
     setSearchQuery: (option: string) => set({ searchQuery: option }),
 }));
 
-
 enum UsersOptionEnum {
-    FindNewFriends = "Find New Friends",
+    FindNewFriends = "Search For Users",
     Friends = "Friends",
     FriendsRequest = "Friends Request",
-    PendingRequest = "Pending Request",
     Blocked = "Blocked"
 }
+
 
 
 interface UsersOptionState {
@@ -62,3 +62,55 @@ export const useUsersOption = create<UsersOptionState>((set) => ({
     setUsersOption: (option: UsersOptionEnum) => set({ usersOption: option })
 }));
 
+
+export interface ValidationErrors {
+    current_password?: string,
+    new_password?: string,
+    confirm_password?: string,
+    display_name?: string;
+    profile_picture?: string;
+
+    setDisplayNameError: (error: string) => void
+    setCurrentPasswordError: (error: string) => void
+    setNewPasswordError: (error: string) => void
+    setConfirmPasswordError: (error: string) => void
+    setProfilePictureError: (error: string) => void
+    clearErrors: () => void;
+}
+
+
+
+export const useValidationStore = create<ValidationErrors>((set) => ({
+    current_password: undefined,
+    new_password: undefined,
+    confirm_password: undefined,
+    display_name: undefined,
+    profile_picture: undefined,
+
+    setDisplayNameError: (error: string) => set({ display_name: error }),
+    setCurrentPasswordError: (error: string) => set({ current_password: error }),
+    setNewPasswordError: (error: string) => set({ new_password: error }),
+    setConfirmPasswordError: (error: string) => set({ confirm_password: error }),
+    setProfilePictureError: (error: string) => set({ profile_picture: error }),
+    clearErrors: () => set({
+        current_password: undefined,
+        new_password: undefined,
+        confirm_password: undefined,
+        display_name: undefined,
+        profile_picture: undefined
+    }),
+}));
+
+
+
+
+export interface UserState {
+    user: User | null;
+    setUser: (user: User | null) => void;
+}
+
+
+export const useUserStore = create<UserState>((set) => ({
+    user: null,
+    setUser: (user: User | null) => set({ user }),
+}));

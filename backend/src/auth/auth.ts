@@ -53,7 +53,6 @@ const UserAuth = {
                 sameSite: true, // alternative CSRF protection
             })
 
-
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',

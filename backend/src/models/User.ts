@@ -1,5 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { userRepository } from "../repository/userRepository";
+import path from "path";
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs/promises';
 
 interface IRequestHandlerBody {
     req_id: number;
@@ -37,18 +42,22 @@ const User = {
 
     getFriends: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
-        if (search) {
-            const friends = await userRepository.findFriends(req.user.id, search);
-            return reply.status(200).send(friends);
-        }
-        const friends = await userRepository.getFriends(req.user.id);
-        return reply.status(200).send(friends);
+        let friends;
+        if (search)
+            friends = await userRepository.findFriends(req.user.id, search);
+        else
+            friends = await userRepository.getFriends(req.user.id);
+        const new_friends = friends.map(friend => ({ ...friend, profile_picture: friend.image_src + friend.profile_picture }));
+        return reply.status(200).send(new_friends);
     },
 
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
-        const friends = await userRepository.getUserById(req.user.id, id);
-        return reply.status(200).send(friends);
+        const user = await userRepository.getUserById(req.user.id, id);
+        if (!user) return reply.status(200).send({ message: "User not found" });
+        user.profile_picture = user.image_src + user.profile_picture;
+        delete user.image_src;
+        return reply.status(200).send(user);
     },
 
     findUsers: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -56,8 +65,8 @@ const User = {
         if (!search)
             return reply.status(200).send([]); // maybe show some random friends suggestion
         const users = await userRepository.findUsers(search);
-        return reply.status(200).send(users);
-
+        const updatedUsers = users.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+        return reply.status(200).send(updatedUsers);
     },
 
     createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -66,7 +75,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id) 
+        const user = await userRepository.getUserById(req.user.id, user_id)
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -114,7 +123,7 @@ const User = {
         switch (type) {
             case "friend":
                 const friendRequests = await userRepository.getFriendRequests(req.user.id);
-                return reply.status(200).send(friendRequests);
+                return reply.status(200).send(friendRequests.map(request => ({ ...request, profile_picture: request.image_src + request.profile_picture })));
             case "chat":
                 throw new Error("chat requests not implemented yet");
             default:
@@ -247,6 +256,61 @@ const User = {
         }
         return reply.status(400).send({ message: 'you have not unfriended this user' });
 
+    },
+
+    getBlockedUsers: async (req: FastifyRequest, reply: FastifyReply) => {
+        const blockedUsers = await userRepository.getBlockedUsers(req.user.id);
+        const updatedBlockedUsers = blockedUsers?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+        return reply.status(200).send(updatedBlockedUsers || []);
+    },
+
+    updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
+        const data = await req.file()
+        if (!data) {
+            return reply.status(400).send({ message: 'No file uploaded' });
+        }
+
+        const extension = path.extname(data.filename);
+        const uniqueFilename = `${randomUUID()}${extension}`;
+
+        // Define the path where the file will be saved
+        const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+        const filePath = path.join(uploadDir, uniqueFilename);
+        console.log(uploadDir, filePath)
+
+
+        await pipeline(data.file, createWriteStream(filePath));
+        const result = await userRepository.updateProfilePicture(req.user.id, uniqueFilename);
+        if (result === undefined) {
+            await fs.unlink(filePath); // Clean up the file if the update fails
+            return reply.status(400).send({ message: 'Failed to update profile image' });
+        }
+        if (result && result !== "default.jpg") {
+            try {
+                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result));
+            } catch (error) {
+                console.error('Error deleting old profile image:', error);
+            }
+
+        }
+        reply.send({ message: 'Profile image Updated successfully' });
+    },
+    getUserProfile: async (req: FastifyRequest, reply: FastifyReply) => {
+        const user = await userRepository.getCurrentUserById(req.user.id);
+        if (!user) {
+            return reply.status(404).send({ message: "user not found" });
+        }
+
+        user.profile_picture = user.image_src + user.profile_picture;
+        delete user.image_src;
+
+        return reply.status(200).send({
+            id: user.id,
+            display_name: user.display_name,
+            username: user.username,
+            email: user.email,
+            profile_picture: user.profile_picture
+        });
     }
 }
 

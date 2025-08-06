@@ -7,9 +7,7 @@ import { loginSchema, requestHandlerBody, blockUserBody, createRequestBody } fro
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
 
-    fastify.get('/user', async (request, reply) => {
-        return ({ message: 'Hello World! user' })
-    })
+    fastify.get('/api/user', { onRequest: fastify.authenticate }, User.getUserProfile)
 
     fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)
 
@@ -18,6 +16,8 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends)
     fastify.delete('/user/friends/:user_id', { onRequest: fastify.authenticate }, User.unFriends) // unfriend
 
+
+    fastify.get('/user/block', { onRequest: fastify.authenticate }, User.getBlockedUsers)
 
     fastify.post('/user/block', {
         onRequest: fastify.authenticate,
@@ -42,6 +42,7 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
         User.HandelRequests
     )
 
+    fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture)
 
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
 

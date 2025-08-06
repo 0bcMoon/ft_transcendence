@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import endpoints from '@/endpoints.json';
-import UsersProfileCard, { IUsersProfileCard } from '@/users/UsersProfileCard';
+import { UsersProfileCard, IUsersProfileCard } from '@/users/Cards';
 import { useSearchStore } from '@/state/Store';
 const Friends = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)

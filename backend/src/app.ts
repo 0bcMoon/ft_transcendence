@@ -5,9 +5,15 @@ import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import routes from './routes'
 import cookie from '@fastify/cookie'
+import { mkdir } from 'fs';
+import staticPlugin from '@fastify/static'
 import pino from "pino";
 import pretty from "pino-pretty";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
+// This import is essential. It loads the types from the plugin.
+import '@fastify/multipart';
+import path from 'path';
+
 
 
 declare module "@fastify/jwt" {
@@ -33,6 +39,7 @@ declare module 'fastify' {
         authenticate: Authenticate,
     }
 }
+
 const fastify = Fastify({
     logger: process.env.NODE_ENV === 'test' ? false : {
         level: 'debug',
@@ -64,6 +71,14 @@ fastify.register(jwt, {
 fastify.register(websocket)
 
 fastify.register(wsRouter);
+
+fastify.register(staticPlugin, {
+    root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
+    prefix: '/public/',
+});
+
+fastify.register(require('@fastify/multipart'));
+
 fastify.register(routes);
 
 fastify.register(cors, {
@@ -73,6 +88,13 @@ fastify.register(cors, {
     allowedHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
     credentials: true,
     preflightContinue: true // Important for WebSocket connections
+});
+
+const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+
+
+mkdir(uploadDir, { recursive: true }, (err) => {
+    if (err) throw err;
 });
 
 
@@ -109,7 +131,7 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         return reply.code(401).send({ message: 'Unauthorized: Invalid refresh token' });
     }
 }
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _, reply) => {
     // Check if the error is a Zod validation error
     if (error.validation) {
         // Return a 400 response with a simplified message
@@ -118,7 +140,6 @@ fastify.setErrorHandler((error, request, reply) => {
         });
         return;
     }
-
     // For all other errors, use the default handler
     reply.send(error);
 });
@@ -129,7 +150,7 @@ fastify.decorate(
         try {
             await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
-            console.error("Auth Error", error.code, error.message);
+            console.debug('JWT verification failed:', error);
             switch (error.code) {
                 case 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED':
                 case 'FST_JWT_NO_AUTHORIZATION_IN_COOKIE':

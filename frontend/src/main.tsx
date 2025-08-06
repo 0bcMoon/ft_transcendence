@@ -14,6 +14,7 @@ import RootLayout from '@/RootLayout'
 import NotFound from '@/NotFound.tsx';
 import UsersPage from '@/users/UsersPage';
 import UserProfile from '@/users/UserProfile';
+import Settings from './settings/Settings';
 
 
 // TODO: for daynamic routes validate the user_id to be a number
@@ -26,9 +27,10 @@ const router = createBrowserRouter([
             { index: true, element: <App /> },
             { path: 'home', element: <Home /> },
             { path: 'users/:user_id', element: <UserProfile /> },
-            { path: 'friends', element: <UsersPage /> },
+            { path: 'users', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
+            {path: 'settings', element: <Settings /> },
 
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],

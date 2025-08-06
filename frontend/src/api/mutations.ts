@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 import toast from "react-hot-toast";
+import { IFormData } from "@/zod/zod-schema";
 
 
 interface IRequest {
@@ -73,6 +74,7 @@ export const useBlockUser = ({ user_id }: IRequest) => {
                     ? 'User has been blocked successfully'
                     : 'User has been unblocked successfully'
             );
+            queryClient.invalidateQueries({ queryKey: ['search'] });
             queryClient.invalidateQueries({ queryKey: ['users', user_id] });
         },
         onError: (error: any) => {
@@ -119,3 +121,45 @@ export const useUnFriend = ({ user_id }: { user_id: number }) => {
     })
 };
 
+export const useUpdateUserProfile = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (formData: IFormData) => {
+            const response = await api.patch("/user/update/p", formData);
+            return response.data;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Profile updated successfully");
+            queryClient.invalidateQueries({ queryKey: ['user'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    });
+
+}
+
+export const useUpdateProfilePicture = () => {
+
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (form: FormData) => {
+            const response = await api.patch("/user/update/profile_picture", form, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            toast.success(data.message || "Profile updated successfully");
+            queryClient.invalidateQueries({ queryKey: ['user'] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    });
+
+}

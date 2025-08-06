@@ -2,29 +2,36 @@ import assert from 'assert';
 import db from '../../db/db';
 
 export interface User {
-    relation_status: 'none' | 'friend' | 'pending' | 'waiting' | 'blocking' | 'blocked_by',
     id: number,
     username: string,
     display_name: string,
-    password: string | undefined,
+    password: string,
     email: string,
+    image_src: string | undefined,
+    profile_picture: string,
+    relation_status: string
     created_at: Date,
 }
-export type UserResponse = Omit<User, 'password'>;
+
 
 export const userRepository = {
 
-    getUserByUsername: async (username: string) => {
+    getUserByUsername: async (username: string): Promise<User | undefined> => {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
+    getCurrentUserById: async (id: number) :Promise<User | undefined> => {
+        return await db.get('SELECT * FROM users WHERE id = ?', [id]);
+    },
+
     getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
-        //TODO: check if u.i=sender_id and f.receiver_id = user_id
         const sql: string = `
                         SELECT
                             u.id,
                             u.display_name,
                             u.username,
+                            u.profile_picture,
+                            u.image_src,
                             r.id req_id,
                             CASE
                                 WHEN b.user_id = $1 THEN 'blocking'
@@ -71,32 +78,30 @@ export const userRepository = {
     },
 
     getFriends: async (user_id: number) => {
-        const sql: string = `SELECT u.id,
-                            u.display_name
-                            from users u
-                            inner join friends f on f.sender_id = u.id 
+        const sql: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
+                            FROM users u
+                            INNER join friends f on f.sender_id = u.id 
                             WHERE f.receiver_id = $1
                             UNION
-                            SELECT u.id,
-                            u.display_name
-                            from users u
-                            inner join friends f on f.receiver_id= u.id 
+                            SELECT u.id, u.display_name, u.profile_picture, u.image_src
+                            FROM users u
+                            INNER join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1
                             `;
         return await db.all(sql, [user_id]);
     },
 
     findFriends: async (user_id: number, search: string) => {
-        const sql: string = `SELECT u.id,
-                            u.display_name
-                            from users u
-                            inner join friends f on f.sender_id = u.id 
+        const sql: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
+                            FROM users u
+                            INNER join friends f on f.sender_id = u.id 
                             WHERE f.receiver_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
+
                             UNION
-                            SELECT u.id,
-                            u.display_name
-                            from users u
-                            inner join friends f on f.receiver_id= u.id 
+
+                            SELECT u.id, u.display_name, u.profile_picture, u.image_src
+                            FROM users u
+                            INNER join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
                             `;
         const searchTermWithWildcards = `%${search}%`;
@@ -105,7 +110,12 @@ export const userRepository = {
     },
 
     findUsers: async (search: string) => {
-        const sql: string = "SELECT id, username, display_name FROM users WHERE username LIKE $1 OR display_name LIKE $1";
+        const sql: string = `SELECT id,
+                            username,
+                            display_name,
+                            profile_picture,
+                            image_src
+                            FROM users WHERE username LIKE $1 OR display_name LIKE $1`;
         const searchTermWithWildcards = `%${search}%`;
         return await db.all(sql, [searchTermWithWildcards]);
     },
@@ -139,7 +149,14 @@ export const userRepository = {
 
     getFriendRequests: async (user_id: number) => {
         const sql: string = `
-                            SELECT r.id req_id, u.id, u.display_name, r.request_type,
+                            SELECT 
+                            r.id req_id,
+                            u.id,
+                            u.display_name,
+                            r.request_type,
+                            u.profile_picture,
+                            u.image_src,
+                            u.username,
                             CASE
                                 WHEN u.id = r.receiver_id THEN 'sent'
                                 ELSE 'received'
@@ -192,6 +209,25 @@ export const userRepository = {
         const result = await db.run(sql, [user_id, block_user_id]);
         assert(result.changes >= 1, "Failed to delete requests between the specified users. Expected at least one row to be deleted.");
         return result.changes > 0;
+    },
+    getBlockedUsers(user_id: number): Promise<User[] | undefined> {
+
+        const sql: string = `SELECT u.id, u.display_name, u.username , u.profile_picture, u.image_src
+                            FROM users u
+                            JOIN blocks b ON u.id = b.blocked_user_id
+                            WHERE b.user_id = $1`;
+        return db.all(sql, [user_id]);
+    },
+    updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
+
+        const user = await userRepository.getCurrentUserById(user_id);
+        if (!user) {
+            return undefined; // User not found
+        }
+
+        const sql: string = `UPDATE users SET profile_picture = ? WHERE id = ?`;
+        await db.run(sql, [picture_url, user_id]);
+        return user?.profile_picture;
     }
 
 }
