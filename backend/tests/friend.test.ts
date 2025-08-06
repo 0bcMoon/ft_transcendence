@@ -82,7 +82,7 @@ describe('Friend Requests API', () => {
             .send({ user_id: testUser.id, type: 'friend' });
 
         expect(response.status).toBe(400);
-        expect(response.body).toEqual({ message: 'you cannot send friend request to yourself' });
+        expect(response.body).toEqual({ message: 'you cannot send request to yourself' });
 
     });
 
