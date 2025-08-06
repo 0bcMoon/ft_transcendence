@@ -7,7 +7,7 @@ import db from './db'
 db.serialize(async () => {
 
     //truncate the tables
-    const createUsers = db.prepare('INSERT INTO users (username, display_name, password, email) VALUES ( ?, ?, ?, ?)')
+    const createUsers = db.prepare('INSERT INTO users (username, display_name, password, image_src, email) VALUES ( ?, ?, ?, ?, ?)')
     const insertFriends = db.prepare('INSERT INTO friends (sender_id, receiver_id) VALUES (?, ?)')
     const insertContact = db.prepare('INSERT INTO contacts (user_id, contact_id) VALUES (?, ?)')
     const createMessages = db.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
@@ -19,6 +19,7 @@ db.serialize(async () => {
         "hicham",
         "Hicham Benoukaiss",
         await bcrypt.hash('password', salt),
+        'http://localhost:3000/public/',
         "hicham@mail.com"
     )
 
@@ -26,6 +27,7 @@ db.serialize(async () => {
         "jebli",
         "Mohamed Regrag",
         await bcrypt.hash('password', salt),
+        'http://localhost:3000/public/',
         "mohamed@mail.com"
     )
 
@@ -33,6 +35,7 @@ db.serialize(async () => {
         "zaid",
         "Zaid kotbi",
         await bcrypt.hash('password', salt),
+        'http://localhost:3000/public/',
         "zaid@mail.com"
     )
 
@@ -40,6 +43,7 @@ db.serialize(async () => {
         "microb",
         "khona microb",
         await bcrypt.hash('password', salt),
+        'http://localhost:3000/public/',
         "microb@mail.com"
     )
 
@@ -47,6 +51,7 @@ db.serialize(async () => {
         "hmouda",
         "Mohammed El Bouazizi",
         await bcrypt.hash('password', salt),
+        'http://localhost:3000/public/',
         faker.internet.email()
     )
 
@@ -55,6 +60,7 @@ db.serialize(async () => {
             faker.internet.username(),
             faker.person.fullName(),
             await bcrypt.hash(faker.internet.password(), salt),
+            'http://localhost:3000/public/',
             faker.internet.email()
         )
     }
@@ -79,9 +85,6 @@ db.serialize(async () => {
     createMessages.run(1, 2, faker.lorem.sentence())
     createMessages.run(1, 2, faker.lorem.sentence())
     createMessages.run(1, 2, faker.lorem.sentence())
-
-
     createUsers.finalize()
-    const users = await db.all('SELECT * FROM users')
-    console.log(users)
+
 })
