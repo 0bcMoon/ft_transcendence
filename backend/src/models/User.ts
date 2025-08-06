@@ -62,11 +62,14 @@ const User = {
 
     findUsers: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
+        let users;
         if (!search)
-            return reply.status(200).send([]); // maybe show some random friends suggestion
-        const users = await userRepository.findUsers(search);
-        const updatedUsers = users.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
-        return reply.status(200).send(updatedUsers);
+            users = await userRepository.getAllUsers(req.user.id);
+        else
+            users = await userRepository.findUsers(search);
+        const updatedUsers = users?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+
+        return reply.status(200).send(updatedUsers || []);
     },
 
     createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {

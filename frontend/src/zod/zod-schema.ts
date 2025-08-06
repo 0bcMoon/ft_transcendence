@@ -9,6 +9,7 @@ export interface IFormData {
     confirm_password: string,
     display_name: string;
     profile_picture: File;
+    username: string;
 }
 
 
@@ -37,7 +38,7 @@ export const profilePictureValidate = (file: File | null): boolean => {
 
 const updateProfile = (formData: IFormData): boolean => {
 
-    const { display_name } = formData;
+    const { display_name, username } = formData;
     const { current_password, new_password, confirm_password } = formData;
     const errors = useValidationStore.getState();
     errors.clearErrors();
@@ -66,21 +67,30 @@ const updateProfile = (formData: IFormData): boolean => {
             path: ["new_password"], // path of the error
         });
 
-    const changeDisplayNameSchema = z.object({
+    const updateProfileSchema = z.object({
         display_name: z
             .string()
             .min(1, "Display name is required.")
-            .max(50, "Display name cannot exceed 50 characters.")
+            .max(50, "Display name cannot exceed 50 characters."),
+        username: z
+            .string()
+            .min(1, "Username is required.")
+            .max(16, "username name cannot exceed 16 characters.")
+            .regex(/^\S+$/, 'Username cannot contain whitespace'),
 
     });
 
-    const changeDisplayNameResult = changeDisplayNameSchema.safeParse({ display_name });
-    if (!changeDisplayNameResult.success) {
-        const fieldErrors = changeDisplayNameResult.error.flatten().fieldErrors;
+    const formResult = updateProfileSchema.safeParse({ display_name, username });
+    if (!formResult.success) {
+
+        const fieldErrors = formResult.error.flatten().fieldErrors;
         if (fieldErrors.display_name) {
             errors.setDisplayNameError(fieldErrors.display_name[0]);
         }
-        result = false; // Display name validation failed
+        if (fieldErrors.username) {
+            errors.setUsernameError(fieldErrors.username[0]);
+        }
+        result = false;
     }
 
 

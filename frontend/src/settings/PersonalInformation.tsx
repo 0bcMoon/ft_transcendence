@@ -1,11 +1,13 @@
 import { useAuthStore } from '@/state/authStore';
 import { useValidationStore } from '@/state/Store';
 import { User } from 'lucide-react';
-
+import { useState } from 'react';
 
 function PersonalInformation() {
-    const display_name = useValidationStore((state) => state.display_name);
+    const { display_name, username  } = useValidationStore((state) => state);
     const user = useAuthStore(state => state.user)
+    const [readOnly, setReadOnly] = useState(true);
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
@@ -20,12 +22,34 @@ function PersonalInformation() {
                 <input
                     name="display_name"
                     type="text"
-                    defaultValue= {user?.display_name || ''}
+                    defaultValue={user?.display_name}
                     className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                     placeholder="Enter your display name"
+                    autoComplete="off"
+                    readOnly={readOnly}
+                    onFocus={() => setReadOnly(false)}
                 />
                 {display_name && (
                     <p className="mt-1 text-sm text-red-600">{display_name}</p>
+                )}
+            </div>
+
+            <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Username
+                </label>
+                <input
+                    name="username"
+                    type="text"
+                    defaultValue={user?.username}
+                    className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
+                    placeholder="Enter your Username"
+                    autoComplete="off"
+                    readOnly={readOnly}
+                    onFocus={() => setReadOnly(false)}
+                />
+                {username && (
+                    <p className="mt-1 text-sm text-red-600">{username}</p>
                 )}
             </div>
         </div>

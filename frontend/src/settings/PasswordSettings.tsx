@@ -1,5 +1,6 @@
 import { useValidationStore } from '@/state/Store';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 interface PasswordSettingsProps {
     showPasswords: { current: boolean; new: boolean; confirm: boolean; };
@@ -9,6 +10,7 @@ interface PasswordSettingsProps {
 function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordSettingsProps) {
 
     const errors = useValidationStore((state) => state);
+    const [readOnly, setReadOnly] = useState(true);
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -28,6 +30,9 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                             type={showPasswords.current ? 'text' : 'password'}
                             className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
                             placeholder="Enter current password"
+                            autoComplete="current-password"
+                            readOnly={readOnly}
+                            onFocus={() => setReadOnly(false)}
                         />
                         <button
                             type="button"
@@ -53,6 +58,9 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                                 type={showPasswords.new ? 'text' : 'password'}
                                 className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
                                 placeholder="Enter new password"
+                                autoComplete="new-password"
+                                readOnly={readOnly}
+                                onFocus={() => setReadOnly(false)}
                             />
                             <button
                                 type="button"
@@ -77,6 +85,9 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                                 type={showPasswords.confirm ? 'text' : 'password'}
                                 className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
                                 placeholder="Confirm new password"
+                                autoComplete="new-password"
+                                readOnly={readOnly}
+                                onFocus={() => setReadOnly(false)}
                             />
                             <button
                                 type="button"

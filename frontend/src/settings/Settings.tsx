@@ -92,7 +92,7 @@ function Settings() {
                 {/*     </div> */}
                 {/* )} */}
 
-                <form onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
+                <form autoComplete="off" onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
 
                     <ProfilePhoto
                         profileImage={profileImage ? URL.createObjectURL(profileImage) : null}
@@ -119,7 +119,7 @@ function Settings() {
                     </div>
                 </form>
 
-                <form onSubmit={submitForm} className="space-y-6">
+                <form autoComplete="new-password" onSubmit={submitForm} className="space-y-6">
 
                     <PersonalInformation />
 
