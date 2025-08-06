@@ -42,18 +42,22 @@ const User = {
 
     getFriends: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
-        if (search) {
-            const friends = await userRepository.findFriends(req.user.id, search);
-            return reply.status(200).send(friends);
-        }
-        const friends = await userRepository.getFriends(req.user.id);
-        return reply.status(200).send(friends);
+        let friends;
+        if (search)
+            friends = await userRepository.findFriends(req.user.id, search);
+        else
+            friends = await userRepository.getFriends(req.user.id);
+        const new_friends = friends.map(friend => ({ ...friend, profile_picture: friend.image_src + friend.profile_picture }));
+        return reply.status(200).send(new_friends);
     },
 
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
-        const friends = await userRepository.getUserById(req.user.id, id);
-        return reply.status(200).send(friends);
+        const user = await userRepository.getUserById(req.user.id, id);
+        if (!user) return reply.status(200).send({ message: "User not found" });
+        user.profile_picture = user.image_src + user.profile_picture;
+        delete user.image_src;
+        return reply.status(200).send(user);
     },
 
     findUsers: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -61,8 +65,8 @@ const User = {
         if (!search)
             return reply.status(200).send([]); // maybe show some random friends suggestion
         const users = await userRepository.findUsers(search);
-        return reply.status(200).send(users);
-
+        const updatedUsers = users.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+        return reply.status(200).send(updatedUsers);
     },
 
     createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -119,7 +123,7 @@ const User = {
         switch (type) {
             case "friend":
                 const friendRequests = await userRepository.getFriendRequests(req.user.id);
-                return reply.status(200).send(friendRequests);
+                return reply.status(200).send(friendRequests.map(request => ({ ...request, profile_picture: request.image_src + request.profile_picture })));
             case "chat":
                 throw new Error("chat requests not implemented yet");
             default:
@@ -256,7 +260,8 @@ const User = {
 
     getBlockedUsers: async (req: FastifyRequest, reply: FastifyReply) => {
         const blockedUsers = await userRepository.getBlockedUsers(req.user.id);
-        return reply.status(200).send(blockedUsers);
+        const updatedBlockedUsers = blockedUsers?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+        return reply.status(200).send(updatedBlockedUsers || []);
     },
 
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -273,24 +278,39 @@ const User = {
         const filePath = path.join(uploadDir, uniqueFilename);
         console.log(uploadDir, filePath)
 
-        // Ensure the upload directory exists
 
-        // Securely stream the file to the filesystem
         await pipeline(data.file, createWriteStream(filePath));
         const result = await userRepository.updateProfilePicture(req.user.id, uniqueFilename);
         if (result === undefined) {
             await fs.unlink(filePath); // Clean up the file if the update fails
             return reply.status(400).send({ message: 'Failed to update profile image' });
         }
-        if (result) {
+        if (result && result !== "default.jpg") {
             try {
-                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result)); // Clean up the file if the update fails
+                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result));
             } catch (error) {
                 console.error('Error deleting old profile image:', error);
             }
 
         }
         reply.send({ message: 'Profile image Updated successfully' });
+    },
+    getUserProfile: async (req: FastifyRequest, reply: FastifyReply) => {
+        const user = await userRepository.getCurrentUserById(req.user.id);
+        if (!user) {
+            return reply.status(404).send({ message: "user not found" });
+        }
+
+        user.profile_picture = user.image_src + user.profile_picture;
+        delete user.image_src;
+
+        return reply.status(200).send({
+            id: user.id,
+            display_name: user.display_name,
+            username: user.username,
+            email: user.email,
+            profile_picture: user.profile_picture
+        });
     }
 }
 

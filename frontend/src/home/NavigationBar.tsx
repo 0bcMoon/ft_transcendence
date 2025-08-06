@@ -38,6 +38,7 @@ const NavigationItem = ({ label, icon: Icon, isActive, link }: NavigationItemPro
 }
 
 const Logout = () => {
+
     const { logout } = useAuth();
 
     return (

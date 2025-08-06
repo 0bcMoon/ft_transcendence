@@ -97,6 +97,7 @@ export const useValidationStore = create<ValidationErrors>((set) => ({
         new_password: undefined,
         confirm_password: undefined,
         display_name: undefined,
+        profile_picture: undefined
     }),
 }));
 

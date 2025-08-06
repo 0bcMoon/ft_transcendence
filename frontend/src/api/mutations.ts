@@ -122,6 +122,7 @@ export const useUnFriend = ({ user_id }: { user_id: number }) => {
 };
 
 export const useUpdateUserProfile = () => {
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (formData: IFormData) => {
@@ -130,6 +131,7 @@ export const useUpdateUserProfile = () => {
         },
         onSuccess: (data) => {
             toast.success(data.message || "Profile updated successfully");
+            queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to update profile");
@@ -139,6 +141,8 @@ export const useUpdateUserProfile = () => {
 }
 
 export const useUpdateProfilePicture = () => {
+
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (form: FormData) => {
@@ -151,6 +155,7 @@ export const useUpdateProfilePicture = () => {
         },
         onSuccess: (data) => {
             toast.success(data.message || "Profile updated successfully");
+            queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to update profile");

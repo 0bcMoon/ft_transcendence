@@ -7,9 +7,7 @@ import { loginSchema, requestHandlerBody, blockUserBody, createRequestBody } fro
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
 
-    fastify.get('/user', async (request, reply) => {
-        return ({ message: 'Hello World! user' })
-    })
+    fastify.get('/api/user', { onRequest: fastify.authenticate }, User.getUserProfile)
 
     fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)
 
@@ -45,7 +43,6 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     )
 
     fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture)
-    // fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture)
 
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
 

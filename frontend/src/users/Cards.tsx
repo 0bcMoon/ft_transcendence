@@ -8,25 +8,24 @@ export interface IUsersProfileCard {
     id: string;
     display_name: string;
     status: string;
+    profile_picture: string;
 }
 
-export const UsersProfileCard = ({ id, display_name, status }: IUsersProfileCard) => {
+export const UsersProfileCard = ({ id, display_name, status, profile_picture }: IUsersProfileCard) => {
 
     const navigate = useNavigate();
+    console.debug("UsersProfileCard", { id, display_name, status, profile_picture });
 
-    const handleClick = () => {
-        navigate(`/users/${id}`);
-    }
     return (
         <div
-            onClick={handleClick}
+            onClick={() => navigate(`/users/${id}`)}
             className=" border flex p-2 gap-4
                         rounded-xl  border-gray-100 col-span-1 h-20 hover:bg-gray-200
                         "
         >
             <div >
                 <UserAvatar
-                    src={profile}
+                    src={profile_picture}
                     alt="profile image"
                     name={display_name}
                     isOnline={true}
@@ -52,9 +51,10 @@ export interface IUsersRequestCard {
     id: number;
     display_name: string;
     request_type: string;
+    profile_picture: string;
 }
 
-export const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUsersRequestCard) => {
+export const UsersRequestCard = ({ id, req_id, display_name, request_type, profile_picture }: IUsersRequestCard) => {
     const navigate = useNavigate();
 
     const handleNavigate = () => {
@@ -89,7 +89,7 @@ export const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUs
             <div onClick={handleNavigate} className="flex p-2 gap-4 cursor-pointer">
                 <div >
                     <UserAvatar
-                        src={profile}
+                        src={profile_picture}
                         alt="profile image"
                         name={display_name}
                         isOnline={true}
@@ -146,9 +146,10 @@ export const UsersRequestCard = ({ id, req_id, display_name, request_type }: IUs
 export interface IBlockedUserCard {
     id: number;
     display_name: string;
+    profile_picture?: string;
 }
 
-export const BlockedUserCard = ({ id, display_name }: IBlockedUserCard) => {
+export const BlockedUserCard = ({ id, display_name, profile_picture }: IBlockedUserCard) => {
     const navigate = useNavigate();
     const { mutate: blockAction } = useBlockUser({ user_id: id });
 
@@ -170,7 +171,7 @@ export const BlockedUserCard = ({ id, display_name }: IBlockedUserCard) => {
             <div onClick={handleNavigate} className="flex p-2 gap-4 cursor-pointer">
                 <div >
                     <UserAvatar
-                        src={profile}
+                        src={profile_picture}
                         alt="profile image"
                         name={display_name}
                         isOnline={true}

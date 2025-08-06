@@ -14,9 +14,11 @@ export default function RootLayout() {
         }
     }, [isAuthenticated, navigate, isLoading]);
 
-    if (isLoading) {
+
+    if (isLoading ) {
         return null
     }
+    
 
     return (
         <>

@@ -1,12 +1,28 @@
 import { useValidationStore } from '@/state/Store';
 import React from 'react';
 import { User, Upload } from 'lucide-react';
+import { useAuthStore } from '@/state/authStore';
 
 interface ProfilePhotoProps {
     profileImage: string | null;
     handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+
+const UserImage = ({ profileImage }: { profileImage: string | null }) => {
+
+    const profile_picture = useAuthStore().user?.profile_picture;
+
+    if (profileImage)
+        return <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+    else if (profile_picture)
+        return <img src={profile_picture} alt="Profile" className="w-full h-full object-cover" />
+    else
+        return <User className="w-full h-full text-gray-300" />
+
+
+
+}
 function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
 
     const { profile_picture } = useValidationStore();
@@ -16,11 +32,7 @@ function ProfilePhoto({ profileImage, handleImageUpload }: ProfilePhotoProps) {
             <div className="flex items-center gap-6">
                 <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                        {profileImage ? (
-                            <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <User className="w-12 h-12 text-gray-400" />
-                        )}
+                        <UserImage profileImage={profileImage} />
                     </div>
                 </div>
                 <div>
