@@ -91,6 +91,7 @@ const BlockedUsers = () => {
     return users?.map((user) => (<BlockedUserCard key={user.id} {...user} />))
 }
 
+
 const RenderView = () => {
 
     const searchOption = useUsersOption(state => state.usersOption)

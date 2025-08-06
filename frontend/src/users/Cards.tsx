@@ -1,4 +1,3 @@
-import profile from '@/image/profile.svg'
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from '@/component/UserAvatar';
 import { useCancelRequest, useAcceptRequest, useDenyRequest, useBlockUser } from "@/api/mutations";
@@ -153,9 +152,6 @@ export const BlockedUserCard = ({ id, display_name, profile_picture }: IBlockedU
     const navigate = useNavigate();
     const { mutate: blockAction } = useBlockUser({ user_id: id });
 
-    const handleNavigate = () => {
-        navigate(`/users/${id}`);
-    }
 
     const handleUnblock = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -168,7 +164,7 @@ export const BlockedUserCard = ({ id, display_name, profile_picture }: IBlockedU
                         rounded-xl  border-gray-100 col-span-1 h-auto hover:bg-gray-200
                         "
         >
-            <div onClick={handleNavigate} className="flex p-2 gap-4 cursor-pointer">
+            <div onClick={() => navigate(`/users/${id}`)} className="flex p-2 gap-4 cursor-pointer">
                 <div >
                     <UserAvatar
                         src={profile_picture}
