@@ -3,6 +3,7 @@ import { useSearchStore, useUsersOption } from "@/state/Store";
 import { UsersProfileCard, IUsersProfileCard, UsersRequestCard, IUsersRequestCard, BlockedUserCard, IBlockedUserCard } from '@/users/Cards';
 import api from "@/api/api";
 import { useQuery } from "@tanstack/react-query";
+import EmptyList from "@/component/EmptyList";
 
 
 type Event = React.FormEvent<HTMLFormElement>
@@ -51,6 +52,10 @@ const FindNewUsers = () => {
         }
     })
 
+    if (!users || users?.length === 0) {
+        return <EmptyList message="No users found" />
+    }
+
     return users?.map((user) => (<UsersProfileCard key={user?.id} {...user} />))
 }
 
@@ -71,12 +76,16 @@ const FriendsRequest = () => {
         }
     })
 
+    if (!users || users?.length === 0) {
+        return <EmptyList message="No friend requests found" />
+    }
+
     return users?.map((user) => (<UsersRequestCard key={user.id} {...user} />))
 }
 
 const BlockedUsers = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)
-    const { data: users } = useQuery<IBlockedUserCard[]>({ 
+    const { data: users } = useQuery<IBlockedUserCard[]>({
         queryKey: ["search", "blocked", searchQuery],
         queryFn: async () => {
             const response = await api.get("/user/block", {
@@ -87,6 +96,10 @@ const BlockedUsers = () => {
             return response.data
         }
     })
+
+    if (!users || users?.length === 0) {
+        return <EmptyList message="No blocked users found" />
+    }
 
     return users?.map((user) => (<BlockedUserCard key={user.id} {...user} />))
 }
@@ -132,7 +145,7 @@ const UsersPage = () => {
         <div
             className="col-span-13 h-[97svh]
                         rounded-xl 
-                        border-gray-100 border-2 shadow-lg shadow-gray-200"
+                        border-gray-100 border-2 shadow-lg shadow-gray-200 flex flex-col"
         >
             <form onSubmit={setSearch}>
                 <input
@@ -152,7 +165,7 @@ const UsersPage = () => {
 
             </form>
             <div
-                className="flex-1 overflow-x-auto no-scrollbar whitespace-nowrap bg-white p-4 space-x-4
+                className="overflow-x-auto no-scrollbar whitespace-nowrap bg-white p-4 space-x-4
                                            flex flex-row w-full ">
                 {searchOptions.map((option, index) => (
                     <SearchOptions key={index}   {...option} />
@@ -160,7 +173,7 @@ const UsersPage = () => {
             </div>
 
             <div
-                className="p-4 grid lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 gap-4"
+                className="p-4 grid lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 gap-4 flex-1 overflow-y-auto"
             >
                 <RenderView />
             </div>

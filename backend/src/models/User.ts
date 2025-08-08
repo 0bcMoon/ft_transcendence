@@ -5,6 +5,15 @@ import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
+import bcrypt from 'bcrypt';
+import { string } from "zod/v4";
+
+interface IUserUpdateInfo {
+    display_name?: string;
+    username?: string;
+    current_password?: string;
+    new_password?: string;
+}
 
 interface IRequestHandlerBody {
     req_id: number;
@@ -62,11 +71,14 @@ const User = {
 
     findUsers: async (req: FastifyRequest, reply: FastifyReply) => {
         const { search } = req.query as { search: string };
+        let users;
         if (!search)
-            return reply.status(200).send([]); // maybe show some random friends suggestion
-        const users = await userRepository.findUsers(search);
-        const updatedUsers = users.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
-        return reply.status(200).send(updatedUsers);
+            users = await userRepository.getAllUsers(req.user.id);
+        else
+            users = await userRepository.findUsers(search);
+        const updatedUsers = users?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
+
+        return reply.status(200).send(updatedUsers || []);
     },
 
     createFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -311,6 +323,44 @@ const User = {
             email: user.email,
             profile_picture: user.profile_picture
         });
+    },
+    isValidUsername: async (username: string | undefined): Promise<boolean> => {
+        if (!username) return false;
+
+        const user = await userRepository.getUserByUsername(username);
+        if (user) {
+            return true;
+        }
+        return false;
+    },
+    isValidPassword: async (id: number, password: string | undefined): Promise<boolean> => {
+
+        if (!password) return false;
+        const curr_user = await userRepository.getCurrentUserById(id);
+        const isPasswordValid = await bcrypt.compare( password, curr_user?.password!,);
+        if (!isPasswordValid) {
+            return true;
+        }
+        return false;
+    },
+
+    updateUserInfo: async (req: FastifyRequest, reply: FastifyReply) => {
+
+        const { display_name, username, ...pass_info } = req.body as IUserUpdateInfo
+
+        // Validate the input with Zod (ai)
+
+        if (await User.isValidUsername(username)) {
+            return reply.status(400).send({ message: "username already exists" })
+        } else if (await User.isValidPassword(req.user.id, pass_info.current_password)) {
+            return reply.status(400).send({ message: "old password does not match" })
+        } 
+        const result = await userRepository.updateUserInfo(req.user.id, display_name, username, pass_info.new_password);
+        // big problem here, is change are zero
+        if (!result) {
+            return reply.status(400).send({ message: "failed to update user info" });
+        }
+        return reply.status(200).send({ message: "user info updated successfully" });
     }
 }
 

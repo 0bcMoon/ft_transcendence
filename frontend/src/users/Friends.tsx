@@ -3,9 +3,10 @@ import api from '@/api/api';
 import endpoints from '@/endpoints.json';
 import { UsersProfileCard, IUsersProfileCard } from '@/users/Cards';
 import { useSearchStore } from '@/state/Store';
+import EmptyList from '@/component/EmptyList';
 const Friends = () => {
     const searchQuery = useSearchStore(state => state.searchQuery)
-    const { data: friendsProfileCards, error } = useQuery<IUsersProfileCard[]>({
+    const { data: friends} = useQuery<IUsersProfileCard[]>({
         queryKey: ["friends", searchQuery],
         queryFn: async () => {
             const result = await api.get(endpoints.user.friends, {
@@ -17,10 +18,12 @@ const Friends = () => {
         }
     })
 
-    if (error) {
-        return <div>Error loading friends.</div>;
+
+    if (!friends || friends?.length === 0) {
+        return <EmptyList message="No users found" />
     }
-    return friendsProfileCards?.map((items, index) => <UsersProfileCard key={index} {...items} />)
+
+    return friends.map((items, index) => <UsersProfileCard key={index} {...items} />)
 
 }
 

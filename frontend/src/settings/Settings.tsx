@@ -7,6 +7,7 @@ import PasswordSettings from './PasswordSettings';
 import updateProfile, { IFormData, profilePictureValidate } from '@/zod/zod-schema';
 import { useValidationStore } from '@/state/Store';
 import { useUpdateProfilePicture, useUpdateUserProfile } from '@/api/mutations';
+import { useAuthStore } from '@/state/authStore';
 // import SecuritySettings from './SecuritySettings';
 
 function Settings() {
@@ -43,6 +44,8 @@ function Settings() {
     const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+        const user = useAuthStore.getState().user;
+
         const formdata = new FormData(e.currentTarget);
         const data = Object.fromEntries(formdata.entries()) as unknown as IFormData;
 
@@ -50,6 +53,21 @@ function Settings() {
         if (!result) {
             return;
         }
+
+
+        if (user?.username == data.username) {
+            delete data.username;
+        }
+
+        if (user?.display_name == data.display_name) {
+            delete data.display_name;
+        }
+        if (data.current_password?.length === 0) {
+            delete data.current_password;
+            delete data.new_password;
+            delete data.confirm_password;
+        }
+
         updateUserProfile(data)
     }
 
@@ -61,15 +79,14 @@ function Settings() {
     const uploadUserProfilePicture = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+
         const fromData = new FormData(e.currentTarget);
         const file = fromData.get('profile_picture') as File | null;
         if (!profilePictureValidate(file)) {
             return;
         }
+
         updateProfilePicture(fromData)
-
-
-
     }
 
     return (
@@ -92,7 +109,7 @@ function Settings() {
                 {/*     </div> */}
                 {/* )} */}
 
-                <form onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
+                <form autoComplete="off" onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
 
                     <ProfilePhoto
                         profileImage={profileImage ? URL.createObjectURL(profileImage) : null}
@@ -119,7 +136,7 @@ function Settings() {
                     </div>
                 </form>
 
-                <form onSubmit={submitForm} className="space-y-6">
+                <form autoComplete="new-password" onSubmit={submitForm} className="space-y-6">
 
                     <PersonalInformation />
 

@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import endpoint from "@/endpoints.json";
 
 import googleIcon from "@/image/google.svg";
 import fortytwoIcon from "@/image/42.svg";
@@ -8,10 +7,10 @@ import userIcon from "@/image/user.svg";
 import { z } from "zod";
 import { toast, Toaster } from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
-import api from "@/api/api";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { User } from "@/types/types";
+import { Loader, X } from "lucide-react";
+import  { login_api } from "@/api/api";
 
 
 
@@ -26,6 +25,7 @@ interface InputProps {
 interface IUserLoginInfo {
     username: string;
     password: string;
+    setError?: (error: string[]) => void;
 }
 const Logo = ({ source }: { source: string }) => {
     return (
@@ -56,15 +56,10 @@ const validateLogin = (data: IUserLoginInfo): boolean => {
 
     const userSchema = z.object({
         username: z
-            .string()
-            .min(3, 'Username must be at least 3 characters long')
-            .max(16, 'Username cannot exceed 16 characters')
+            .string({ required_error: 'Username is required' })
             .regex(/^\S+$/, 'Username cannot contain whitespace'),
         password: z
-            .string()
-            .min(8, 'Password must be at least 8 characters long')
-            .max(24, 'Password cannot exceed 24 characters')
-            .regex(/^\S+$/, 'Password cannot contain whitespace'),
+            .string({ required_error: 'Password is required' })
     });
 
     const result = userSchema.safeParse(data);
@@ -86,6 +81,7 @@ const validateLogin = (data: IUserLoginInfo): boolean => {
 }
 
 export default function Login() {
+    const [error, setError] = useState<string[]>([]);
 
     const { isAuthenticated, isLoading, setAuth } = useAuth();
     const navigate = useNavigate();
@@ -99,15 +95,16 @@ export default function Login() {
 
     const { mutate: login } = useMutation({
         mutationFn: async (userData: IUserLoginInfo) => {
-            const response = await api.post(endpoint.auth.login, userData);
+            const response = await login_api.post("auth/login", userData);
             return response.data;
         },
-        onSuccess: async (response: { message: string, user: User }) => {
+        onSuccess: async (response: any) => {
+            debugger;
             toast.success(response.message);
             setAuth(true);
         },
         onError: async (error: any) => {
-            toast.error(error.response?.data?.message || "Internal Server Error");
+            setError([error.response?.data?.message || "Internal Server Error"]);
         },
     });
 
@@ -121,14 +118,31 @@ export default function Login() {
             password: data["password"] as string,
         };
 
-        if (validateLogin(userData)) {
-            login(userData);
+        if (!validateLogin({ ...userData, setError })) {
+            return
         }
+        delete userData.setError; // Remove setError from userData
+
+        login(userData);
     }
 
     if (isLoading) {
-        return null
+        return <Loader className="animate-spin h-10 w-10 text-gray-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />;
     }
+
+    const ErrorBlock = () => {
+        if (error.length === 0) return null;
+        return (
+            <div className="w-100 bg-red-50 border border-red-200 rounded-lg pl-8 p-4 flex flex-col gap-3">
+                {error.map((err, index) => (
+                    <div key={index} className="text-red-800">
+                        <X className="inline w-5 h-5 mr-2" />
+                        {err}
+                    </div>
+                ))}
+            </div>
+        );
+    };
     return (
         <>
             <div>
@@ -144,7 +158,8 @@ export default function Login() {
             </div>
 
             <div className=" flex flex-col items-center justify-center h-screen w-screen bg-gray-100 m-0 p-0">
-                <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded-2xl gap-4 shadow-md h-155 w-120  border border-gray-200">
+                <form onSubmit={submitForm} className="flex flex-col items-center bg-white rounded-2xl gap-4 shadow-md  w-120  border border-gray-200">
+
                     <div className="gap-4 w-full text-center mt-8">
                         <p className="m-2 font-extrabold text-2xl"> Welcome back</p>
                         <p className=" text-balance text-muted-foreground">
@@ -152,6 +167,9 @@ export default function Login() {
                         </p>
                     </div>
 
+
+                    {/* Error Message */}
+                    <ErrorBlock />
                     <div className="flex flex-col items-center justify-center h-[50%] w-full border-b" >
                         <Input type={"text"} icon={userIcon} label="username" name="Username" placeholder="Enter your username" />
                         <Input type={"password"} icon={passwordIcon} label="password" name="Password" placeholder="Enter your Password" />

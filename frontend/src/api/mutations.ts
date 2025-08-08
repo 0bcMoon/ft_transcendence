@@ -126,7 +126,7 @@ export const useUpdateUserProfile = () => {
 
     return useMutation({
         mutationFn: async (formData: IFormData) => {
-            const response = await api.patch("/user/update/p", formData);
+            const response = await api.patch("/user/update/info", formData);
             return response.data;
         },
         onSuccess: (data) => {

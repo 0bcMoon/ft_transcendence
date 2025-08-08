@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import UserAuth from './auth/auth';
 import User from './models/User';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { loginSchema, requestHandlerBody, blockUserBody, createRequestBody } from './schema/zod-schema';
+import { loginSchema, requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo } from './schema/zod-schema';
 
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
@@ -43,6 +43,12 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     )
 
     fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture)
+    fastify.patch('/user/update/info', {
+        onRequest: fastify.authenticate 
+        , schema: {
+            body: updateUserInfo
+        }
+    }, User.updateUserInfo)
 
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
 

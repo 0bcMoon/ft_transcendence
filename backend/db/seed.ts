@@ -55,7 +55,7 @@ db.serialize(async () => {
         faker.internet.email()
     )
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
         createUsers.run(
             faker.internet.username(),
             faker.person.fullName(),

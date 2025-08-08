@@ -11,9 +11,7 @@ export interface IUsersProfileCard {
 }
 
 export const UsersProfileCard = ({ id, display_name, status, profile_picture }: IUsersProfileCard) => {
-
     const navigate = useNavigate();
-    console.debug("UsersProfileCard", { id, display_name, status, profile_picture });
 
     return (
         <div
@@ -56,10 +54,6 @@ export interface IUsersRequestCard {
 export const UsersRequestCard = ({ id, req_id, display_name, request_type, profile_picture }: IUsersRequestCard) => {
     const navigate = useNavigate();
 
-    const handleNavigate = () => {
-        navigate(`/users/${id}`);
-    }
-
     const { mutate: cancelRequest } = useCancelRequest({ req_id, user_id: id });
     const { mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
     const { mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
@@ -82,10 +76,10 @@ export const UsersRequestCard = ({ id, req_id, display_name, request_type, profi
     return (
         <div
             className=" border flex flex-col p-2 gap-2
-                        rounded-xl  border-gray-100 col-span-1 h-auto hover:bg-gray-200
+                        rounded-xl  border-gray-100 col-span-1 h-40 hover:bg-gray-200
                         "
         >
-            <div onClick={handleNavigate} className="flex p-2 gap-4 cursor-pointer">
+            <div onClick={() => navigate(`/users/${id}`)} className="flex p-2 gap-4 cursor-pointer">
                 <div >
                     <UserAvatar
                         src={profile_picture}

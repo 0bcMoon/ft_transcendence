@@ -43,3 +43,40 @@ export const createRequestBody = z.object({
     invalid_type_error: 'bad request body',
     required_error: 'bad request body',
 });
+
+
+export const updateUserInfo = z.object({
+    display_name: z
+        .string()
+        .min(3)
+        .max(32)
+        .optional(),
+    username: z
+        .string()
+        .min(3, "Username is required.")
+        .max(16)
+        .regex(/^\S+$/, 'Username cannot contain whitespace')
+        .optional(),
+    current_password: z
+        .string()
+        .min(8)
+        .max(32)
+        .optional(),
+    new_password: z
+        .string()
+        .max(32)
+        .min(8, "Password must be at least 8 characters long.")
+        .regex(/[0-9]/, "Password must contain at least one number.")
+        .regex(
+            /[!@#$%^&*(),.?":{}|<>]/,
+            "Password must contain at least one special character."
+        )
+        .optional(),
+
+}).refine(data => (data.current_password && data.new_password)
+    || (!data.current_password && !data.new_password),
+    { message: 'Both current and new passwords must be provided together or not at all' })
+    .refine(data => data.current_password
+        || data.display_name || data.username,
+        { message: 'At least one field must be updated' });
+
