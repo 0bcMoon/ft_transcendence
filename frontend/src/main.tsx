@@ -8,6 +8,7 @@ import Login from '@/login/Login.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Home from '@/home/Home.tsx';
+import Game from '@/game/Game.tsx';
 import { AuthProvider } from '@/context/AuthContext';
 
 import RootLayout from '@/RootLayout'
@@ -26,11 +27,12 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <App /> },
             { path: 'home', element: <Home /> },
+            { path: 'game', element: <Game /> },
             { path: 'users/:user_id', element: <UserProfile /> },
             { path: 'users', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
-            {path: 'settings', element: <Settings /> },
+            { path: 'settings', element: <Settings /> },
 
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],
