@@ -7,7 +7,7 @@
 
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
-        "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts",
+        "migrate": "rm  db.sqlite; ts-node  db/seed.ts",
         "test": "sh test.sh",
         "test:migrate": "rm  /tmp/test.db; DB_PATH=/tmp/test.db ts-node  db/seed.ts",
         "test:debug": "DB_PATH=/tmp/test.db NODE_ENV=test node --inspect-brk=0.0.0.0:9229 -r dotenv/config ./node_modules/.bin/jest --runInBand --no-cache"
@@ -26,6 +26,8 @@
         "@fastify/cors": "^11.0.1",
         "@fastify/jwt": "^9.1.0",
         "@fastify/multipart": "^9.0.3",
+        "@fastify/oauth2": "^8.1.2",
+        "@fastify/session": "^11.1.0",
         "@fastify/static": "^8.2.0",
         "@fastify/websocket": "^11.0.2",
         "bcrypt": "^6.0.0",

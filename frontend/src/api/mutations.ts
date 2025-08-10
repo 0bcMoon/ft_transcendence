@@ -121,26 +121,36 @@ export const useUnFriend = ({ user_id }: { user_id: number }) => {
     })
 };
 
-export const useUpdateUserProfile = () => {
+interface IUpdateState {
+    type: 'error' | 'success';
+    message: string;
+}
+
+interface IUpdateProfilePicture {
+
+    setUpdateState: (state: IUpdateState | null) => void;
+}
+
+export const useUpdateUserProfile = ({ setUpdateState }: IUpdateProfilePicture) => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (formData: IFormData) => {
-            const response = await api.patch("/user/update/p", formData);
+            const response = await api.patch("/user/update/info", formData);
             return response.data;
         },
         onSuccess: (data) => {
-            toast.success(data.message || "Profile updated successfully");
+            setUpdateState({ type: 'success', message: data.message || "Profile updated successfully" });
             queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to update profile");
+            setUpdateState({ type: 'error', message: error.response?.data?.message || "Failed to update profile" });
         }
     });
 
 }
 
-export const useUpdateProfilePicture = () => {
+export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePicture) => {
 
     const queryClient = useQueryClient();
 
@@ -154,11 +164,11 @@ export const useUpdateProfilePicture = () => {
             return response.data;
         },
         onSuccess: (data) => {
-            toast.success(data.message || "Profile updated successfully");
+            setUpdateState({ type: 'success', message: data.message || "Profile picture updated successfully" });
             queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to update profile");
+            setUpdateState({ type: 'error', message: error.response?.data?.message || "Failed to update profile picture" });
         }
     });
 

@@ -1,5 +1,6 @@
 import assert from 'assert';
 import db from '../../db/db';
+import bcrypt from 'bcrypt'
 
 export interface User {
     id: number,
@@ -241,6 +242,28 @@ export const userRepository = {
         const query: string = `UPDATE users SET profile_picture = ? WHERE id = ?`;
         await db.run(query, [picture_url, user_id]);
         return user?.profile_picture;
+    },
+
+    updateUserInfo: async (id: number, display_name: string | undefined, username: string | undefined, password: string | undefined) => {
+        let sql: string = "UPDATE users set ";
+        let update_statement = []
+        let args: (string | number)[] = []
+        if (display_name) {
+            update_statement.push("display_name=?")
+            args.push(display_name);
+        }
+        if (username) {
+            update_statement.push("username=?")
+            args.push(username);
+        }
+        if (password) {
+            update_statement.push("password=?")
+            args.push(await bcrypt.hash(password, 10));
+        }
+        sql += update_statement.join(", ")
+        args.push(id)
+        sql += " WHERE id=?"
+        return (await db.run(sql, args)).changes == 1
     }
 
 }

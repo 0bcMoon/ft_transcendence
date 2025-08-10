@@ -4,12 +4,12 @@ import { z } from "zod";
 
 
 export interface IFormData {
-    current_password: string,
-    new_password: string,
-    confirm_password: string,
-    display_name: string;
-    profile_picture: File;
-    username: string;
+    current_password?: string,
+    new_password?: string,
+    confirm_password?: string,
+    display_name?: string;
+    profile_picture?: File;
+    username?: string;
 }
 
 
@@ -45,12 +45,13 @@ const updateProfile = (formData: IFormData): boolean => {
     let result = true;
 
     const changePasswordSchema = z.object({
-        current_password: z.string().min(1, "Old password is required."),
+        current_password: z
+            .string()
+            .min(1, "Old password is required.")
+            .max(256),
         new_password: z
             .string()
             .min(8, "Password must be at least 8 characters long.")
-            .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
-            .regex(/[a-z]/, "Password must contain at least one lowercase letter.")
             .regex(/[0-9]/, "Password must contain at least one number.")
             .regex(
                 /[!@#$%^&*(),.?":{}|<>]/,

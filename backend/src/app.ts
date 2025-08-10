@@ -1,10 +1,11 @@
 import jwt, { FastifyJWT } from '@fastify/jwt'
 import cors from '@fastify/cors'
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import routes from './routes'
 import cookie from '@fastify/cookie'
+import session from '@fastify/session'
 import { mkdir } from 'fs';
 import staticPlugin from '@fastify/static'
 import pino from "pino";
@@ -13,6 +14,9 @@ import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-
 // This import is essential. It loads the types from the plugin.
 import '@fastify/multipart';
 import path from 'path';
+
+import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
+
 
 
 
@@ -28,6 +32,9 @@ declare module "@fastify/jwt" {
 }
 
 declare module 'fastify' {
+    interface Session {
+        state?: string;
+    }
 
     type Authenticate = (
         request: FastifyRequest,
@@ -37,6 +44,7 @@ declare module 'fastify' {
     /** Apply the extension */
     interface FastifyInstance {
         authenticate: Authenticate,
+        intra42OAuth2: OAuth2Namespace
     }
 }
 
@@ -58,7 +66,14 @@ fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
 
 
-fastify.register(cookie)
+
+
+fastify.register(cookie, {
+    secret: process.env.JWT_SECRET!,
+    parseOptions: {}
+})
+
+
 fastify.register(jwt, {
     secret: process.env.JWT_SECRET!,
     cookie: {
@@ -67,6 +82,51 @@ fastify.register(jwt, {
     }
 
 })
+
+
+import { randomBytes } from 'node:crypto';
+
+const random = (bytes = 32) => randomBytes(bytes).toString('base64url')
+
+function defaultGenerateStateFunction(_request: any, callback: any) {
+    callback(null, random(16))
+}
+
+function defaultCheckStateFunction(request: any, callback: any) {
+    const state = request.query.state
+    const stateCookie =
+        request.cookies[
+        'oauth2-redirect-state'
+        ]
+    if (stateCookie && state === stateCookie) {
+        callback()
+        return
+    }
+    callback(new Error('Invalid state'))
+}
+
+fastify.register(oauthPlugin, {
+    name: 'intra42OAuth2',
+    credentials: {
+        client: {
+            id: process.env.INTRA_CLIENT_ID!,
+            secret: process.env.INTRA_CLIENT_SECRET!,
+        },
+        auth: {
+            authorizeHost: 'https://api.intra.42.fr',
+            authorizePath: '/oauth/authorize',
+            tokenHost: 'https://api.intra.42.fr',
+            tokenPath: '/oauth/token'
+        },
+
+    },
+    startRedirectPath: '/auth/oauth/42',
+    callbackUri: 'http://localhost:3000/auth/oauth/42/callback',
+    scope: ['public'],
+})
+
+
+
 
 fastify.register(websocket)
 
@@ -79,8 +139,6 @@ fastify.register(staticPlugin, {
 
 fastify.register(require('@fastify/multipart'));
 
-fastify.register(routes);
-
 fastify.register(cors, {
     // Configure CORS options
     origin: true, // Allow any origin for development (restrict this in production!)
@@ -89,6 +147,8 @@ fastify.register(cors, {
     credentials: true,
     preflightContinue: true // Important for WebSocket connections
 });
+
+fastify.register(routes);
 
 const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
 

@@ -29,19 +29,17 @@ const UserAuth = {
         const access_token = fastify.jwt.sign({
             id: user.id,
             username: user.username,
+        }, {
+            expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
         },
-            {
-                expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
-            },
         )
 
         const refresh_token = fastify.jwt.sign({
             id: user.id,
             username: user.username,
+        }, {
+            expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
         },
-            {
-                expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
-            },
         )
 
         reply
@@ -63,11 +61,9 @@ const UserAuth = {
                 sameSite: true // alternative CSRF protection
             })
 
-        return reply.status(200).send(
-            {
-                message: 'Login successful',
-            }
-        );
+        return reply.status(200).send({
+            message: 'Login successful',
+        });
     },
 
     register: async (req: FastifyRequest, reply: FastifyReply) => {
