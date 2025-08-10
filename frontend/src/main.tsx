@@ -9,6 +9,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Home from '@/home/Home.tsx';
 import Game from '@/game/Game.tsx';
+import LocalGame from '@/game/LocalGame.tsx';
+import LocalGamePlay from '@/game/LocalGamePlay.tsx';
 import { AuthProvider } from '@/context/AuthContext';
 
 import RootLayout from '@/RootLayout'
@@ -33,11 +35,13 @@ const router = createBrowserRouter([
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
             { path: 'settings', element: <Settings /> },
-
+	    { path: 'game/local', element: <LocalGame /> },
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],
     },
     { path: '/login', element: <Login /> },
+    { path: '/game/local/play', element: <LocalGamePlay /> }, // Moved outside RootLayout
+
     { path: '*', element: <NotFound /> },
 
 ])

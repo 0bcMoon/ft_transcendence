@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, Zap } from 'lucide-react';
+import { Trophy, Users, Zap, Cpu } from 'lucide-react';
 
 export default function Game() {
     return (
@@ -13,7 +13,6 @@ export default function Game() {
                 </div>
 
                 {/* Game Options - Vertical Layout with Centered Elements */}
-
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-5">
                     <h2 className="font-bold text-gray-900 text-lg mb-4 text-center">Select Option</h2>
 
@@ -28,6 +27,19 @@ export default function Game() {
 
                             <Link to="/game/quick" className="bg-green-600 text-white py-2 px-6 rounded-lg inline-block hover:bg-green-700 transition-colors">
                                 Start
+                            </Link>
+                        </div>
+
+                        {/* AI Game - New Option */}
+                        <div className="border border-gray-200 rounded-xl p-6 transition-all flex flex-col items-center text-center hover:border-orange-200 hover:bg-orange-50/30">
+                            <div className="bg-orange-100 p-3 rounded-full mb-3">
+                                <Cpu size={28} className="text-orange-600" />
+                            </div>
+                            <h3 className="font-bold text-gray-900 mb-2">AI Challenge</h3>
+                            <p className="text-gray-600 text-sm mb-4">Test your skills against artificial intelligence opponents of varying difficulties. Perfect for practice and improvement.</p>
+
+                            <Link to="/game/ai" className="bg-orange-600 text-white py-2 px-6 rounded-lg inline-block hover:bg-orange-700 transition-colors">
+                                Challenge AI
                             </Link>
                         </div>
 
