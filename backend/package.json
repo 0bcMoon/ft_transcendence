@@ -3,6 +3,8 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
+        "exec": "ts-node  -r dotenv/config index.ts",
+
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
         "migrate": "rm  ./db/db/db.sqlite; ts-node  db/seed.ts",
