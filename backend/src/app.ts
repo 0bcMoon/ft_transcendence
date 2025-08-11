@@ -5,7 +5,6 @@ import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import routes from './routes'
 import cookie from '@fastify/cookie'
-import session from '@fastify/session'
 import { mkdir } from 'fs';
 import staticPlugin from '@fastify/static'
 import pino from "pino";
@@ -32,9 +31,6 @@ declare module "@fastify/jwt" {
 }
 
 declare module 'fastify' {
-    interface Session {
-        state?: string;
-    }
 
     type Authenticate = (
         request: FastifyRequest,
@@ -84,26 +80,7 @@ fastify.register(jwt, {
 })
 
 
-import { randomBytes } from 'node:crypto';
 
-const random = (bytes = 32) => randomBytes(bytes).toString('base64url')
-
-function defaultGenerateStateFunction(_request: any, callback: any) {
-    callback(null, random(16))
-}
-
-function defaultCheckStateFunction(request: any, callback: any) {
-    const state = request.query.state
-    const stateCookie =
-        request.cookies[
-        'oauth2-redirect-state'
-        ]
-    if (stateCookie && state === stateCookie) {
-        callback()
-        return
-    }
-    callback(new Error('Invalid state'))
-}
 
 fastify.register(oauthPlugin, {
     name: 'intra42OAuth2',
@@ -123,6 +100,21 @@ fastify.register(oauthPlugin, {
     startRedirectPath: '/auth/oauth/42',
     callbackUri: 'http://localhost:3000/auth/oauth/42/callback',
     scope: ['public'],
+})
+
+fastify.register(oauthPlugin, {
+    name: 'googleOAuth2',
+    credentials: {
+        client: {
+            id: process.env.GOOGLE_CLIENT_ID!,
+            secret: process.env.GOOGLE_CLIENT_SECRET!,
+        },
+        auth: oauthPlugin.GOOGLE_CONFIGURATION
+
+    },
+    startRedirectPath: '/auth/oauth/google',
+    callbackUri: 'http://localhost:3000/auth/oauth/google/callback',
+    scope: ['https://www.googleapis.com/auth/userinfo.profile'],
 })
 
 

@@ -102,6 +102,20 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
         const userData = await userResponse.json()
         return reply.status(200).send({ user: userData, token: token.access_token })
     })
+
+    fastify.get('/auth/oauth/google/callback', async (request, reply) => {
+
+
+        // Clear the state from session after verification
+        const { token } = await fastify.intra42OAuth2.getAccessTokenFromAuthorizationCodeFlow(request)
+        //
+        console.log('Access Token:', token)
+        // console.debug('Access Token:', token.access_token)
+        // console.debug('Token Type:', token.token_type)
+        // console.debug('Expires In:', token.expires_in)
+        reply.status(200).send({ token: token })
+
+    })
 }
 
 export default routes;
