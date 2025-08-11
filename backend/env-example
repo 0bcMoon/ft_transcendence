@@ -1,5 +1,5 @@
 
-DB_PATH="db/db/db.sqlite"
+DB_PATH="db/db.sqlite"
 
 
 DB_SCHEMA="db/schema.sql"
