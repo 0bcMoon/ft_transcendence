@@ -1,113 +1,82 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Ball, GameState } from '../engine/types';
 
 interface GameCanvasProps {
-	canvasRef: React.RefObject<HTMLCanvasElement>;
-	ball: Ball;
-	player1Y: number;
-	player2Y: number;
-	paddleWidth: number;
-	paddleHeight: number;
-	gameState: GameState;
+    canvasRef: React.RefObject<HTMLCanvasElement>;
+    ball: Ball;
+    player1Y: number;
+    player2Y: number;
+    paddleWidth: number;
+    paddleHeight: number;
+    gameState: GameState;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({
-	canvasRef,
-	ball,
-	player1Y,
-	player2Y,
-	paddleWidth,
-	paddleHeight,
-	gameState
-}) => {
-	// Setup canvas rendering on each update
-	useEffect(() => {
-		drawCanvas();
-	});
+const GameCanvas = ({ canvasRef, ball, player1Y, player2Y, paddleWidth, paddleHeight, gameState }: GameCanvasProps) => {
 
-	// Draw the game elements
-	const drawCanvas = () => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+    useEffect(() => { drawCanvas(); });
 
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
+    const drawCanvas = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-		const { width, height } = canvas;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-		// Clear canvas
-		ctx.fillStyle = '#000000';
-		ctx.fillRect(0, 0, width, height);
+        const { width, height } = canvas;
 
-		// Draw center line
-		ctx.beginPath();
-		ctx.setLineDash([15, 15]);
-		ctx.moveTo(width / 2, 0);
-		ctx.lineTo(width / 2, height);
-		ctx.strokeStyle = '#FFFFFF';
-		ctx.lineWidth = 4;
-		ctx.stroke();
-		ctx.setLineDash([]);
+        // Clear canvas
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, height);
 
-		// Draw scores
-		ctx.font = '64px "Courier New", monospace';
-		ctx.fillStyle = '#FFFFFF';
-		ctx.textAlign = 'center';
-		ctx.fillText(gameState.scores.player1.toString(), width / 4, 80);
-		ctx.fillText(gameState.scores.player2.toString(), 3 * width / 4, 80);
+        // Draw center line
+        ctx.beginPath();
+        ctx.setLineDash([15, 15]);
+        ctx.moveTo(width / 2, 0);
+        ctx.lineTo(width / 2, height);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.setLineDash([]);
 
-		// Draw player 1 paddle
-		ctx.fillStyle = '#FFFFFF';
-		ctx.fillRect(30, player1Y, paddleWidth, paddleHeight);
+        // Draw player names
+        ctx.font = '24px "Courier New", monospace';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText(gameState.player1, width / 4, 30);
+        ctx.fillText(gameState.player2, 3 * width / 4, 30);
 
-		// Draw player 2 paddle
-		ctx.fillRect(width - 30 - paddleWidth, player2Y, paddleWidth, paddleHeight);
+        // Draw scores
+        ctx.font = '64px "Courier New", monospace';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText(gameState.scores.player1.toString(), width / 4, 90);
+        ctx.fillText(gameState.scores.player2.toString(), 3 * width / 4, 90);
 
-		// Draw ball
-		ctx.fillRect(
-			ball.position.x - ball.size / 2,
-			ball.position.y - ball.size / 2,
-			ball.size,
-			ball.size
-		);
+        // Draw paddles
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(30, player1Y, paddleWidth, paddleHeight);
+        ctx.fillRect(width - 30 - paddleWidth, player2Y, paddleWidth, paddleHeight);
 
-		// Draw current time
-		ctx.font = '12px "Courier New", monospace';
-		ctx.fillStyle = '#888888';
-		ctx.textAlign = 'center';
-		const currentTime = new Date().toISOString().replace('T', ' ').substring(0, 19);
-		ctx.fillText(currentTime, width / 2, height - 10);
+        // Draw ball
+        ctx.beginPath();
+        ctx.arc(ball.position.x, ball.position.y, ball.size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
 
-		// Draw game over overlay if needed
-		if (gameState.isGameOver) {
-			// Semi-transparent overlay
-			ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-			ctx.fillRect(0, 0, width, height);
+    };
 
-			// Game over text
-			ctx.font = '64px "Courier New", monospace';
-			ctx.fillStyle = '#FFFFFF';
-			ctx.textAlign = 'center';
-			ctx.fillText('GAME OVER', width / 2, height / 2 - 40);
-
-			// Winner text
-			ctx.font = '36px "Courier New", monospace';
-			ctx.fillText(`${gameState.winner} WINS`, width / 2, height / 2 + 30);
-		}
-	};
-
-	return (
-		<canvas
-			ref={canvasRef}
-			className="border border-gray-800 max-h-screen"
-			style={{
-				aspectRatio: '4/3',
-				maxWidth: '100vw',
-				maxHeight: '100vh',
-				objectFit: 'contain'
-			}}
-		/>
-	);
+    return (
+        <canvas
+            ref={canvasRef}
+            className="border border-gray-800 max-h-screen"
+            style={{
+                aspectRatio: '4/3',
+                maxWidth: '100vw',
+                maxHeight: '100vh',
+                objectFit: 'contain'
+            }}
+        />
+    );
 };
 
 export default GameCanvas;
