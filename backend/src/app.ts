@@ -4,15 +4,17 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from '@fastify/websocket'
 import wsRouter from './websocket'
 import routes from './routes'
+import auth from './auth.routes';
 import cookie from '@fastify/cookie'
 import { mkdir } from 'fs';
 import staticPlugin from '@fastify/static'
-import pino from "pino";
-import pretty from "pino-pretty";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 // This import is essential. It loads the types from the plugin.
-import '@fastify/multipart';
+import multipart from '@fastify/multipart';
 import path from 'path';
+
+import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
+
 
 
 
@@ -20,7 +22,6 @@ declare module "@fastify/jwt" {
     interface FastifyJWT {
         user: {
             id: number,
-            username: string
             iat: number,
             exp: number
         };
@@ -37,6 +38,8 @@ declare module 'fastify' {
     /** Apply the extension */
     interface FastifyInstance {
         authenticate: Authenticate,
+        intra42OAuth2: OAuth2Namespace
+        googleOAuth2: OAuth2Namespace
     }
 }
 
@@ -58,7 +61,14 @@ fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
 
 
-fastify.register(cookie)
+
+
+fastify.register(cookie, {
+    secret: process.env.JWT_SECRET!,
+    parseOptions: {}
+})
+
+
 fastify.register(jwt, {
     secret: process.env.JWT_SECRET!,
     cookie: {
@@ -68,18 +78,57 @@ fastify.register(jwt, {
 
 })
 
-fastify.register(websocket)
 
+
+
+fastify.register(oauthPlugin, {
+    name: 'intra42OAuth2',
+    credentials: {
+        client: {
+            id: process.env.INTRA_CLIENT_ID!,
+            secret: process.env.INTRA_CLIENT_SECRET!,
+        },
+        auth: {
+            authorizeHost: 'https://api.intra.42.fr',
+            authorizePath: '/oauth/authorize',
+            tokenHost: 'https://api.intra.42.fr',
+            tokenPath: '/oauth/token'
+        },
+
+    },
+    startRedirectPath: '/auth/oauth/42',
+    callbackUri: 'http://localhost:3000/auth/oauth/42/callback',
+    scope: ['public'],
+})
+
+fastify.register(oauthPlugin, {
+    name: 'googleOAuth2',
+    credentials: {
+        client: {
+            id: process.env.GOOGLE_CLIENT_ID!,
+            secret: process.env.GOOGLE_CLIENT_SECRET!,
+        },
+        auth: oauthPlugin.GOOGLE_CONFIGURATION
+
+    },
+    startRedirectPath: '/auth/oauth/google',
+    callbackUri: 'http://localhost:3000/auth/oauth/google/callback',
+    scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email'],
+})
+
+
+
+
+fastify.register(websocket)
+fastify.register(multipart)
+fastify.register(routes);
+fastify.register(auth);
 fastify.register(wsRouter);
 
 fastify.register(staticPlugin, {
     root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
     prefix: '/public/',
 });
-
-fastify.register(require('@fastify/multipart'));
-
-fastify.register(routes);
 
 fastify.register(cors, {
     // Configure CORS options
@@ -106,15 +155,11 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
 
     try {
         const decoded = await fastify.jwt.verify(refreshToken) as FastifyJWT['user'];
-        const newAccessToken = fastify.jwt.sign(
-            {
-                id: decoded.id,
-                username: decoded.username,
-            },
-            {
-                expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m', // Token expiration time
-            }
-        );
+        const newAccessToken = fastify.jwt.sign({
+            id: decoded.id,
+        }, {
+            expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m', // Token expiration time
+        });
 
         reply
             .setCookie('access_token', newAccessToken, {

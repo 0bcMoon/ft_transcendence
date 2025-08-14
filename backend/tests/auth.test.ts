@@ -13,6 +13,7 @@ describe('Auth API', () => {
                     username: 'hicham',
                     password: 'password'
                 });
+
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Login successful');
             expect(response.headers['set-cookie']).toBeDefined();

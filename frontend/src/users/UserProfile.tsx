@@ -28,7 +28,7 @@ interface IDisplayObject {
 }
 
 
-const StartChat = ({ relation_status, id, display_name, profilePicture }: User) => {
+const StartChat = ({ relation_status, id, display_name,  profile_picture }: User) => {
 
     switch (relation_status) {
         case 'blocking':
@@ -44,7 +44,7 @@ const StartChat = ({ relation_status, id, display_name, profilePicture }: User) 
         setChat({
             id: id,
             display_name: display_name,
-            profile_image: profilePicture ?? profile,
+            profile_image: profile_picture ?? profile,
         });
         navigate(`/chat/${id}`);
     }
@@ -152,7 +152,7 @@ const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
         <>
             <button
                 disabled={isPendingAccept || isPendingDeny}
-                onClick={() => acceptRequest()} // TODO: implement accept request
+                onClick={() => acceptRequest()} 
                 className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
@@ -162,7 +162,7 @@ const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
             </button>
             <button
                 disabled={isPendingAccept || isPendingDeny}
-                onClick={() => denyRequest()} // TODO: implement deny request
+                onClick={() => denyRequest()} 
                 className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-white hover:bg-gray-400 transition-colors
             duration-300"
@@ -356,6 +356,7 @@ const UserProfile = () => {
                         </div>
                     </div>
                 </div>
+
                 {/* Stats Section */}
                 <div className="px-8 py-6 bg-gray-50 border-t border-gray-100">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -370,7 +371,6 @@ const UserProfile = () => {
             </div>
 
         </div>
-
     )
 }
 
