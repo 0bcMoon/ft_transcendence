@@ -180,7 +180,7 @@ fastify.setErrorHandler((error, _, reply) => {
     // Check if the error is a Zod validation error
     if (error.validation) {
         // Return a 400 response with a simplified message
-        reply.status(400).end({
+        reply.status(400).send({
             message: error.validation[0].message,
         });
         return;
