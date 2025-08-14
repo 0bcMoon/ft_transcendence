@@ -140,7 +140,6 @@ function Settings() {
         //             <span className="text-red-800">{error}</span>
         //         </div>
         //     )
-        // }
     }
 
     return (
