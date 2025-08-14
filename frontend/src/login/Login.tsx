@@ -104,7 +104,6 @@ export default function Login() {
             return response.data;
         },
         onSuccess: async (response: any) => {
-            debugger;
             toast.success(response.message);
             setAuth(true);
         },
