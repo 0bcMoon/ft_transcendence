@@ -107,7 +107,6 @@ function Settings() {
         if (!profilePictureValidate(file)) {
             return;
         }
-        console.log('Uploading profile picture:', fromData);
         updateProfilePicture(fromData)
     }
 
