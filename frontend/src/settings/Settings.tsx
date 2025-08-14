@@ -77,7 +77,6 @@ function Settings() {
         if (!data.username && !data.display_name && !data.current_password) {
             return;
         }
-
         updateUserProfile(data)
     }
 
@@ -108,9 +107,10 @@ function Settings() {
         if (!profilePictureValidate(file)) {
             return;
         }
-
+        console.log('Uploading profile picture:', fromData);
         updateProfilePicture(fromData)
     }
+
     const UpdateState = () => {
 
         if (!updateState) return null;

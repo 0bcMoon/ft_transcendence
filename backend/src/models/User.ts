@@ -1,12 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { userRepository } from "../repository/userRepository";
+import { User, userRepository } from "../repository/userRepository";
 import path from "path";
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import bcrypt from 'bcrypt';
-import { string } from "zod/v4";
+import { CreateUser, GoogleOAuth2 } from "../types/types";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -26,6 +26,7 @@ interface IBlockHandlerBody {
     user_id: number;
     action: boolean; // true for block, false for unblock
 }
+
 interface ICreateRequestBody {
     user_id: number;
     type: 'friend' | 'chat'
@@ -65,7 +66,6 @@ const User = {
         const user = await userRepository.getUserById(req.user.id, id);
         if (!user) return reply.status(200).send({ message: "User not found" });
         user.profile_picture = user.image_src + user.profile_picture;
-        delete user.image_src;
         return reply.status(200).send(user);
     },
 
@@ -276,12 +276,12 @@ const User = {
         return reply.status(200).send(updatedBlockedUsers || []);
     },
 
+
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
-        const data = await req.file()
+        const data = await req.file();
         if (!data) {
             return reply.status(400).send({ message: 'No file uploaded' });
         }
-
         const extension = path.extname(data.filename);
         const uniqueFilename = `${randomUUID()}${extension}`;
 
@@ -307,6 +307,7 @@ const User = {
         }
         reply.send({ message: 'Profile image Updated successfully' });
     },
+
     getUserProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const user = await userRepository.getCurrentUserById(req.user.id);
         if (!user) {
@@ -314,7 +315,6 @@ const User = {
         }
 
         user.profile_picture = user.image_src + user.profile_picture;
-        delete user.image_src;
 
         return reply.status(200).send({
             id: user.id,
@@ -337,7 +337,7 @@ const User = {
 
         if (!password) return false;
         const curr_user = await userRepository.getCurrentUserById(id);
-        const isPasswordValid = await bcrypt.compare( password, curr_user?.password!,);
+        const isPasswordValid = await bcrypt.compare(password, curr_user?.password!,);
         if (!isPasswordValid) {
             return true;
         }
@@ -354,13 +354,30 @@ const User = {
             return reply.status(400).send({ message: "username already exists" })
         } else if (await User.isValidPassword(req.user.id, pass_info.current_password)) {
             return reply.status(400).send({ message: "old password does not match" })
-        } 
+        }
         const result = await userRepository.updateUserInfo(req.user.id, display_name, username, pass_info.new_password);
         // big problem here, is change are zero
         if (!result) {
             return reply.status(400).send({ message: "failed to update user info" });
         }
         return reply.status(200).send({ message: "user info updated successfully" });
+    },
+    googleLogin: async (user: GoogleOAuth2) : Promise<number> => {
+
+        const existing_user = await userRepository.getUserByEmail(user.email);
+
+
+        if (existing_user) {
+            return existing_user.id;
+        }
+        const new_user: CreateUser = {
+            display_name: user.name,
+            image_src: user.picture,
+            email: user.email,
+
+        };
+
+        return await userRepository.createOauthUser(new_user);;
     }
 }
 

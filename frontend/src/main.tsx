@@ -1,6 +1,5 @@
 import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react'
-import App from '@/App.tsx'
 import Chat from '@/chat/Chat.tsx'
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
@@ -14,36 +13,32 @@ import RootLayout from '@/RootLayout'
 import NotFound from '@/NotFound.tsx';
 import UsersPage from '@/users/UsersPage';
 import UserProfile from '@/users/UserProfile';
-import Settings from './settings/Settings';
-
-
-// TODO: for daynamic routes validate the user_id to be a number
+import Settings from '@/settings/Settings';
 
 const router = createBrowserRouter([
     {
         path: '/',
         element: <RootLayout />,
         children: [
-            { index: true, element: <App /> },
-            { path: 'home', element: <Home /> },
+            { index: true, element: <Home /> },
             { path: 'users/:user_id', element: <UserProfile /> },
             { path: 'users', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
-            {path: 'settings', element: <Settings /> },
+            { path: 'settings', element: <Settings /> },
 
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],
     },
     { path: '/login', element: <Login /> },
     { path: '*', element: <NotFound /> },
-
 ])
 
 const queryClient = new QueryClient();
 
 
 createRoot(document.getElementById('root')!).render(
+
     <StrictMode>
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
@@ -52,4 +47,5 @@ createRoot(document.getElementById('root')!).render(
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
     </StrictMode>
+
 )

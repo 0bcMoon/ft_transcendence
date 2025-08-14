@@ -155,7 +155,7 @@ export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePictur
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (form: FormData) => {
+        mutationFn: async (form: any) => {
             const response = await api.patch("/user/update/profile_picture", form, {
                 headers: {
                     'Content-Type': 'multipart/form-data'

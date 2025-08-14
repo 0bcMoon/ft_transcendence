@@ -7,7 +7,7 @@ import db from './db'
 db.serialize(async () => {
 
     //truncate the tables
-    const createUsers = db.prepare('INSERT INTO users (username, display_name, password, image_src, email) VALUES ( ?, ?, ?, ?, ?)')
+    const createUsers = db.prepare('INSERT INTO users (username, display_name, password, image_src, profile_picture,email) VALUES (?, ?, ?, ?, ?, ?)')
     const insertFriends = db.prepare('INSERT INTO friends (sender_id, receiver_id) VALUES (?, ?)')
     const insertContact = db.prepare('INSERT INTO contacts (user_id, contact_id) VALUES (?, ?)')
     const createMessages = db.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
@@ -20,6 +20,7 @@ db.serialize(async () => {
         "Hicham Benoukaiss",
         await bcrypt.hash('password', salt),
         'http://localhost:3000/public/',
+        'default.jpg',
         "hicham@mail.com"
     )
 
@@ -28,6 +29,7 @@ db.serialize(async () => {
         "Mohamed Regrag",
         await bcrypt.hash('password', salt),
         'http://localhost:3000/public/',
+        "default.jpg",
         "mohamed@mail.com"
     )
 
@@ -36,6 +38,7 @@ db.serialize(async () => {
         "Zaid kotbi",
         await bcrypt.hash('password', salt),
         'http://localhost:3000/public/',
+        "default.jpg",
         "zaid@mail.com"
     )
 
@@ -44,6 +47,7 @@ db.serialize(async () => {
         "khona microb",
         await bcrypt.hash('password', salt),
         'http://localhost:3000/public/',
+        "default.jpg",
         "microb@mail.com"
     )
 
@@ -52,6 +56,7 @@ db.serialize(async () => {
         "Mohammed El Bouazizi",
         await bcrypt.hash('password', salt),
         'http://localhost:3000/public/',
+        "default.jpg",
         faker.internet.email()
     )
 
@@ -61,6 +66,7 @@ db.serialize(async () => {
             faker.person.fullName(),
             await bcrypt.hash(faker.internet.password(), salt),
             'http://localhost:3000/public/',
+            "default.jpg",
             faker.internet.email()
         )
     }

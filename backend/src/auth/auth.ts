@@ -3,6 +3,8 @@ import fastify from '../app';
 
 import bcrypt from 'bcrypt';
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { GoogleOAuth2 } from '../types/types';
+import User from '../models/User';
 
 interface LoginBody {
     username: string;
@@ -26,17 +28,55 @@ const UserAuth = {
         if (!isPasswordValid) {
             return reply.status(401).send({ message: 'Invalid username or password' });
         }
+        UserAuth.grantAccess(reply, user.id);
+        return reply.status(200).send({
+            message: 'Login successful',
+        });
+    },
+
+    register: async (req: FastifyRequest, reply: FastifyReply) => {
+
+    },
+
+    logout: async (req: FastifyRequest, reply: FastifyReply) => {
+        return reply
+            .clearCookie('access_token')
+            .clearCookie('refresh_token')
+            .status(200)
+            .send({ message: 'Logout successful' });
+    },
+    GoogleOAuth2: async (req: FastifyRequest, reply: FastifyReply) => {
+
+        const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+
+        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token.access_token}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return reply.status(500).send({ message: 'Failed to fetch user data from Google' });
+        }
+        const user_data = await response.json() as GoogleOAuth2;
+        const id = await User.googleLogin(user_data)
+        UserAuth.grantAccess(reply, id);
+        reply.redirect(process.env.FRONTEND_URL || "http://localhost:5173"); // Redirect to the home page or any other page after successful login
+        return reply;
+    },
+    grantAccess: async (reply: FastifyReply, user_id: number) => {
+
         const access_token = fastify.jwt.sign({
-            id: user.id,
-            username: user.username,
+            id: user_id,
         }, {
             expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
         },
         )
 
         const refresh_token = fastify.jwt.sign({
-            id: user.id,
-            username: user.username,
+            id: user_id,
         }, {
             expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
         },
@@ -61,21 +101,6 @@ const UserAuth = {
                 sameSite: true // alternative CSRF protection
             })
 
-        return reply.status(200).send({
-            message: 'Login successful',
-        });
-    },
-
-    register: async (req: FastifyRequest, reply: FastifyReply) => {
-
-    },
-
-    logout: async (req: FastifyRequest, reply: FastifyReply) => {
-        return reply
-            .clearCookie('access_token')
-            .clearCookie('refresh_token')
-            .status(200)
-            .send({ message: 'Logout successful' });
     }
 
 }

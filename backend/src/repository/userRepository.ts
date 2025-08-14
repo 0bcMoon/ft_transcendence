@@ -1,15 +1,16 @@
 import assert from 'assert';
 import db from '../../db/db';
 import bcrypt from 'bcrypt'
+import { CreateUser } from '../types/types';
 
 export interface User {
     id: number,
     username: string,
     display_name: string,
-    password: string,
+    password: string | null,
     email: string,
-    image_src: string | undefined,
-    profile_picture: string,
+    image_src: string,
+    profile_picture: string | null,
     relation_status: string
     created_at: Date,
 }
@@ -235,11 +236,9 @@ export const userRepository = {
     updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
 
         const user = await userRepository.getCurrentUserById(user_id);
-        if (!user) {
-            return undefined; // User not found
-        }
 
-        const query: string = `UPDATE users SET profile_picture = ? WHERE id = ?`;
+        const backend_url = process.env.BACKEND_URL || "http://localhost:3000/public/uploads/";
+        const query: string = `UPDATE users SET profile_picture = $1, image_src = '${backend_url}' WHERE id = $2`;
         await db.run(query, [picture_url, user_id]);
         return user?.profile_picture;
     },
@@ -264,6 +263,17 @@ export const userRepository = {
         args.push(id)
         sql += " WHERE id=?"
         return (await db.run(sql, args)).changes == 1
+    },
+    createOauthUser: async (user: CreateUser): Promise<number> => {
+        const query: string = `INSERT INTO users (display_name, email, image_src) 
+                            VALUES (?, ?, ?)`;
+        const result = await db.run(query, [user.display_name, user.email, user.image_src])
+        return result.lastID;
+    },
+
+    getUserByEmail: async (email: string): Promise<User | undefined> => {
+        const query: string = `SELECT id FROM users WHERE email = ?`;
+        return await db.get(query, [email]);
     }
 
 }

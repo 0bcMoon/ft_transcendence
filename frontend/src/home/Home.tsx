@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/state/authStore";
-import { Link } from "react-router-dom";
+
+import '@/App.css'
 
 export default function Home() {
     const user = useAuthStore((state) => state.user);

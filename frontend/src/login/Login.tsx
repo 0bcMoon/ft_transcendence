@@ -10,7 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Loader, X } from "lucide-react";
-import  { login_api } from "@/api/api";
+import { login_api } from "@/api/api";
 
 
 
@@ -27,11 +27,16 @@ interface IUserLoginInfo {
     password: string;
     setError?: (error: string[]) => void;
 }
-const Logo = ({ source }: { source: string }) => {
+const OAuth = ({ source, oauth_url }: { source: string, oauth_url: string }) => {
+
+    const handelClick = () => {
+        window.location.href = "http://localhost:3000" + oauth_url;
+
+    }
     return (
-        <div className="border  border-gray-200 rounded-xl w-[40%] h-[70%] text-center">
+        <button onClick={handelClick} className="border  border-gray-200 rounded-xl w-[40%] h-[70%] text-center">
             <img src={source} alt="logo" className="w-full h-full" />
-        </div>
+        </button>
     );
 }
 
@@ -186,8 +191,8 @@ export default function Login() {
                     <div className="flex flex-col items-center w-full h-[20%]">
                         <p className="text-gray-400 font-bold"> Or login with</p>
                         <div className="flex flex-row gap-8 justify-center items-center w-full h-[60%]">
-                            <Logo source={googleIcon} />
-                            <Logo source={fortytwoIcon} />
+                            <OAuth source={googleIcon} oauth_url="/auth/oauth/google" />
+                            <OAuth source={fortytwoIcon} oauth_url="/auth/oauth/42" />
                         </div>
                     </div>
                 </form>
