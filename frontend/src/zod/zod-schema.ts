@@ -76,7 +76,7 @@ const updateProfile = (formData: IFormData): boolean => {
         username: z
             .string()
             .min(1, "Username is required.")
-            .max(16, "username name cannot exceed 16 characters.")
+            .max(16, "Username cannot exceed 16 characters.")
             .regex(/^\S+$/, 'Username cannot contain whitespace'),
 
     });
