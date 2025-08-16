@@ -6,7 +6,6 @@ import { RouterProvider } from "react-router-dom";
 import Login from '@/login/Login.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import Home from '@/home/Home.tsx';
 import Game from '@/game/Game.tsx';
 import LocalGame from '@/game/LocalGame.tsx';
 import LocalGamePlay from '@/game/LocalGamePlay.tsx';
@@ -17,22 +16,21 @@ import NotFound from '@/NotFound.tsx';
 import UsersPage from '@/users/UsersPage';
 import UserProfile from '@/users/UserProfile';
 import Settings from '@/settings/Settings';
+import HomePage from './home/Home';
 
 const router = createBrowserRouter([
     {
         path: '/',
         element: <RootLayout />,
         children: [
-            { index: true, element: <App /> },
-            { path: 'home', element: <Home /> },
+            { index: true, element: <HomePage /> },
             { path: 'game', element: <Game /> },
-            { index: true, element: <Home /> },
             { path: 'users/:user_id', element: <UserProfile /> },
             { path: 'users', element: <UsersPage /> },
             { path: 'chat', element: <Chat /> },
             { path: 'chat/:user_id', element: <Chat /> },
             { path: 'settings', element: <Settings /> },
-	    { path: 'game/local', element: <LocalGame /> },
+            { path: 'game/local', element: <LocalGame /> },
             { path: '*', element: <NotFound /> },   // Relative path to parent '/'
         ],
     },
