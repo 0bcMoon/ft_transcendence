@@ -2,17 +2,19 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Home, MessageCircle, Trophy, Users, Gamepad2, Clock, Calendar, Award, ChevronRight, Zap } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useAuthStore } from "@/state/authStore";
+import '@/App.css'
 
 export default function HomePage() {
-    const { user } = useAuth();
-    const username = user?.username || 'mregrag';
+
+    const user = useAuthStore((state) => state.user);
 
     return (
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
             <div className="max-w-4xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
                 {/* Header Banner */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white mb-5 shadow-md">
-                    <h1 className="text-2xl font-bold mb-1">Welcome back, {username}!</h1>
+                    <h1 className="text-2xl font-bold mb-1">Welcome back, {user?.username}!</h1>
                     <p className="text-blue-100">Ready to play some ping pong?</p>
                     <div className="mt-5 flex gap-3">
                         <Link

@@ -1,5 +1,5 @@
 
-DB_PATH="db/db/db.sqlite"
+DB_PATH="db/db.sqlite"
 
 
 DB_SCHEMA="db/schema.sql"
@@ -21,3 +21,8 @@ REFRESH_TOEKN_EXPR="30d"
 
 UPLOAD_DIR="public/uploads"
 
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+INTRA_CLIENT_ID=
+INTRA_CLIENT_SECRET=

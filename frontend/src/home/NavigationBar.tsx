@@ -62,7 +62,7 @@ const NavigationBar = () => {
 
     const navItemsData = [
 
-        { link: "/home", label: "Home", icon: Home },
+        { link: "/", label: "Home", icon: Home },
         { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/users", label: "Friends", icon: ContactRound },

@@ -1,9 +1,17 @@
 import axios from 'axios'
-import endpoints from '@/endpoints.json';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/' // Fallback to localhost if env var is not set
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000' // Fallback to localhost if env var is not set
 
 const api = axios.create({
+    baseURL: API_URL,
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+})
+
+export const login_api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     headers: {
@@ -23,14 +31,11 @@ export function deleteCookie(name: string): void {
 }
 
 api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
+    (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            alert (error.response.data.message || "Unauthorized access. Please log in again.");
             deleteCookie("access_token");
-            window.location.href = endpoints.auth.login; // Redirect to login page
+            window.location.href = "/login"; // Redirect to login page
         }
         return Promise.reject(error);
     }

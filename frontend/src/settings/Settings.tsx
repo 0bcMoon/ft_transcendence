@@ -7,10 +7,17 @@ import PasswordSettings from './PasswordSettings';
 import updateProfile, { IFormData, profilePictureValidate } from '@/zod/zod-schema';
 import { useValidationStore } from '@/state/Store';
 import { useUpdateProfilePicture, useUpdateUserProfile } from '@/api/mutations';
+import { useAuthStore } from '@/state/authStore';
+import { Check, X } from 'lucide-react';
 // import SecuritySettings from './SecuritySettings';
 
+interface IUpdateState {
+    type: 'error' | 'success';
+    message: string;
+}
 function Settings() {
 
+    const [updateState, setUpdateState] = useState<IUpdateState | null>(null);
 
     useEffect(() => {
         return () => {
@@ -38,9 +45,43 @@ function Settings() {
     };
 
 
-    const { mutate: updateUserProfile, isPending: isPendingUpdateUserProfile } = useUpdateUserProfile();
-    const { mutate: updateProfilePicture, isPending: isPendingUpdateProfilePicture } = useUpdateProfilePicture()
+    const { mutate: updateUserProfile, isPending: isPendingUpdateUserProfile } = useUpdateUserProfile({ setUpdateState });
+    const { mutate: updateProfilePicture, isPending: isPendingUpdateProfilePicture } = useUpdateProfilePicture({ setUpdateState })
     const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const user = useAuthStore.getState().user;
+
+        const formdata = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formdata.entries()) as unknown as IFormData;
+
+        const result = updateProfile(data)
+        if (!result) {
+            return;
+        }
+
+
+        if (user?.username == data.username) {
+            delete data.username;
+        }
+
+        if (user?.display_name == data.display_name) {
+            delete data.display_name;
+        }
+
+        if (data.current_password?.length === 0) {
+            delete data.current_password;
+            delete data.new_password;
+            delete data.confirm_password;
+        }
+        if (!data.username && !data.display_name && !data.current_password) {
+            return;
+        }
+        updateUserProfile(data)
+    }
+
+    const validateForm = (e: React.FormEvent<HTMLFormElement>) => {
+
         e.preventDefault();
 
         const formdata = new FormData(e.currentTarget);
@@ -50,7 +91,6 @@ function Settings() {
         if (!result) {
             return;
         }
-        updateUserProfile(data)
     }
 
 
@@ -61,15 +101,45 @@ function Settings() {
     const uploadUserProfilePicture = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+
         const fromData = new FormData(e.currentTarget);
         const file = fromData.get('profile_picture') as File | null;
         if (!profilePictureValidate(file)) {
             return;
         }
         updateProfilePicture(fromData)
+    }
 
+    const UpdateState = () => {
 
+        if (!updateState) return null;
 
+        switch (updateState.type) {
+            case 'success':
+                return (
+                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+                        <Check className="w-5 h-5 text-green-600" />
+                        <span className="text-green-800">{updateState.message}</span>
+                    </div>
+                );
+            case 'error':
+                return (
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+                        <X className="w-5 h-5 text-red-600" />
+                        <span className="text-red-800">{updateState.message}</span>
+                    </div>
+                );
+            default:
+                return null;
+        }
+        {/* Error Message */ }
+        // {
+        //     error && (
+        //         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+        //             <X className="w-5 h-5 text-red-600" />
+        //             <span className="text-red-800">{error}</span>
+        //         </div>
+        //     )
     }
 
     return (
@@ -84,15 +154,12 @@ function Settings() {
                     <p className="text-gray-600">Manage your account settings and preferences</p>
                 </div>
 
-                {/* Success Message */}
-                {/* {successMessage && ( */}
-                {/*     <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3"> */}
-                {/*         <Check className="w-5 h-5 text-green-600" /> */}
-                {/*         <span className="text-green-800">{successMessage}</span> */}
-                {/*     </div> */}
-                {/* )} */}
+                {/* Update State Message */}
+                <UpdateState />
 
-                <form onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
+                {/* Profile Picture Upload */}
+
+                <form autoComplete="off" onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
 
                     <ProfilePhoto
                         profileImage={profileImage ? URL.createObjectURL(profileImage) : null}
@@ -119,7 +186,8 @@ function Settings() {
                     </div>
                 </form>
 
-                <form onSubmit={submitForm} className="space-y-6">
+                <form onChange={validateForm} autoComplete="new-password" onSubmit={submitForm} className="space-y-6">
+
 
                     <PersonalInformation />
 

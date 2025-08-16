@@ -1,14 +1,16 @@
 import assert from 'assert';
 import db from '../../db/db';
+import bcrypt from 'bcrypt'
+import { CreateUser } from '../types/types';
 
 export interface User {
     id: number,
     username: string,
     display_name: string,
-    password: string,
+    password: string | null,
     email: string,
-    image_src: string | undefined,
-    profile_picture: string,
+    image_src: string,
+    profile_picture: string | null,
     relation_status: string
     created_at: Date,
 }
@@ -20,12 +22,25 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
     },
 
-    getCurrentUserById: async (id: number) :Promise<User | undefined> => {
+    getAllUsers: async (id: number): Promise<User[] | undefined> => {
+        // const query: string = `SELECT
+        const query = `SELECT 
+                        u.id,
+                        u.display_name,
+                        u.username,
+                        u.profile_picture,
+                        u.image_src
+                    FROM users u 
+                    WHERE u.id != $1`
+        return await db.all(query, [id]);
+    },
+
+    getCurrentUserById: async (id: number): Promise<User | undefined> => {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
     },
 
     getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
-        const sql: string = `
+        const query: string = `
                         SELECT
                             u.id,
                             u.display_name,
@@ -55,7 +70,7 @@ export const userRepository = {
                         WHERE
                             u.id = $2;
                             `
-        return await db.get(sql, [id, user_id]);
+        return await db.get(query, [id, user_id]);
     },
 
     getUserProfile: async (id: number) => {
@@ -64,21 +79,21 @@ export const userRepository = {
 
     // get last message for each contact
     getContactList: async (user_id: number) => {
-        const sql: string = `SELECT users.id, users.display_name, users.username 
+        const query: string = `SELECT users.id, users.display_name, users.username 
                             from contacts 
                             INNER JOIN users on contacts.contact_id = users.id and contacts.user_id = ?`;
-        return await db.all(sql, [user_id]);
+        return await db.all(query, [user_id]);
     },
 
     getMessages: async (senderId: number, receiverId: number) => {
 
-        const sql: string = `SELECT * FROM messages 
+        const query: string = `SELECT * FROM messages 
                              WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)`;
-        return await db.all(sql, [senderId, receiverId, receiverId, senderId]);
+        return await db.all(query, [senderId, receiverId, receiverId, senderId]);
     },
 
     getFriends: async (user_id: number) => {
-        const sql: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
+        const query: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
                             FROM users u
                             INNER join friends f on f.sender_id = u.id 
                             WHERE f.receiver_id = $1
@@ -88,11 +103,11 @@ export const userRepository = {
                             INNER join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1
                             `;
-        return await db.all(sql, [user_id]);
+        return await db.all(query, [user_id]);
     },
 
     findFriends: async (user_id: number, search: string) => {
-        const sql: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
+        const query: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
                             FROM users u
                             INNER join friends f on f.sender_id = u.id 
                             WHERE f.receiver_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
@@ -105,50 +120,49 @@ export const userRepository = {
                             WHERE f.sender_id = $1 AND (u.display_name LIKE $2 OR u.username LIKE $2)
                             `;
         const searchTermWithWildcards = `%${search}%`;
-        return await db.all(sql, [user_id, searchTermWithWildcards]);
+        return await db.all(query, [user_id, searchTermWithWildcards]);
 
     },
-
-    findUsers: async (search: string) => {
-        const sql: string = `SELECT id,
+    findUsers: async (search: string): Promise<User[] | undefined> => {
+        const query: string = `SELECT id,
                             username,
                             display_name,
                             profile_picture,
                             image_src
                             FROM users WHERE username LIKE $1 OR display_name LIKE $1`;
         const searchTermWithWildcards = `%${search}%`;
-        return await db.all(sql, [searchTermWithWildcards]);
+        return await db.all(query, [searchTermWithWildcards]);
     },
 
     //TODO: implement chat requests 
     getChatRequests: async (user_id: number) => {
-        const sql: string = `SELECT * from chat_requests`;
-        return await db.all(sql, [user_id]);
+        const query: string = `SELECT * from chat_requests`;
+        return await db.all(query, [user_id]);
     },
 
     createFriendRequests: async (senderId: number, receiverId: number) => {
-        const sql: string = `INSERT OR IGNORE into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
-        const result = await db.run(sql, [senderId, receiverId, 'friend'])
+        const query: string = `INSERT OR IGNORE into requests(sender_id, receiver_id, request_type) values(?, ?, ?)`
+        const result = await db.run(query, [senderId, receiverId, 'friend'])
         return result.changes > 0;
     },
 
     cancelFriendRequest: async (req_id: number, user_id: number) => {
-        const sql = `DELETE FROM requests WHERE id=? and sender_id = ?`
-        const result = await db.run(sql, [req_id, user_id])
+        const query = `DELETE FROM requests WHERE id=? and sender_id = ?`
+        const result = await db.run(query, [req_id, user_id])
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
     deleteFriendRequest: async (req_id: number, user_id: number) => {
-        const sql = `DELETE FROM requests WHERE id=? and receiver_id = ?`
-        const result = await db.run(sql, [req_id, user_id])
+        const query = `DELETE FROM requests WHERE id=? and receiver_id = ?`
+        const result = await db.run(query, [req_id, user_id])
         assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
 
     getFriendRequests: async (user_id: number) => {
-        const sql: string = `
+        const query: string = `
                             SELECT 
                             r.id req_id,
                             u.id,
@@ -167,7 +181,7 @@ export const userRepository = {
                             OR r.sender_id=u.id and r.receiver_id=$1
                             WHERE r.request_type = 'friend'
                             `;
-        return await db.all(sql, [user_id]);
+        return await db.all(query, [user_id]);
     },
 
     acceptFriendRequest: async (req_id: number, user_id: number, other_user_id: number) => {
@@ -176,58 +190,90 @@ export const userRepository = {
         if (!result) {
             return false;
         }
-        const sql: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
-        const insertResult = await db.run(sql, [other_user_id, user_id]);
+        const query: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
+        const insertResult = await db.run(query, [other_user_id, user_id]);
         assert(insertResult.changes == 1, "THIS IS BIG PROBLEM");
         return insertResult.changes > 0;
     },
     unblockUser: async (user_id: number, blocked_user_id: number) => {
-        const sql: string = `DELETE FROM blocks WHERE user_id = ? AND blocked_user_id = ?`;
-        const result = await db.run(sql, [user_id, blocked_user_id]);
+        const query: string = `DELETE FROM blocks WHERE user_id = ? AND blocked_user_id = ?`;
+        const result = await db.run(query, [user_id, blocked_user_id]);
         assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is deleted and will get removed in production
         return result.changes > 0;
     },
     blockUser: async (user_id: number, blocked_user_id: number) => {
-        const sql: string = `INSERT INTO blocks (user_id, blocked_user_id) VALUES (?, ?)`;
-        const result = await db.run(sql, [user_id, blocked_user_id]);
+        const query: string = `INSERT INTO blocks (user_id, blocked_user_id) VALUES (?, ?)`;
+        const result = await db.run(query, [user_id, blocked_user_id]);
         assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is inserted and will get removed in production
         return result.changes > 0;
     },
     deleteFriendship: async (user_id: number, friend_id: number) => {
-        const sql: string = `DELETE FROM friends WHERE (sender_id = $1 AND receiver_id = $2) 
+        const query: string = `DELETE FROM friends WHERE (sender_id = $1 AND receiver_id = $2) 
                                                         OR (sender_id = $2 AND receiver_id = $1)`;
 
-        const result = await db.run(sql, [user_id, friend_id]);
+        const result = await db.run(query, [user_id, friend_id]);
         assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that at most one row is deleted and will get removed in production
         return result.changes > 0;
     },
     deleteRequests: async (user_id: number, block_user_id: number) => {
         /// Deletes both sent and received requests between two users include chat requests
-        const sql: string = `DELETE FROM requests 
+        const query: string = `DELETE FROM requests 
                             WHERE (sender_id = $1 AND receiver_id = $2)
                             OR (sender_id = $2 AND receiver_id = $1)`;
-        const result = await db.run(sql, [user_id, block_user_id]);
-        assert(result.changes >= 1, "Failed to delete requests between the specified users. Expected at least one row to be deleted.");
+        const result = await db.run(query, [user_id, block_user_id]);
+        assert(result.changes >= 1, "THIS IS BIG PROBLEM");
         return result.changes > 0;
     },
-    getBlockedUsers(user_id: number): Promise<User[] | undefined> {
+    getBlockedUsers: async (user_id: number): Promise<User[] | undefined> => {
 
-        const sql: string = `SELECT u.id, u.display_name, u.username , u.profile_picture, u.image_src
+        const query: string = `SELECT u.id, u.display_name, u.username , u.profile_picture, u.image_src
                             FROM users u
                             JOIN blocks b ON u.id = b.blocked_user_id
                             WHERE b.user_id = $1`;
-        return db.all(sql, [user_id]);
+        return db.all(query, [user_id]);
     },
+
     updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
 
         const user = await userRepository.getCurrentUserById(user_id);
-        if (!user) {
-            return undefined; // User not found
-        }
 
-        const sql: string = `UPDATE users SET profile_picture = ? WHERE id = ?`;
-        await db.run(sql, [picture_url, user_id]);
+        const backend_url = process.env.BACKEND_URL || "http://localhost:3000/public/uploads/";
+        const query: string = `UPDATE users SET profile_picture = $1, image_src = '${backend_url}' WHERE id = $2`;
+        await db.run(query, [picture_url, user_id]);
         return user?.profile_picture;
+    },
+
+    updateUserInfo: async (id: number, display_name: string | undefined, username: string | undefined, password: string | undefined) => {
+        let sql: string = "UPDATE users set ";
+        let update_statement = []
+        let args: (string | number)[] = []
+        if (display_name) {
+            update_statement.push("display_name=?")
+            args.push(display_name);
+        }
+        if (username) {
+            update_statement.push("username=?")
+            args.push(username);
+        }
+        if (password) {
+            update_statement.push("password=?")
+            args.push(await bcrypt.hash(password, 10));
+        }
+        sql += update_statement.join(", ")
+        args.push(id)
+        sql += " WHERE id=?"
+        return (await db.run(sql, args)).changes == 1
+    },
+    createOauthUser: async (user: CreateUser): Promise<number> => {
+        const query: string = `INSERT INTO users (display_name, email, image_src) 
+                            VALUES (?, ?, ?)`;
+        const result = await db.run(query, [user.display_name, user.email, user.image_src])
+        return result.lastID;
+    },
+
+    getUserByEmail: async (email: string): Promise<User | undefined> => {
+        const query: string = `SELECT id FROM users WHERE email = ?`;
+        return await db.get(query, [email]);
     }
 
 }

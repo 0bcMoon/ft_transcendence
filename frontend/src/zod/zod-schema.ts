@@ -4,11 +4,12 @@ import { z } from "zod";
 
 
 export interface IFormData {
-    current_password: string,
-    new_password: string,
-    confirm_password: string,
-    display_name: string;
-    profile_picture: File;
+    current_password?: string,
+    new_password?: string,
+    confirm_password?: string,
+    display_name?: string;
+    profile_picture?: File;
+    username?: string;
 }
 
 
@@ -37,19 +38,20 @@ export const profilePictureValidate = (file: File | null): boolean => {
 
 const updateProfile = (formData: IFormData): boolean => {
 
-    const { display_name } = formData;
+    const { display_name, username } = formData;
     const { current_password, new_password, confirm_password } = formData;
     const errors = useValidationStore.getState();
     errors.clearErrors();
     let result = true;
 
     const changePasswordSchema = z.object({
-        current_password: z.string().min(1, "Old password is required."),
+        current_password: z
+            .string()
+            .min(1, "Old password is required.")
+            .max(256),
         new_password: z
             .string()
             .min(8, "Password must be at least 8 characters long.")
-            .regex(/[A-Z]/, "Password must contain at least one uppercase letter.")
-            .regex(/[a-z]/, "Password must contain at least one lowercase letter.")
             .regex(/[0-9]/, "Password must contain at least one number.")
             .regex(
                 /[!@#$%^&*(),.?":{}|<>]/,
@@ -66,21 +68,30 @@ const updateProfile = (formData: IFormData): boolean => {
             path: ["new_password"], // path of the error
         });
 
-    const changeDisplayNameSchema = z.object({
+    const updateProfileSchema = z.object({
         display_name: z
             .string()
             .min(1, "Display name is required.")
-            .max(50, "Display name cannot exceed 50 characters.")
+            .max(50, "Display name cannot exceed 50 characters."),
+        username: z
+            .string()
+            .min(1, "Username is required.")
+            .max(16, "Username cannot exceed 16 characters.")
+            .regex(/^\S+$/, 'Username cannot contain whitespace'),
 
     });
 
-    const changeDisplayNameResult = changeDisplayNameSchema.safeParse({ display_name });
-    if (!changeDisplayNameResult.success) {
-        const fieldErrors = changeDisplayNameResult.error.flatten().fieldErrors;
+    const formResult = updateProfileSchema.safeParse({ display_name, username });
+    if (!formResult.success) {
+
+        const fieldErrors = formResult.error.flatten().fieldErrors;
         if (fieldErrors.display_name) {
             errors.setDisplayNameError(fieldErrors.display_name[0]);
         }
-        result = false; // Display name validation failed
+        if (fieldErrors.username) {
+            errors.setUsernameError(fieldErrors.username[0]);
+        }
+        result = false;
     }
 
 
