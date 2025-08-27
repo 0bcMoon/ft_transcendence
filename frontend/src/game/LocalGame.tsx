@@ -58,10 +58,6 @@ export default function LocalGame() {
                         <h2 className="font-bold text-gray-900 text-lg text-center">
                             Enter Player Names
                         </h2>
-                        <p className="text-gray-600 text-lg text-center mt-1">
-                            Both players will use the same device. Player 1 uses W/S keys and
-                            Player 2 uses Up/Down arrows.
-                        </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -95,16 +91,6 @@ export default function LocalGame() {
                                         <p className="text-red-500 text-xs mt-1">{errors.player1}</p>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                                    <span className="bg-gray-200 px-1.5 rounded text-gray-700 font-mono">
-                                        W
-                                    </span>{' '}
-                                    and{' '}
-                                    <span className="bg-gray-200 px-1.5 rounded text-gray-700 font-mono">
-                                        S
-                                    </span>{' '}
-                                    keys
-                                </div>
                             </div>
 
                             {/* Player 2 */}
@@ -135,41 +121,6 @@ export default function LocalGame() {
                                     {errors.player2 && (
                                         <p className="text-red-500 text-xs mt-1">{errors.player2}</p>
                                     )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                                    <span className="bg-gray-200 px-1.5 rounded text-gray-700 font-mono">
-                                        ↑
-                                    </span>{' '}
-                                    and{' '}
-                                    <span className="bg-gray-200 px-1.5 rounded text-gray-700 font-mono">
-                                        ↓
-                                    </span>{' '}
-                                    keys
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Game Info */}
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <div className="flex items-center mb-2">
-                                <h3 className="font-medium text-gray-800">Game Settings</h3>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-gray-500">Score Limit:</p>
-                                    <p className="font-medium">11 points</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-500">Win By:</p>
-                                    <p className="font-medium">2 points</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-500">Game Speed:</p>
-                                    <p className="font-medium">Normal</p>
-                                </div>
-                                <div>
-                                    <p className="text-gray-500">Mode:</p>
-                                    <p className="font-medium">Classic</p>
                                 </div>
                             </div>
                         </div>

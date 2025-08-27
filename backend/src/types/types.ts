@@ -1,6 +1,6 @@
 export interface CreateUser {
     email: string;
-    display_name: string; 
+    display_name: string;
     image_src: string; // Optional, can be set later
 }
 
