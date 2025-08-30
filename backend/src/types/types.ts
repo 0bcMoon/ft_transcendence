@@ -1,7 +1,11 @@
 export interface CreateUser {
     email: string;
-    display_name: string; 
-    image_src: string; // Optional, can be set later
+    display_name: string;
+    image_src: string;
+    username: string;
+    password: string;
+    profile_picture?: string;
+    oauth_type: 'intra42' | 'google' | 'local'; 
 }
 
 export interface GoogleOAuth2 {
@@ -14,4 +18,22 @@ export interface GoogleOAuth2 {
     family_name: string
     picture: string
 
+}
+
+interface intra42ImageUser {
+    link: string
+
+}
+
+export interface Intra42OAuth2 {
+
+    email: string
+    displayname: string
+    image: intra42ImageUser
+
+}
+
+export interface EmailUpdate {
+    email: string
+    confirmtion_code?: string
 }

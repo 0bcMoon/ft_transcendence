@@ -6,7 +6,9 @@ import { pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import bcrypt from 'bcrypt';
-import { CreateUser, GoogleOAuth2 } from "../types/types";
+import { CreateUser, EmailUpdate, GoogleOAuth2, Intra42OAuth2 } from "../types/types";
+import crypto from 'node:crypto';
+import { sendEmail } from "../email-service";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -31,6 +33,30 @@ interface ICreateRequestBody {
     user_id: number;
     type: 'friend' | 'chat'
 }
+function generateUUIDUsername() {
+    const uuid = crypto.randomUUID();
+    // Take first 8 characters and add prefix
+    return `user_${uuid.substring(0, 16)}`;
+}
+
+function generateUUIDPassword() {
+    const uuid = crypto.randomUUID();
+    // Take first 8 characters and add prefix
+    return `pass_${uuid}`;
+}
+
+interface OTPMap {
+    email: string;
+    code: string;
+}
+
+
+function generateOTP(length = 8) {
+    const otp = crypto.randomBytes(length / 2).toString('hex')
+    return otp;
+}
+
+const OneTimePass = new Map<number, OTPMap>();
 
 const User = {
 
@@ -303,7 +329,6 @@ const User = {
             } catch (error) {
                 console.error('Error deleting old profile image:', error);
             }
-
         }
         reply.send({ message: 'Profile image Updated successfully' });
     },
@@ -321,7 +346,9 @@ const User = {
             display_name: user.display_name,
             username: user.username,
             email: user.email,
-            profile_picture: user.profile_picture
+            profile_picture: user.profile_picture,
+            oauth_type: user.oauth_type,
+            two_factor_enabled: user.two_factor_enabled
         });
     },
     isValidUsername: async (username: string | undefined): Promise<boolean> => {
@@ -362,21 +389,109 @@ const User = {
         }
         return reply.status(200).send({ message: "user info updated successfully" });
     },
-    googleLogin: async (user: GoogleOAuth2) : Promise<number> => {
+
+    updateEmail: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { email, confirmtion_code } = req.body as EmailUpdate;
+
+        const existing_user = await userRepository.getUserByEmail(email);
+        if (existing_user) {
+            return reply.status(400).send({ message: "Email already exists" });
+        }
+
+        const user = await userRepository.getCurrentUserById(req.user.id);
+        if (user?.oauth_type !== 'local') {
+            return reply.status(400).send({ message: "you cannot update email for oauth users" });
+        }
+        else if (!confirmtion_code) {
+            return await User.sendEmailConfirmation(req.user.id,  email, reply);
+        }
+        else if (!User.confirmtion_code_match(req.user.id, email, confirmtion_code)) {
+            return reply.status(400).send({ message: "invalid confirmation code" });
+        }
+
+        const result = await userRepository.updateEmail(req.user.id, email);
+        if (!result) {
+            return reply.status(400).send({ message: "failed to update email" });
+        }
+
+        return reply.status(200).send({ message: "Email updated successfully" });
+    },
+
+    confirmtion_code_match: (id: number, email: string, confirmtion_code: string): boolean => {
+        const otp = OneTimePass.get(id);
+        if (!otp) {
+            return false;
+        }
+        if (otp.email === email && otp.code === confirmtion_code) {
+            OneTimePass.delete(id);
+            return true;
+        }
+        return false;
+    },
+
+    sendEmailConfirmation: async (id: number, email: string, reply: FastifyReply) => {
+
+        const code = generateOTP(8);
+        // const _ = await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
+
+        // email is expensive operation, so we will just log it
+        console.log(`-------------------------------`);
+        console.log(`Sending email to ${email} with code: ${code}`);
+        console.log(`-------------------------------`);
+
+        OneTimePass.set(id, {
+            email: email,
+            code: code
+        });
+
+
+        return reply.status(200).send({
+            message: "Email confirmation sent",
+        });
+    },
+
+    googleLogin: async (user: GoogleOAuth2): Promise<number | undefined> => {
 
         const existing_user = await userRepository.getUserByEmail(user.email);
 
-
         if (existing_user) {
-            return existing_user.id;
+            if (existing_user.oauth_type === 'google') {
+                return existing_user.id;
+            }
+            return undefined;
         }
+
         const new_user: CreateUser = {
             display_name: user.name,
             image_src: user.picture,
             email: user.email,
-
+            username: generateUUIDUsername(), // Generate a unique username
+            password: await bcrypt.hash(generateUUIDPassword(), 10),
+            oauth_type: 'google'
         };
 
+        return await userRepository.createOauthUser(new_user);;
+    },
+
+    intraLogin: async (user: Intra42OAuth2): Promise<number| undefined> => {
+
+        const existing_user = await userRepository.getUserByEmail(user.email);
+
+        if (existing_user) {
+            if (existing_user.oauth_type === 'intra42') {
+                return existing_user.id;
+            }
+            return undefined;
+        }
+
+        const new_user: CreateUser = {
+            display_name: user.displayname,
+            image_src: user.image.link,
+            email: user.email,
+            username: generateUUIDUsername(), // Generate a unique username
+            password: await bcrypt.hash(generateUUIDPassword(), 10),
+            oauth_type: 'intra42'
+        };
         return await userRepository.createOauthUser(new_user);;
     }
 }

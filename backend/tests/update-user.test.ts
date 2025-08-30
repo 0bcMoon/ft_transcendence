@@ -71,7 +71,6 @@ describe('User API', () => {
                     new_password: 'password1!'
                 });
 
-            console.debug(response.body);
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('user info updated successfully');
         });

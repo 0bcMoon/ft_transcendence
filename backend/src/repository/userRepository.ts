@@ -12,11 +12,32 @@ export interface User {
     image_src: string,
     profile_picture: string | null,
     relation_status: string
+    oauth_type: 'intra42' | 'google' | 'local'
+    two_factor_enabled: boolean,
     created_at: Date,
 }
 
 
 export const userRepository = {
+    createUser: async (user: CreateUser): Promise<number> => {
+        const query: string = `INSERT INTO users (username, password, display_name, email, image_src, profile_picture) VALUES (?, ?, ?, ?, ?, ?)`;
+        const result = await db.run(query, [user.username, user.password, user.display_name, user.email, user.image_src, 'default.jpg']);
+        return result.lastID;
+    },
+
+    updateUserTwoFactorAuth: async (id: number, two_factor_enabled: boolean): Promise<boolean> => {
+        const query: string = `UPDATE users SET two_factor_enabled = ? WHERE id = ?`;
+        const result = await db.run(query, [two_factor_enabled, id]);
+        assert(result.changes === 1, "this is big problem"); // this assertion ensures that at most one row is updated and will get removed in production
+        return result.changes > 0;
+    },
+
+    updateEmail: async (id: number, email: string): Promise<boolean> => {
+        const query: string = `UPDATE users SET email = ? WHERE id = ?`;
+        const result = await db.run(query, [email, id]);
+        assert(result.changes === 1, "this is big problem"); // this assertion ensures that at most one row is updated and will get removed in production
+        return result.changes > 0;
+    },
 
     getUserByUsername: async (username: string): Promise<User | undefined> => {
         return await db.get('SELECT * FROM users WHERE username = ?', [username]);
@@ -265,14 +286,13 @@ export const userRepository = {
         return (await db.run(sql, args)).changes == 1
     },
     createOauthUser: async (user: CreateUser): Promise<number> => {
-        const query: string = `INSERT INTO users (display_name, email, image_src) 
-                            VALUES (?, ?, ?)`;
-        const result = await db.run(query, [user.display_name, user.email, user.image_src])
+        const query: string = `INSERT INTO users (username, password, display_name, email, image_src, oauth_type) VALUES (?, ?, ?, ?, ?, ?)`;
+        const result = await db.run(query, [user.username, user.password, user.display_name, user.email, user.image_src, user.oauth_type]);
         return result.lastID;
     },
 
     getUserByEmail: async (email: string): Promise<User | undefined> => {
-        const query: string = `SELECT id FROM users WHERE email = ?`;
+        const query: string = `SELECT id, oauth_type FROM users WHERE email = ?`;
         return await db.get(query, [email]);
     }
 

@@ -16,6 +16,27 @@ export const loginSchema = z.object({
 }
 );
 
+export const registerSchema = z.object({
+    username: z
+        .string({ required_error: "Username is required" })
+        .min(3)
+        .max(20),
+    display_name: z
+        .string({ required_error: "Display name is required" })
+        .min(3)
+        .max(30),
+    password: z
+        .string({ required_error: "Password is required" })
+        .min(8)
+        .max(32),
+    email: z
+        .string({ required_error: "Email is required" })
+        .email(),
+}, {
+    invalid_type_error: 'bad request body',
+    required_error: 'bad request body',
+});
+
 export const requestHandlerBody = z.object({
     req_id: z.number({ required_error: 'request id is required' }),
     user_id: z.number({ required_error: 'user_id is required' }),
@@ -54,7 +75,7 @@ export const updateUserInfo = z.object({
     username: z
         .string()
         .min(3, "Username is required.")
-        .max(16)
+        .max(24)
         .regex(/^\S+$/, 'Username cannot contain whitespace')
         .optional(),
     current_password: z

@@ -15,8 +15,7 @@ import path from 'path';
 
 import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 
-
-
+export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -94,7 +93,6 @@ fastify.register(oauthPlugin, {
             tokenHost: 'https://api.intra.42.fr',
             tokenPath: '/oauth/token'
         },
-
     },
     startRedirectPath: '/auth/oauth/42',
     callbackUri: 'http://localhost:3000/auth/oauth/42/callback',
@@ -180,7 +178,7 @@ fastify.setErrorHandler((error, _, reply) => {
     // Check if the error is a Zod validation error
     if (error.validation) {
         // Return a 400 response with a simplified message
-        reply.status(400).end({
+        reply.status(400).send({
             message: error.validation[0].message,
         });
         return;

@@ -1,7 +1,7 @@
 
 export interface EmailData {
     email: string;
-    confirmationCode: string;
+    confirmation_code: string;
 }
 
 export interface TwoFactorState {

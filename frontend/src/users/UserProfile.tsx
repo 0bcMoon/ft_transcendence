@@ -158,7 +158,7 @@ const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
             duration-300"
             >
                 <Check className='text-white' />
-                <p className="font-semibold text-white">Accepte</p>
+                <p className="font-semibold text-white">Accept</p>
             </button>
             <button
                 disabled={isPendingAccept || isPendingDeny}

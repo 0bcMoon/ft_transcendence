@@ -3,10 +3,12 @@ import NavigationBar from "./home/NavigationBar";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
+import { Loader } from "lucide-react";
 
 export default function RootLayout() {
 
     const { isAuthenticated, isLoading } = useAuth();
+
     const navigate = useNavigate();
     useEffect(() => {
         if (!isAuthenticated && !isLoading) {
@@ -14,11 +16,10 @@ export default function RootLayout() {
         }
     }, [isAuthenticated, navigate, isLoading]);
 
-
+    // TODO: add a loding page like discord maybe
     if (isLoading ) {
-        return null
+        return <Loader className="animate-spin" />
     }
-    
 
     return (
         <>

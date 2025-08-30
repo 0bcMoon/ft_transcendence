@@ -4,7 +4,6 @@
     "main": "index.js",
     "scripts": {
         "exec": "ts-node  -r dotenv/config index.ts",
-
         "dev": "nodemon",
         "seed": "ts-node  db/seed.ts",
         "migrate": "rm  db.sqlite; ts-node  db/seed.ts",
@@ -35,6 +34,7 @@
         "fastify-type-provider-zod": "^5.0.1",
         "module-alias": "^2.2.3",
         "pino-pretty": "^7.0.0",
+        "resend": "^6.0.1",
         "sqlite3": "^5.1.7",
         "zod": "^3.25.74"
     },
@@ -42,6 +42,7 @@
         "@types/bcrypt": "^5.0.2",
         "@types/jest": "^30.0.0",
         "@types/node": "^22.15.18",
+        "@types/nodemailer": "^7.0.0",
         "@types/supertest": "^6.0.3",
         "@types/ws": "^8.18.1",
         "dotenv": "^16.5.0",

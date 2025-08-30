@@ -1,4 +1,4 @@
-import { Home, MessageCircle, Gamepad2, Settings, LogOut, ContactRound } from 'lucide-react';
+import { Home, MessageCircle, Gamepad2, Settings, LogOut, History, ContactRound, BarChart2, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom'; // Import useLocation
 import { useAuth } from '@/context/AuthContext';
 
@@ -62,11 +62,14 @@ const NavigationBar = () => {
 
     const navItemsData = [
 
-        { link: "/home", label: "Home", icon: Home },
+        { link: "/", label: "Home", icon: Home },
         { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/users", label: "Friends", icon: ContactRound },
+        { link: "/stats", label: "Stats", icon: BarChart2 },
+        { link: "/history", label: "History", icon: History },
         { link: "/settings", label: "Settings", icon: Settings },
+        { link: "/profile", label: "Profile", icon: User },
 
     ];
 

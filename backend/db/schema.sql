@@ -1,14 +1,18 @@
 CREATE TABLE IF NOT EXISTS "users" (
 	"id"	INTEGER,
-	"username"	VARCHAR(64) UNIQUE ,
+	"username"	VARCHAR(64) UNIQUE NOT NULL,
     "display_name" VARCHAR(64) NOT NULL,
-    "password" VARCHAR(255) ,
+    "password" VARCHAR(255) NOT NULL,
     "profile_picture" TEXT  DEFAULT '',
     "image_src" TEXT NOT NULL,
     "email" VARCHAR(255) UNIQUE NOT NULL,
+    "oauth_type" TEXT NOT NULL DEFAULT 'local',
+    "two_factor_enabled" BOOLEAN NOT NULL DEFAULT FALSE,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+
+ 
 
 CREATE TABLE IF NOT EXISTS "messages" (
     "id" INTEGER,
@@ -65,4 +69,8 @@ CREATE TABLE IF NOT EXISTS "blocks" (
     FOREIGN KEY (blocked_user_id) REFERENCES users(id),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_username" ON "users" ("username");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_email" ON "users" ("email");
+CREATE INDEX IF NOT EXISTS "idx_display_name" ON "users" ("display_name");
 

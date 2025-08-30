@@ -31,24 +31,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuth(false);
     };
 
-    const { data, isLoading: isLoadingUser } = useQuery({
+    const { data, isLoading: isLoadingUser, isError } = useQuery({
         queryKey: ['user'],
         queryFn: async () => (await api.get('/api/user')).data,
         enabled: isAuthenticated && !isLoading,
         refetchOnWindowFocus: false,
     })
+    useEffect(() => {
+        if (isError) {
+            setAuth(false);
+            setLoading(false);
+            logout();
+        }
+    }, [isError]);
 
 
     useEffect(() => {
         useAuthStore.getState().login(data)
     }, [data]);
 
-    if (isLoadingUser) {
+    if (isLoadingUser ) {
         return <Loader />
     }
 
 
-    // why don't know `react shit`
 
     return (
         <AuthContext.Provider
