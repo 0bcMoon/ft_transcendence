@@ -1,8 +1,9 @@
 import { FastifyPluginAsync } from 'fastify';
 import Auth from './auth/auth';
 import User from './models/User';
+import Game from './models/Game';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { loginSchema, requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo } from './schema/zod-schema';
+import { requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo } from './schema/zod-schema';
 
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
@@ -74,8 +75,13 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
 
     fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
 
-}
+    // === GAME ROUTES ===
+    fastify.get('/game/matches', { onRequest: fastify.authenticate }, Game.getUserMatches);
+    fastify.get('/game/matches/:match_uuid', { onRequest: fastify.authenticate }, Game.getMatchDetails);
+    fastify.get('/game/leaderboard', { onRequest: fastify.authenticate }, Game.getLeaderboard);
+    fastify.post('/game/matches', { onRequest: fastify.authenticate }, Game.createTestMatch);
+
+};
 
 export default routes;
-
 
