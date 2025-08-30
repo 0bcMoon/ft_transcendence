@@ -1,11 +1,11 @@
-import { User, Check, X, Trophy, Users, Zap, ArrowLeft } from 'lucide-react';
+import { User, X, Trophy, Users, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useChatStore } from '@/state/Store';
-import { ReactNode } from 'react';
+import { useState } from 'react';
 import {
     useAcceptRequest,
     useBlockUser,
@@ -15,20 +15,16 @@ import {
     useUnFriend
 } from '@/api/mutations';
 import Loader from '@/vendor/loader';
+import Modal from '@/component/Model';
 
 
 
 
 type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocking' | 'block_by' | 'none';
 
-interface IDisplayObject {
-    display_text: string;
-    icon: ReactNode;
-    action: () => void;
-}
 
 
-const StartChat = ({ relation_status, id, display_name,  profile_picture }: User) => {
+const StartChat = ({ relation_status, id, display_name, profile_picture }: User) => {
 
     switch (relation_status) {
         case 'blocking':
@@ -97,80 +93,114 @@ const PlayPingPong = ({ relation_status }: User) => {
         >
 
             <PingPongFillIcon />
-
             <button className="font-semibold text-white">Play PingPong</button>
         </div>
     )
 }
 
 const BlockAction = ({ id, relation_status }: User) => {
-    const { mutate: blockAction } = useBlockUser({ user_id: id });
+    const [ isModalOpen,setIsModalOpen ] = useState(false);
+
+    const { mutate: blockAction, isPending } = useBlockUser({ user_id: id });
     switch (relation_status) {
         case 'blocking':
-            relation_status = 'blocking';
             break;
         default:
             relation_status = undefined;
     }
 
-    const display_object: Record<string, IDisplayObject> = {
+
+    const display_object: Record<string, any> = {
 
         'blocking': {
+            action: () => blockAction({ action: false }),
+            title: "Confirm Unblock",
+            message: `Are you sure you want to unblock this user? You will be able to interact with them again.`,
+            type: 'warning',
+            acceptText: "Unblock",
             display_text: 'Unblock',
-            icon: <BlockIcon />,
-            action: () => blockAction({ action: false })
+
         },
         'else': {
             display_text: 'Block',
-            icon: <BlockIcon />,
-            action: () => blockAction({ action: true })
+            action: () => blockAction({ action: true }),
+            title: "Confirm Block",
+            message: `Are you sure you want to block this user? You will no longer be able to interact with them.`,
+            type: 'danger',
+            acceptText: "Block",
+
         }
     };
 
     return (
-        <button
-            onClick={display_object[relation_status || 'else'].action}
-            className="p-5 flex flex-row items-center gap-3 justify-center
+        <>
+            <button
+                onClick={() => setIsModalOpen(true)}
+                className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
             duration-300"
-        >
+            >
+                { isPending ? <Loader2 className='text-white animate-spin'/> : <BlockIcon className='text-white' /> }
+                <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
+            </button>
 
-            {display_object[relation_status || 'else'].icon}
-            <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
-
-        </button>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onDeny={() => setIsModalOpen(false)}
+                onAccept={() => {display_object[relation_status ?? 'else'].action(); setIsModalOpen(false)}}
+                title={display_object[relation_status ?? 'else'].title}
+                message={display_object[relation_status ?? 'else'].message}
+                acceptText={display_object[relation_status ?? 'else'].acceptText}
+                type={display_object[relation_status ?? 'else'].type}
+                denyText="Cancel"
+            />
+        </>
     )
 }
 
 
 const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
     const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
+
+    const isPending = isPendingAccept || isPendingDeny;
+
+    const handleAccept = () => {
+        acceptRequest();
+        setIsModalOpen(false);
+    }
+
+    const handleDeny = () => {
+        denyRequest();
+        setIsModalOpen(false);
+    }
 
     return (
         <>
             <button
-                disabled={isPendingAccept || isPendingDeny}
-                onClick={() => acceptRequest()} 
+                onClick={() => setIsModalOpen(true)}
                 className="p-5 flex flex-row items-center gap-3 justify-center
-            h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
+            h-8 rounded-xl bg-green-600 hover:bg-green-700 transition-colors
             duration-300"
             >
-                <Check className='text-white' />
-                <p className="font-semibold text-white">Accept</p>
-            </button>
-            <button
-                disabled={isPendingAccept || isPendingDeny}
-                onClick={() => denyRequest()} 
-                className="p-5 flex flex-row items-center gap-3 justify-center
-            h-8 rounded-xl bg-white hover:bg-gray-400 transition-colors
-            duration-300"
-            >
-                <X className='text-black' />
-                <p className="font-semibold text-black">Deny</p>
+                {isPending ? <Loader2 className='text-white animate-spin' /> : <Users className='text-white' />}
+                <p className="font-semibold text-white">Respond to Request</p>
             </button>
 
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onAccept={handleAccept}
+                onDeny={handleDeny}
+                title="Friend Request"
+                message="This user has sent you a friend request. What would you like to do?"
+                acceptText="Accept"
+                denyText="Deny"
+                type="default"
+            />
         </>
     )
 }
@@ -190,39 +220,69 @@ const FriendRequestAction = (data: User) => {
 
 const FriendAction = ({ req_id, relation_status, id }: User) => {
 
-    const { mutate: cancelRequest } = useCancelRequest({ req_id, user_id: id });
-    const { mutate: sendRequest } = useSendRequest({ user_id: id });
-    const { mutate: unfriend } = useUnFriend({ user_id: id });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { mutate: cancelRequest, isPending: isCanceling } = useCancelRequest({ req_id, user_id: id });
+    const { mutate: sendRequest, isPending: isSending } = useSendRequest({ user_id: id });
+    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend({ user_id: id });
 
-    const display_object: Record<string, IDisplayObject> = {
+    const isPending = isCanceling || isSending || isUnfriending;
+
+    const display_object: Record<string, any> = {
 
         'friend': {
             display_text: 'Unfriend',
             icon: <UserXLineIcon />,
-            action: unfriend
+            action: unfriend,
+            title: "Confirm Unfriend",
+            message: "Are you sure you want to unfriend this user? This action cannot be undone.",
+            acceptText: "Unfriend",
+            type: 'danger',
         },
         'pending': {
             display_text: 'Cancel Request',
             icon: <X className='text-white' />,
-            action: cancelRequest
+            action: cancelRequest,
+            title: "Cancel Friend Request",
+            message: "Are you sure you want to cancel your friend request to this user?",
+            acceptText: "Cancel Request",
+            type: 'warning',
         },
         'none': {
             display_text: 'Add Friend',
             icon: <AddFriendIcon />,
-            action: sendRequest
+            action: sendRequest,
+            title: "Send Friend Request",
+            message: "Do you want to send a friend request to this user?",
+            acceptText: "Send",
+            type: 'info',
         }
     };
 
+    const current_display = display_object[relation_status || 'none'];
+
     return (
-        <button onClick={display_object[relation_status || 'none'].action} className="p-5 flex flex-row items-center gap-3 justify-center
+        <>
+            <button onClick={() => setIsModalOpen(true)} className="p-5 flex flex-row items-center gap-3 justify-center
             h-8 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors
             duration-300"
-        >
-            {display_object[relation_status || 'none'].icon}
-            <p className='text-white font-semibold '>
-                {display_object[relation_status || 'none'].display_text}
-            </p>
-        </button>
+            >
+                {isPending ? <Loader2 className='text-white animate-spin' /> : current_display.icon}
+                <p className='text-white font-semibold '>
+                    {current_display.display_text}
+                </p>
+            </button>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onDeny={() => setIsModalOpen(false)}
+                onAccept={() => { current_display.action(); setIsModalOpen(false); }}
+                title={current_display.title}
+                message={current_display.message}
+                acceptText={current_display.acceptText}
+                type={current_display.type}
+                denyText="Cancel"
+            />
+        </>
     )
 }
 

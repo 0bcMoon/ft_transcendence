@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import UserAvatar from '@/component/UserAvatar';
 import { useCancelRequest, useAcceptRequest, useDenyRequest, useBlockUser } from "@/api/mutations";
-import React from 'react';
+import React, { useState } from 'react';
+import Modal from '@/component/Model';
 
 export interface IUsersProfileCard {
     id: string;
@@ -54,23 +55,28 @@ export interface IUsersRequestCard {
 export const UsersRequestCard = ({ id, req_id, display_name, request_type, profile_picture }: IUsersRequestCard) => {
     const navigate = useNavigate();
 
+    const [ isModalOpen,setIsModalOpen ] = useState(false);
+
     const { mutate: cancelRequest } = useCancelRequest({ req_id, user_id: id });
     const { mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
     const { mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
 
     const handleAccept = (e: React.MouseEvent) => {
         e.stopPropagation();
+        e.preventDefault(); //This prevents the default action of the event from occurring.
         acceptRequest();
     }
 
     const handleDeny = (e: React.MouseEvent) => {
         e.stopPropagation();
+        e.preventDefault(); //This prevents the default action of the event from occurring.
         denyRequest();
     }
 
     const handleCancel = (e: React.MouseEvent) => {
         e.stopPropagation();  //This prevents the click event from bubbling up to the parent div
-        cancelRequest();
+        e.preventDefault(); //This prevents the default action of the event from occurring.
+        setIsModalOpen(true)
     }
 
     return (
@@ -132,6 +138,18 @@ export const UsersRequestCard = ({ id, req_id, display_name, request_type, profi
                     </>
                 )}
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onDeny={() => setIsModalOpen(false)}
+                onAccept={() => cancelRequest()}
+                type="warning"
+                title="Cancel Friend Request"
+                message={`Are you sure you want to cancel the friend request to ${display_name}?`}
+                acceptText="Cancel Request"
+                denyText="Cancel"
+            />
         </div>
     )
 }
@@ -144,19 +162,23 @@ export interface IBlockedUserCard {
 
 export const BlockedUserCard = ({ id, display_name, profile_picture }: IBlockedUserCard) => {
     const navigate = useNavigate();
+
+    const [ isModalOpen,setIsModalOpen ] = useState(false);
+
     const { mutate: blockAction } = useBlockUser({ user_id: id });
 
 
     const handleUnblock = (e: React.MouseEvent) => {
+
         e.stopPropagation();
-        blockAction({ action: false });
+        e.preventDefault()
+        setIsModalOpen(true)
     }
 
     return (
         <div
             className=" border flex flex-col p-2 gap-2
-                        rounded-xl  border-gray-100 col-span-1 h-auto hover:bg-gray-200
-                        "
+                        rounded-xl  border-gray-100 col-span-1 h-36 hover:bg-gray-200"
         >
             <div onClick={() => navigate(`/users/${id}`)} className="flex p-2 gap-4 cursor-pointer">
                 <div >
@@ -187,6 +209,18 @@ export const BlockedUserCard = ({ id, display_name, profile_picture }: IBlockedU
                     Unblock
                 </button>
             </div>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onDeny={() => setIsModalOpen(false)}
+                onAccept={() => blockAction({action: false})}
+                type="warning"
+                title="Unblock User"
+                message={`Are you sure you want to unblock ${display_name}?`}
+                acceptText="Unblock"
+                denyText="Cancel"
+            />
         </div>
     )
 }
