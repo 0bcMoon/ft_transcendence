@@ -1,5 +1,4 @@
 import { createRoot } from 'react-dom/client'
-// import { StrictMode } from 'react'
 import Chat from '@/chat/Chat.tsx'
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
