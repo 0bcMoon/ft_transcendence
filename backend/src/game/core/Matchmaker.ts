@@ -28,11 +28,11 @@ import { checkCollision } from "../mechanics/collision";
 import { shuffleQueue } from "../utils/shuffleQueue";
 
 export class Matchmaker {
-    private clients = new Map<string, Player>();
+    private clients = new Map<number, Player>();
     private queue: Player[] = [];
     private matches = new Map<string, Match>();
 
-    addPlayer(id: string, username: string, socket: WebSocket | null) {
+    addPlayer(id: number, username: string, socket: WebSocket | null) {
         const player: Player = { id, username, socket };
         this.clients.set(id, player);
         if (this.findMatchByPlayer(id))
@@ -45,7 +45,7 @@ export class Matchmaker {
         this.palayGame();
     }
 
-    removePlayer(id: string) {
+    removePlayer(id: number) {
         this.queue = this.queue.filter(p => p.id !== id);
         const match = this.findMatchByPlayer(id);
         if (!match)
@@ -69,7 +69,7 @@ export class Matchmaker {
         this.endMatch(match.id);
     }
 
-    handleMessage(id: string, data: ClientMessage, socket?: WebSocket) {
+    handleMessage(id: number, data: ClientMessage, socket?: WebSocket) {
         if (data.type === "ai") {
             const human = this.clients.get(id);
             if (!human || !this.isOpen(human.socket))
@@ -123,7 +123,7 @@ export class Matchmaker {
 
 
     private startVsAI(human: Player, botUsername: string) {
-        const ai: Player = { id: `ai_${Date.now()}`, username: botUsername, socket: null };
+        const ai: Player = { id: Date.now(), username: botUsername, socket: null };
         const left = ai;
         const right = human;
 
@@ -260,13 +260,13 @@ export class Matchmaker {
         return !!socket && socket.readyState === WebSocket.OPEN;
     }
 
-    private findMatchByPlayer(id: string) {
+    private findMatchByPlayer(id: number) {
         for (const match of this.matches.values())
             if (match.players.left.id === id || match.players.right.id === id) return match;
         return undefined;
     }
 
-    private getPlayerSide(match: Match, id: string): Side | undefined {
+    private getPlayerSide(match: Match, id: number): Side | undefined {
         if (match.players.left.id === id)
             return "left";
         if (match.players.right.id === id)

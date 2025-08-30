@@ -3,7 +3,7 @@ import type { Side, GameState } from "../types/types";
 import { AIController } from "../AIController";
 
 export interface Player {
-    id: string;
+    id: number;
     username: string;
     socket: WebSocket | null; // AI has null
 }
