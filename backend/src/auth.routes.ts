@@ -1,11 +1,9 @@
 
-import fastify from '../src/app';
 
-import { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
+import { FastifyPluginAsync } from 'fastify';
 import Auth from './auth/auth';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { loginSchema, registerSchema } from './schema/zod-schema';
-import { FastifyJWT } from '@fastify/jwt';
 
 
 
