@@ -1,13 +1,9 @@
+require("module-alias/register");
 
-require('module-alias/register')
-
-import fastify from './src/app'
-
+import fastify from "./src/app";
 
 // Run the server!
-console.log('Server listening on http://localhost:3000')
-const PORT: number = parseInt(process.env.PORT_NUMBER || "3000")
+console.log("Server listening on http://localhost:3000");
+const PORT: number = parseInt(process.env.PORT_NUMBER || "3000");
 
-fastify.listen({ port: PORT })
-
-
+fastify.listen({ port: PORT });

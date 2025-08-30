@@ -186,7 +186,6 @@ export default function ChatContainer({ isConnected, webSocket, user_id }: ChatC
 
         webSocket.onmessage = (event) => {
             const data: Message = JSON.parse(event.data); //plz dont fail me
-            console.log("Received message:", data);
             // Update the messages cache with the new message
             queryClient.setQueryData<Message[]>(['messages', user_id], (oldMessages) => {
                 if (!oldMessages) return [data];

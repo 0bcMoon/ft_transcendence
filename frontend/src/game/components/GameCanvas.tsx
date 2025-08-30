@@ -1,82 +1,119 @@
-import React, { useEffect } from 'react';
-import { Ball, GameState } from '../engine/types';
+import { useEffect, useRef } from "react";
+import { GameState } from "../types/types";
 
 interface GameCanvasProps {
-    canvasRef: React.RefObject<HTMLCanvasElement>;
-    ball: Ball;
-    player1Y: number;
-    player2Y: number;
-    paddleWidth: number;
-    paddleHeight: number;
-    gameState: GameState;
+    gameStateRef: React.MutableRefObject<GameState | null>;
+    countdown: number | null;
+    isGameOver: boolean;
+    winner: "left" | "right" | null;
+    side: "left" | "right" | null;
+    waiting: boolean;
 }
 
-const GameCanvas = ({ canvasRef, ball, player1Y, player2Y, paddleWidth, paddleHeight, gameState }: GameCanvasProps) => {
+export default function GameCanvas({
+    gameStateRef,
+    countdown,
+    isGameOver,
+    winner,
+    side,
+    waiting,
+}: GameCanvasProps) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    useEffect(() => { drawCanvas(); });
-
-    const drawCanvas = () => {
+    useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx) return;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        let frameId: number;
 
-        const { width, height } = canvas;
+        const draw = () => {
+            const width = canvas.width;
+            const height = canvas.height;
 
-        // Clear canvas
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, width, height);
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, width, height);
 
-        // Draw center line
-        ctx.beginPath();
-        ctx.setLineDash([15, 15]);
-        ctx.moveTo(width / 2, 0);
-        ctx.lineTo(width / 2, height);
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        ctx.setLineDash([]);
+            const state = gameStateRef.current;
 
-        // Draw player names
-        ctx.font = '24px "Courier New", monospace';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.fillText(gameState.player1, width / 4, 30);
-        ctx.fillText(gameState.player2, 3 * width / 4, 30);
+            if (!waiting) {
+                if (!isGameOver && countdown === null && state) {
+                    ctx.beginPath();
+                    ctx.setLineDash([15, 15]);
+                    ctx.moveTo(width / 2, 0);
+                    ctx.lineTo(width / 2, height);
+                    ctx.strokeStyle = "#FFFFFF";
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
 
-        // Draw scores
-        ctx.font = '64px "Courier New", monospace';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.fillText(gameState.scores.player1.toString(), width / 4, 90);
-        ctx.fillText(gameState.scores.player2.toString(), 3 * width / 4, 90);
+                if (state && !isGameOver && !countdown) {
+                    const { paddles, ball, score } = state;
 
-        // Draw paddles
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(30, player1Y, paddleWidth, paddleHeight);
-        ctx.fillRect(width - 30 - paddleWidth, player2Y, paddleWidth, paddleHeight);
+                    ctx.fillStyle = "#fff";
+                    ctx.fillRect(paddles.left.x, paddles.left.y, paddles.left.width, paddles.left.height);
+                    ctx.fillRect(paddles.right.x, paddles.right.y, paddles.right.width, paddles.right.height);
 
-        // Draw ball
-        ctx.beginPath();
-        ctx.arc(ball.position.x, ball.position.y, ball.size / 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                    ctx.fill();
 
-    };
+                    ctx.font = "32px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(score.left.toString(), width / 2 - 60, 40);
+                    ctx.fillText(score.right.toString(), width / 2 + 60, 40);
+                }
+
+                if (countdown && !isGameOver) {
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                    ctx.fillRect(0, 0, width, height);
+
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
+                    ctx.fillStyle = "#000";
+                    ctx.fill();
+
+                    ctx.lineWidth = 6;
+                    ctx.strokeStyle = "#fff";
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ec4899";
+                    ctx.font = "bold 64px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(countdown.toString(), centerX, centerY);
+                }
+
+                if (isGameOver) {
+                    ctx.fillStyle = "rgba(0,0,0,0.7)";
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "48px Arial";
+                    ctx.textAlign = "center";
+                }
+            }
+
+            frameId = requestAnimationFrame(draw);
+        };
+
+        draw();
+        return () => cancelAnimationFrame(frameId);
+    }, [gameStateRef, countdown, isGameOver, winner, side, waiting]);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className="border border-gray-800 max-h-screen"
-            style={{
-                aspectRatio: '4/3',
-                maxWidth: '100vw',
-                maxHeight: '100vh',
-                objectFit: 'contain'
-            }}
-        />
+        <div className="w-full max-w-screen-md aspect-[4/3] relative rounded-xl overflow-hidden shadow-2xl border-4 border-gray-700">
+            <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full"
+                width={800}
+                height={600}
+            />
+        </div>
     );
-};
+}
 
-export default GameCanvas;

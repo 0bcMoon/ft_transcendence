@@ -118,3 +118,22 @@ export const useUserStore = create<UserState>((set) => ({
     user: null,
     setUser: (user: User | null) => set({ user }),
 }));
+
+export interface EmailUpdate {
+    setEmail: (email: string) => void;
+    setConfirmationCode: (code: string) => void;
+    setConfirmationSent: (sent: boolean) => void;
+
+    email: string;
+    confirmation_code?: string; // Optional, used when confirming the new email:
+    confirmation_sent: boolean; // Indicates if the confirmation code has been sent
+}
+
+export const useChangeEmail = create<EmailUpdate>((set) => ({
+    email: '',
+    confirmation_sent: false,
+    setEmail: (email: string) => set({ email }),
+    setConfirmationCode: (code: string) => set({ confirmation_code: code }),
+    setConfirmationSent: (sent: boolean) => set({ confirmation_sent: sent })
+
+}))

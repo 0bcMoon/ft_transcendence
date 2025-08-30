@@ -9,6 +9,9 @@ import { useValidationStore } from '@/state/Store';
 import { useUpdateProfilePicture, useUpdateUserProfile } from '@/api/mutations';
 import { useAuthStore } from '@/state/authStore';
 import { Check, X } from 'lucide-react';
+import EmailSettings from './EmailSettings';
+import TwoFactorModal from './TwoFactorModal';
+import SecuritySettings from './SecuritySettings';
 // import SecuritySettings from './SecuritySettings';
 
 interface IUpdateState {
@@ -77,6 +80,7 @@ function Settings() {
         if (!data.username && !data.display_name && !data.current_password) {
             return;
         }
+        window.scrollTo(0, 0);
         updateUserProfile(data)
     }
 
@@ -132,14 +136,6 @@ function Settings() {
             default:
                 return null;
         }
-        {/* Error Message */ }
-        // {
-        //     error && (
-        //         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-        //             <X className="w-5 h-5 text-red-600" />
-        //             <span className="text-red-800">{error}</span>
-        //         </div>
-        //     )
     }
 
     return (
@@ -216,39 +212,13 @@ function Settings() {
                         </button>
                     </div>
                 </form>
+                {/* for Oauth2 users disable email update */}
+                <EmailSettings />
+                <SecuritySettings />
+                {/* <TwoFactorModal /> */}
 
 
-                {/* <EmailSettings */}
-                {/*     emailData={emailData} */}
-                {/*     handleEmailChange={handleEmailChange} */}
-                {/*     errors={errors} */}
-                {/*     emailConfirmationSent={emailConfirmationSent} */}
-                {/*     handleSendEmailConfirmation={handleSendEmailConfirmation} */}
-                {/*     handleConfirmEmailChange={handleConfirmEmailChange} */}
-                {/*     isEmailLoading={isEmailLoading} */}
-                {/*     setEmailConfirmationSent={setEmailConfirmationSent} */}
-                {/*     setEmailData={setEmailData} */}
-                {/* /> */}
-                {/**/}
-                {/* <SecuritySettings */}
-                {/*     twoFactor={twoFactor} */}
-                {/*     setShow2FAModal={setShow2FAModal} */}
-                {/* /> */}
-                {/**/}
-                {/* Two-Factor Authentication Modal */}
-                {/* <TwoFactorModal */}
-                {/*     isOpen={show2FAModal} */}
-                {/*     onClose={handleClose2FAModal} */}
-                {/*     twoFactor={twoFactor} */}
-                {/*     setTwoFactor={setTwoFactor} */}
-                {/*     isLoading={isLoading} */}
-                {/*     onEnable2FA={handleEnable2FA} */}
-                {/*     onDisable2FA={handleDisable2FA} */}
-                {/*     onVerify2FA={handleVerify2FA} */}
-                {/*     onCopyToClipboard={copyToClipboard} */}
-                {/*     onDownloadBackupCodes={downloadBackupCodes} */}
-                {/*     errors={errors} */}
-                {/* /> */}
+
             </div>
         </div>
     );

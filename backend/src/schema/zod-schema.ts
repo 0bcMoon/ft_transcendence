@@ -1,20 +1,46 @@
 import { z } from "zod";
 
-
 export const loginSchema = z.object({
+    username: z.
+        string().
+        min(1, 'Username is required').
+        min(3, 'Username must be at least 3 characters').
+        max(24, 'Username must be at most 20 characters'),
+    password: z.
+        string().
+        min(1, 'Password is required').
+        min(8, 'Password must be at least 8 characters'),
+}, {
+    invalid_type_error: 'bad request body',
+    required_error: 'bad request body',
+
+});
+
+
+export const registerSchema = z.object({
     username: z
         .string({ required_error: "Username is required" })
         .min(3)
         .max(20),
+    display_name: z
+        .string({ required_error: "Display name is required" })
+        .min(3)
+        .max(30),
     password: z
         .string({ required_error: "Password is required" })
         .min(8)
         .max(32),
+    email: z
+        .string({ required_error: "Email is required" })
+        .email(),
+    confirmation_code: z
+        .string({ required_error: "Confirmation code is required" })
+        .length(8, "Confirmation code must be 8 characters long"),
 }, {
     invalid_type_error: 'bad request body',
     required_error: 'bad request body',
-}
-);
+});
+
 
 export const requestHandlerBody = z.object({
     req_id: z.number({ required_error: 'request id is required' }),
@@ -54,7 +80,7 @@ export const updateUserInfo = z.object({
     username: z
         .string()
         .min(3, "Username is required.")
-        .max(16)
+        .max(24)
         .regex(/^\S+$/, 'Username cannot contain whitespace')
         .optional(),
     current_password: z
