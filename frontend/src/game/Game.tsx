@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Users, Zap, Cpu } from 'lucide-react';
 
+
 const gameModes = [
     {
         id: 'quick',
@@ -55,20 +56,21 @@ const gameModes = [
 export default function Game() {
     return (
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
-            <div className="max-w-4xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
-                {/* Header*/}
+            <div className="max-w-6xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
 
-                <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-5 text-white mb-5 shadow-md">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-5 text-white mb-8 shadow-md text-center">
                     <h1 className="text-2xl font-bold mb-1">Welcome to Pong Arena</h1>
-                    <p className="text-blue-100">Challenge players in real-time ping pong matches or participate in tournaments to climb the ranks.</p>
+                    <p className="text-blue-100">
+                        Challenge players in real-time matches or tournaments to climb the ranks.
+                    </p>
                 </div>
 
+                {/* Game Options Grid */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h2 className="font-bold text-gray-900 text-lg mb-6 text-center">Select Game Mode</h2>
 
-                {/* Game Options */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-5">
-                    <h2 className="font-bold text-gray-900 text-lg mb-4 text-center">Select Option</h2>
-
-                    <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {gameModes.map((mode) => (
                             <div
                                 key={mode.id}
@@ -78,10 +80,10 @@ export default function Game() {
                                     {mode.icon}
                                 </div>
                                 <h3 className="font-bold text-gray-900 mb-2">{mode.title}</h3>
-                                <p className="text-gray-600 text-sm mb-4">{mode.description}</p>
+                                <p className="text-gray-600 text-sm mb-4 flex-grow">{mode.description}</p>
                                 <Link
                                     to={mode.link}
-                                    className={`${mode.buttonColor} text-white py-2 px-6 rounded-lg inline-block transition-colors`}
+                                    className={`${mode.buttonColor} text-white py-2 px-6 rounded-lg inline-block transition-colors w-full`}
                                 >
                                     {mode.buttonText}
                                 </Link>
@@ -93,3 +95,4 @@ export default function Game() {
         </div>
     );
 }
+

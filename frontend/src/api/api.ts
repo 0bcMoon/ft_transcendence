@@ -1,25 +1,25 @@
-import axios from 'axios'
+import axios from "axios";
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000' // Fallback to localhost if env var is not set
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"; // Fallback to localhost if env var is not set
+// export const API_URL = import.meta.env.VITE_API_URL || "http://10.13.5.3:3000";
 
 const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
     },
-})
+});
 
 export const login_api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
     },
-})
-
+});
 
 /**
  * Deletes a cookie by its name.
@@ -38,7 +38,7 @@ api.interceptors.response.use(
             window.location.href = "/login"; // Redirect to login page
         }
         return Promise.reject(error);
-    }
+    },
 );
 
 // api.interceptors.request.use(

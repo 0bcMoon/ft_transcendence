@@ -21,38 +21,38 @@ import Register from './auth/Register';
 
 const router = createBrowserRouter([
     {
-        path: '/',
+        path: "/",
         element: <RootLayout />,
         children: [
             { index: true, element: <HomePage /> },
-            { path: 'game', element: <Game /> },
-            { path: 'users/:user_id', element: <UserProfile /> },
-            { path: 'users', element: <UsersPage /> },
-            { path: 'chat', element: <Chat /> },
-            { path: 'chat/:user_id', element: <Chat /> },
-            { path: 'settings', element: <Settings /> },
-            { path: 'game/local', element: <LocalGame /> },
-            { path: '*', element: <NotFound /> },
+            { path: "game", element: <Game /> },
+            { path: "users/:user_id", element: <UserProfile /> },
+            { path: "users", element: <UsersPage /> },
+            { path: "chat", element: <Chat /> },
+            { path: "chat/:user_id", element: <Chat /> },
+            { path: "settings", element: <Settings /> },
+            { path: "game/local", element: <LocalGame /> },
+            { path: "*", element: <NotFound /> }, // Relative path to parent '/'
         ],
     },
-    { path: '/login', element: <Login /> },
-    { path: '/register', element: <Register /> },
-    { path: '/game/local/play', element: <LocalGamePlay /> },
-    { path: '*', element: <NotFound /> },
-])
+    { path: "/login", element: <Login /> },
+    { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
+    { path: "game/quick", element: <QuickGame /> },
+    { path: "game/ai", element: <AIGame /> },
+    { path: "game/tournament", element: <TournamentLobby /> },
+
+    { path: "*", element: <NotFound /> },
+]);
 
 const queryClient = new QueryClient();
 
-
-createRoot(document.getElementById('root')!).render(
-
-    //<StrictMode>
+createRoot(document.getElementById("root")!).render(
+    <StrictMode>
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
                 <RouterProvider router={router} />
             </AuthProvider>
             <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
-    //</StrictMode>
-
-)
+    </StrictMode>,
+);
