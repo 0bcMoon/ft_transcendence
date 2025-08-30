@@ -13,7 +13,7 @@ export function useLocalGame() {
     const MAX_SCORE = 5;
 
     const initState = (): GameState => ({
-        status: "waiting",
+        status: "end",
         paddles: {
             left: { x: 30, y: 260, width: 10, height: 80 },
             right: { x: 760, y: 260, width: 10, height: 80 },
@@ -147,7 +147,7 @@ export function useLocalGame() {
         gameStateRef.current = initState();
         setIsGameOver(false);
         setWinner(null);
-        setCountdown(3); // ️ Only set countdown, don't start game yet
+        setCountdown(3);
     };
 
     return {

@@ -1,62 +1,29 @@
-// --- Core types ---
-
 export type Side = "left" | "right";
 
-export interface Paddle {
+interface Paddle {
     x: number;
     y: number;
     width: number;
     height: number;
 }
 
-export interface Ball {
-    x: number;
-    y: number;
-    radius: number;
-    speedX: number;
-    speedY: number;
-}
-
-export interface Score {
-    left: number;
-    right: number;
-}
-
 export interface GameState {
-    status: "waiting" | "playing" | "ended";
-    paddles: {
-        left: Paddle;
-        right: Paddle;
-    };
-    ball: Ball;
-    score: Score;
+    ball: { x: number; y: number; speedX: number; speedY: number; radius: number };
+    paddles: { left: Paddle; right: Paddle };
+    score: { left: number; right: number };
+    status: "waiting" | "playing" | "gameOver";
 }
-
-// --- Messages from client to server ---
 
 export type ClientMessage =
-    | { type: "move"; up: boolean; down: boolean }
+    | { type: "human"; username: string }
+    | { type: "ready" }
+    | { type: "move"; up?: boolean; down?: boolean }
     | { type: "playAgain" }
-    | { type: "start" }
     | { type: "leaveGame" }
-    | { type: "identify"; username: string };
-
-// --- Messages from server to client ---
+    | { type: "ai", username: string };
 
 export type ServerMessage =
-    | {
-        type: "matchFound";
-        side: Side;
-        leftUsername: string;
-        rightUsername: string;
-    }
+    | { type: "matchFound"; side: Side; leftUsername: string; rightUsername: string; id: string }
     | { type: "state"; state: GameState }
-    | {
-        type: "gameOver";
-        winner: Side;
-        score: Score;
-    }
-    | { type: "matchEnded" }
-    | { type: "waitingForOpponent" }
-
+    | { type: "gameOver"; winner: Side; score: { left: number; right: number } };
 

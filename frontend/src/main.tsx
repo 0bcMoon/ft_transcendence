@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import Game from "@/game/Game.tsx";
 import LocalGame from "@/game/LocalGame.tsx";
-import LocalGamePlay from "@/game/local/LocalGame";
+import LocalGamePlay from "@/game/pages/LocalGame";
 import { AuthProvider } from "@/context/AuthContext";
 
 import RootLayout from "@/RootLayout";
@@ -16,8 +16,10 @@ import NotFound from "@/NotFound.tsx";
 import UsersPage from "@/users/UsersPage";
 import UserProfile from "@/users/UserProfile";
 import Settings from "@/settings/Settings";
-import QuickGame from "./game/Quick/Game";
-import HomePage from "./home/Home";
+import QuickGame from "@/game/pages/QuickGame";
+import TournamentLobby from "@/game/pages/TournamentLobby";
+import AIGame from "@/game/pages/AIGame";
+import HomePage from "@/home/Home";
 
 const router = createBrowserRouter([
     {
@@ -38,6 +40,8 @@ const router = createBrowserRouter([
     { path: "/login", element: <Login /> },
     { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
     { path: "game/quick", element: <QuickGame /> },
+    { path: "game/ai", element: <AIGame /> },
+    { path: "game/tournament", element: <TournamentLobby /> },
 
     { path: "*", element: <NotFound /> },
 ]);

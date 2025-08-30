@@ -362,7 +362,7 @@ const User = {
         }
         return reply.status(200).send({ message: "user info updated successfully" });
     },
-    googleLogin: async (user: GoogleOAuth2) : Promise<number> => {
+    googleLogin: async (user: GoogleOAuth2): Promise<number> => {
 
         const existing_user = await userRepository.getUserByEmail(user.email);
 

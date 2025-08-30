@@ -37,14 +37,15 @@ export interface GameState {
 export type ClientMessage =
     | { type: "move"; up: boolean; down: boolean }
     | { type: "playAgain" }
-    | { type: "start" }
+    | { type: "redy" }
     | { type: "leaveGame" }
-    | { type: "identify"; username: string };
+    | { type: "human"; username: string }
+    | { type: "ai" };
 
-// --- Messages from server to client ---
 
 export type ServerMessage =
     | {
+        id: string,
         type: "matchFound";
         side: Side;
         leftUsername: string;
@@ -57,6 +58,6 @@ export type ServerMessage =
         score: Score;
     }
     | { type: "matchEnded" }
-    | { type: "waitingForOpponent" }
+    | { type: "leaveGame" }
 
 

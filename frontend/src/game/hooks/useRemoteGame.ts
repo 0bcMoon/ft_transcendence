@@ -11,6 +11,8 @@ export function useRemoteGame() {
     const keysPressed = useRef({ up: false, down: false });
 
     const [side, setSide] = useState<"left" | "right" | null>(null);
+    const [matchId, setMatchId] = useState<string | null>(null);
+
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isGameOver, setIsGameOver] = useState(false);
     const [winner, setWinner] = useState<"left" | "right" | null>(null);
@@ -23,9 +25,8 @@ export function useRemoteGame() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-            if (username) {
-                ws.send(JSON.stringify({ type: "identify", username }));
-            }
+            if (username)
+                ws.send(JSON.stringify({ type: "human", username }));
         };
 
         ws.onmessage = ({ data }) => {
@@ -33,6 +34,7 @@ export function useRemoteGame() {
 
             switch (msg.type) {
                 case "matchFound":
+                    setMatchId(msg.id); // store the match ID
                     setSide(msg.side);
                     setPlayerNames({ left: msg.leftUsername, right: msg.rightUsername });
                     setCountdown(3);
@@ -41,6 +43,7 @@ export function useRemoteGame() {
                     setFinalScore(null);
                     setWaiting(false);
                     break;
+
                 case "state":
                     if (!isGameOver) gameStateRef.current = msg.state;
                     break;
@@ -53,23 +56,31 @@ export function useRemoteGame() {
                     setWaiting(false);
                     break;
 
-                case "waitingForOpponent":
+                case "leaveGame":
                     setWaiting(true);
-                    setSide(null); //  Clear match side so UI knows you're waiting
+                    setSide(null);
+                    setPlayerNames(null);
+                    setIsGameOver(false);
+                    setWinner(null);
+                    setFinalScore(null);
+                    setCountdown(null);
+                    gameStateRef.current = null;
                     break;
             }
         };
 
         return () => ws.close();
-    }, [username, isGameOver]);
+    }, [username]);
 
     useEffect(() => {
         if (countdown === null) return;
+
         if (countdown === 0) {
-            wsRef.current?.send(JSON.stringify({ type: "start" }));
+            wsRef.current?.send(JSON.stringify({ type: "ready" }));
             setCountdown(null);
             return;
         }
+
         const timer = setTimeout(() => setCountdown((prev) => prev! - 1), 1000);
         return () => clearTimeout(timer);
     }, [countdown]);
@@ -80,22 +91,25 @@ export function useRemoteGame() {
             if (!side || countdown !== null || isGameOver) return;
 
             const { up, down } = keysPressed.current;
-            if (up || down) {
+
+            if (up || down)
                 wsRef.current.send(JSON.stringify({ type: "move", up, down }));
-            }
+
         }, 16);
 
         return () => clearInterval(interval);
     }, [side, countdown, isGameOver]);
 
     useEffect(() => {
-        const handleKey = (e: KeyboardEvent, pressed: boolean) => {
-            if (e.key === "ArrowUp" || e.key === "w") keysPressed.current.up = pressed;
-            if (e.key === "ArrowDown" || e.key === "s") keysPressed.current.down = pressed;
+        const handleKey = (pressed: boolean, key: string) => {
+            if (key === "ArrowUp" || key === "w")
+                keysPressed.current.up = pressed;
+            if (key === "ArrowDown" || key === "s")
+                keysPressed.current.down = pressed;
         };
 
-        const downHandler = (e: KeyboardEvent) => handleKey(e, true);
-        const upHandler = (e: KeyboardEvent) => handleKey(e, false);
+        const downHandler = (e: KeyboardEvent) => handleKey(true, e.key);
+        const upHandler = (e: KeyboardEvent) => handleKey(false, e.key);
 
         window.addEventListener("keydown", downHandler);
         window.addEventListener("keyup", upHandler);
@@ -108,6 +122,12 @@ export function useRemoteGame() {
 
     const handlePlayAgain = () => {
         wsRef.current?.send(JSON.stringify({ type: "playAgain" }));
+        keysPressed.current = { up: false, down: false };
+        setIsGameOver(false);
+        setWaiting(true);
+        setSide(null);
+        setFinalScore(null);
+        setWinner(null);
     };
 
     const handleGoHome = (navigate: (path: string) => void) => {
@@ -127,6 +147,7 @@ export function useRemoteGame() {
         finalScore,
         handlePlayAgain,
         handleGoHome,
+        matchId,
     };
 }
 
