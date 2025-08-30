@@ -36,7 +36,7 @@ interface ICreateRequestBody {
 function generateUUIDUsername() {
     const uuid = crypto.randomUUID();
     // Take first 8 characters and add prefix
-    return `user_${uuid.substring(0, 16)}`;
+    return `user_${uuid.substring(0, 8)}`;
 }
 
 function generateUUIDPassword() {

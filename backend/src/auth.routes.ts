@@ -23,12 +23,15 @@ const auth: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> =>
             body: registerSchema
         }
     }, Auth.register)
+
     fastify.get('/auth/logout', Auth.logout)
     fastify.get('/auth/oauth/42/callback', Auth.Intra42OAuth2)
     fastify.get('/auth/oauth/google/callback', Auth.GoogleOAuth2)
     fastify.get('/auth/2fa', { onRequest: fastify.authenticate }, Auth.TwoFactorAuth)
     fastify.get('/auth/login/2fa', Auth.TwoFactorAuthLogin)
     fastify.post('/auth/send-confirmation-code', Auth.SendConfirmationCode)
+    fastify.get('/auth/check-username', Auth.checkUsernameAvailability)
+
 
 }
 

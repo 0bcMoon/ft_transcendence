@@ -39,9 +39,25 @@ function generateRandomKey(length = 8) {
 }
 
 const Auth = {
+    checkUsernameAvailability: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { username } = req.query as { username: string };
+        if (!username) {
+            return reply.status(400).send({ message: "username is require" });
+        }
+        const existingUser = await userRepository.getUserByUsername(username);
+        if (existingUser) {
+            return reply.status(409).send({ message: 'Username already exists' });
+        }
+        return reply.status(200).send({ message: 'Username is available' });
+    },
     SendConfirmationCode: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        const { email } = req.query as { email: string };
+        const { email } = req.body as { email: string };
+
+
+        if (!email) {
+            return reply.status(400).send({ message: "email is require" });
+        }
 
         const existingEmail = await userRepository.getUserByEmail(email);
         if (existingEmail) {
@@ -191,15 +207,16 @@ const Auth = {
     register: async (req: FastifyRequest, reply: FastifyReply) => {
 
         const { username, display_name, password, email, confirmation_code } = req.body as IRegisterBody;
+
         const session_key = req.cookies.session_key;
         if (!session_key) {
             return reply.status(401).send({ message: 'Unauthorized: No session key provided' });
         }
         const session_data = register.get(session_key);
+        register.delete(session_key);
         if (!session_data) {
             return reply.status(401).send({ message: 'Unauthorized: Invalid session key' });
         }
-        register.delete(session_key);
         if (session_data.email !== email) {
             return reply.status(400).send({ message: 'Email does not match the one used for confirmation code' });
         }
@@ -225,7 +242,7 @@ const Auth = {
             oauth_type: 'local'
         });
 
-        return reply.status(201).send({ message: 'User registered successfully'});
+        return reply.status(201).send({ message: 'User registered successfully' });
     },
 
     logout: async (req: FastifyRequest, reply: FastifyReply) => {
