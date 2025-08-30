@@ -18,6 +18,10 @@ import UserProfile from '@/users/UserProfile';
 import Settings from '@/settings/Settings';
 import HomePage from './home/Home';
 import Register from './auth/Register';
+import QuickGame from './game/pages/QuickGame';
+import AIGame from './game/pages/AIGame';
+import TournamentLobby from './game/pages/TournamentLobby';
+import { StrictMode } from 'react';
 
 const router = createBrowserRouter([
     {
@@ -36,6 +40,7 @@ const router = createBrowserRouter([
         ],
     },
     { path: "/login", element: <Login /> },
+    { path: "/register", element: <Register /> },
     { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
     { path: "game/quick", element: <QuickGame /> },
     { path: "game/ai", element: <AIGame /> },
