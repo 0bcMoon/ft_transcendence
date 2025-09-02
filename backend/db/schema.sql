@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "messages" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
+CREATE INDEX IF NOT EXISTS idx_messages_createdat ON messages(created_at);
 
 CREATE TABLE IF NOT EXISTS "contacts" (
     "id" INTEGER,

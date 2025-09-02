@@ -4,7 +4,6 @@ import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
-import { useChatStore } from '@/state/Store';
 import { useState } from 'react';
 import {
     useAcceptRequest,
@@ -33,7 +32,8 @@ const StartChat = ({ relation_status, id, display_name, profile_picture }: User)
     }
 
     const navigate = useNavigate();
-    const setChat = useChatStore((state) => state.setChat)!;
+    //FIXME: : use the new chat store
+    const setChat = (a: any) => {}
 
     //TODO: on start chat add user to contact list if not already present
     const startChat = () => {
