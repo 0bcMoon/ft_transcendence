@@ -19,6 +19,11 @@ export interface User {
 
 
 export const userRepository = {
+    createContactIfNotExist: async (user_id: number, contact_id: number) => {
+        const query: string = `INSERT OR IGNORE INTO contacts (user_id, contact_id) VALUES ($1, $2), ($2, $1)`;
+        const result = await db.run(query, [user_id, contact_id]);
+        return result.changes > 0;
+    },
     createUser: async (user: CreateUser): Promise<number> => {
         const query: string = `INSERT INTO users (username, password, display_name, email, image_src, profile_picture) VALUES (?, ?, ?, ?, ?, ?)`;
         const result = await db.run(query, [user.username, user.password, user.display_name, user.email, user.image_src, 'default.jpg']);
@@ -60,7 +65,7 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
     },
 
-    getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
+    getUserWithRelationStatus: async (id: number, user_id: number): Promise<User | undefined> => {
         const query: string = `
                         SELECT
                             u.id,

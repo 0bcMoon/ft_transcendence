@@ -1,21 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ContactSidebar } from './ContactSidebar';
 import { ChatArea } from './ChatArea';
+import toast from 'react-hot-toast';
 
 function Chat() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    // const { chats, activeChat,  blockUser } = useChatData();
+    const ws = useRef<WebSocket | null>(null);
 
+    useEffect(() => {
 
-    // const handleProfileClick = (user: User) => {
-    //     setSelectedUser(user);
-    // };
+        const websocket = new WebSocket('ws://localhost:3000/chat');
+        websocket.onopen = () => {
+            toast.success('WebSocket connection established');
+        };
+        websocket.onclose = () => {
+            toast.error('WebSocket connection closed');
+        };
 
-    // const handleBlockUser = (userId: string) => {
-    //     if (window.confirm(`Are you sure you want to ${chats.find(c => c.user.id === userId)?.user.isBlocked ? 'unblock' : 'block'} this user?`)) {
-    //         blockUser(userId);
-    //     }
-    // };
+        websocket.onerror = (error) => {
+            toast.error('WebSocket error');
+            console.error('WebSocket error:', error);
+        };
+        ws.current = websocket;
+
+        return () => {
+            toast.success('WebSocket connection closed');
+            websocket.close();
+        };
+    }, []);
 
     return (
         <div className="h-[97svh] bg-gray-100 flex overflow-hidden col-span-14 border-gray-100 border-2 shadow-lg shadow-gray-200 rounded-2xl">
@@ -28,6 +40,7 @@ function Chat() {
             {/* Main Chat Area */}
             <ChatArea
                 onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+                ws={ws}
             />
         </div>
     );

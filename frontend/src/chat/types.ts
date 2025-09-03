@@ -1,11 +1,3 @@
-export interface User {
-    id: string;
-    name: string;
-    avatar: string;
-    isOnline: boolean;
-    lastSeen: string;
-    isBlocked: boolean;
-}
 
 export interface Message {
     id: string;
@@ -25,9 +17,9 @@ export interface Contacts {
         messsage_time: string | null
 }
 
-export interface ChatRequest {
-    id: string;
-    user: User;
-    message: string;
-    timestamp: string;
-}
+// export interface ChatRequest {
+//     id: string;
+//     user: User;
+//     message: string;
+//     timestamp: string;
+// }

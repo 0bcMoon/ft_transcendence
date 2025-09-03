@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS "contacts" (
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (contact_id) REFERENCES users(id),
+    UNIQUE(user_id, contact_id)
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 

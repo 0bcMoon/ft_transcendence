@@ -1,22 +1,32 @@
-import React, { useState } from 'react';
+import React, { RefObject, useEffect } from 'react';
 import { Send, Phone, Video, MoreVertical, Menu, MessageSquare, Shield } from 'lucide-react';
 import { Message } from './types';
 import { useActiveChatStore } from '@/state/Store';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '@/api/api';
+import toast from 'react-hot-toast';
 
 interface ChatAreaProps {
     onSidebarToggle: () => void;
+    ws: RefObject<WebSocket | null>;
+}
+
+interface Payload {
+    receiver_id: number | undefined,
+    content: string,
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
     onSidebarToggle,
+    ws
 }) => {
 
     const { activeChat } = useActiveChatStore();
-    const [newMessage, setNewMessage] = useState('');
+    const queryClient = useQueryClient();
+    const websocket = ws.current;
 
-    const {data: messages} = useQuery<Message[]>({
+    const { data: messages } = useQuery<Message[]>({
         queryKey: ['messages', activeChat?.id],
         queryFn: async () => {
             const respose = await api.get(`/chat/${activeChat?.id}/messages`);
@@ -24,16 +34,50 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         },
         enabled: !!activeChat?.id,
     });
-
-
-
-    const handleSendMessage = () => {
-        if (newMessage.trim() && activeChat) {
-            // In a real app, this would send the message to the backend
-            setNewMessage('');
+    const postMessage = async (payload: Payload) => {
+        if (websocket === null || websocket?.readyState !== WebSocket.OPEN) {
+            throw new Error("WebSocket is not connected");
         }
+        websocket?.send(JSON.stringify(payload));
     };
 
+    const sendMessageMutation = useMutation({
+        mutationFn: postMessage,
+        onSuccess: () => {
+            toast.success('Message sent successfully');
+        },
+        onError: (error) => {
+            toast.error('Failed to send message: ' + error.message);
+        },
+    });
+
+    const SendMessage = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        const formData = new FormData(event.currentTarget)
+        const message = formData.get("message")?.toString().trim();
+        if (message === undefined || message.length == 0)
+            return;
+
+        const newMessage: Payload = {
+            content: message,
+            receiver_id: activeChat?.id, // Assuming user_id is the ID of the receiver
+        }
+        sendMessageMutation.mutate(newMessage);
+        event.currentTarget.reset()
+    }
+
+    useEffect(() => {
+        if (!ws.current) return;
+        ws.current.onmessage = (event) => {
+            const data: Message = JSON.parse(event.data); //plz dont fail me
+            console.log("Received message:", data);
+            // Update the messages cache with the new message
+            queryClient.setQueryData<Message[]>(['messages', activeChat?.id], (messages) => {
+                if (!messages) return [data];
+                return [ ...messages, data];
+            });
+        }
+    }, [activeChat, ws]);
 
     if (!activeChat) {
         return (
@@ -90,14 +134,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                             <div
                                 className={`absolute bottom-0 right-0 w-3 h-3 
                                         rounded-full border-2 border-white 
-                                        ${activeChat.is_online ? 'bg-green-500' : 'bg-gray-400'
+                                        ${false ? 'bg-green-500' : 'bg-gray-400'
                                     }`}
                             />
                         </div>
                         <div className="ml-3">
                             <h2 className="font-semibold text-gray-900">{activeChat.display_name}</h2>
                             <p className="text-sm text-gray-500">
-                                {activeChat.is_online ? 'Active now' : `Last seen ${activeChat.last_seen}`}
+                                {false ? 'Active now' : `Last seen ${undefined}`}
                             </p>
                         </div>
                     </div>
@@ -150,27 +194,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
 
             {/* Message Input */}
-            {!(activeChat.relation_status ==='blocking') && (
+            {/* FIXME: fix the two blocking and blocked_by */}
+            {!(activeChat.relation_status === 'blocking') && (
+                <form onSubmit={SendMessage}>
                 <div className="p-4 bg-white border-t border-gray-200">
                     <div className="flex items-end space-x-3">
                         <div className="flex-1">
-                            <textarea
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
+                            <input
+                                name="message"
                                 placeholder="Type a message..."
-                                className="w-full p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none max-h-32"
-                                rows={1}
+                                className="placeholder:text-gray-300 break-all w-full p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none max-h-32"
                             />
                         </div>
                         <button
-                            onClick={handleSendMessage}
-                            disabled={!newMessage.trim()}
+                            type="submit"
                             className="p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-full transition-colors duration-200 disabled:cursor-not-allowed"
                         >
                             <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
+                </form >
             )}
         </div>
     );

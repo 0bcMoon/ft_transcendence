@@ -1,8 +1,7 @@
 import { User, X, Trophy, Users, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
-import profile from '@/image/profile.svg'
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import { useState } from 'react';
 import {
@@ -15,6 +14,8 @@ import {
 } from '@/api/mutations';
 import Loader from '@/vendor/loader';
 import Modal from '@/component/Model';
+import toast from 'react-hot-toast';
+import { useActiveChatStore } from '@/state/Store';
 
 
 
@@ -23,7 +24,25 @@ type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocking' | 'block
 
 
 
-const StartChat = ({ relation_status, id, display_name, profile_picture }: User) => {
+const StartChat = ({ relation_status, id}: User) => {
+
+    const navigate = useNavigate();
+    const setActiveChat = useActiveChatStore(state => state.setActiveChat);
+    const { mutate, isPending } = useMutation({
+        mutationFn: async () => {
+            const response = await api.get('/chat/contact', { params: { id: id } })
+            return response.data;
+        },
+        onSuccess: (data: any) => {
+            toast.success("Chat started successfully");
+            setActiveChat(data)
+            console.log(data);
+            navigate(`/chat`);
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Error: Could not start chat");
+        }
+    });
 
     switch (relation_status) {
         case 'blocking':
@@ -31,18 +50,13 @@ const StartChat = ({ relation_status, id, display_name, profile_picture }: User)
             return;
     }
 
-    const navigate = useNavigate();
+
     //FIXME: : use the new chat store
-    const setChat = (a: any) => {}
+    // const setChat = (a: any) => { }
 
     //TODO: on start chat add user to contact list if not already present
     const startChat = () => {
-        setChat({
-            id: id,
-            display_name: display_name,
-            profile_image: profile_picture ?? profile,
-        });
-        navigate(`/chat/${id}`);
+        mutate();
     }
     return (
         <div className="w-auto p-5 flex flex-row items-center gap-3
@@ -50,7 +64,7 @@ const StartChat = ({ relation_status, id, display_name, profile_picture }: User)
             transition-colors duration-300"
             onClick={startChat}
         >
-            <ChatIcons />
+            {isPending ? <Loader2 className='text-black animate-spin' /> : <ChatIcons />}
             <button className="font-semibold ">Start Chat</button>
         </div>
     )
@@ -99,7 +113,7 @@ const PlayPingPong = ({ relation_status }: User) => {
 }
 
 const BlockAction = ({ id, relation_status }: User) => {
-    const [ isModalOpen,setIsModalOpen ] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const { mutate: blockAction, isPending } = useBlockUser({ user_id: id });
     switch (relation_status) {
@@ -140,7 +154,7 @@ const BlockAction = ({ id, relation_status }: User) => {
             h-8 rounded-xl bg-red-600 hover:bg-red-700 transition-colors
             duration-300"
             >
-                { isPending ? <Loader2 className='text-white animate-spin'/> : <BlockIcon className='text-white' /> }
+                {isPending ? <Loader2 className='text-white animate-spin' /> : <BlockIcon className='text-white' />}
                 <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
             </button>
 
@@ -148,7 +162,7 @@ const BlockAction = ({ id, relation_status }: User) => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onDeny={() => setIsModalOpen(false)}
-                onAccept={() => {display_object[relation_status ?? 'else'].action(); setIsModalOpen(false)}}
+                onAccept={() => { display_object[relation_status ?? 'else'].action(); setIsModalOpen(false) }}
                 title={display_object[relation_status ?? 'else'].title}
                 message={display_object[relation_status ?? 'else'].message}
                 acceptText={display_object[relation_status ?? 'else'].acceptText}
