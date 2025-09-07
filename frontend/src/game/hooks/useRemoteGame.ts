@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
+import { useNavigate } from "react-router-dom";
 
 const WS_URL = "ws://localhost:3000/game";
 
@@ -19,6 +20,7 @@ export function useRemoteGame() {
     const [waiting, setWaiting] = useState(true);
     const [playerNames, setPlayerNames] = useState<{ left: string; right: string } | null>(null);
     const [finalScore, setFinalScore] = useState<{ left: number; right: number } | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const ws = new WebSocket(WS_URL);
@@ -73,7 +75,8 @@ export function useRemoteGame() {
     }, [username]);
 
     useEffect(() => {
-        if (countdown === null) return;
+        if (countdown === null)
+            return;
 
         if (countdown === 0) {
             wsRef.current?.send(JSON.stringify({ type: "ready" }));
@@ -130,7 +133,7 @@ export function useRemoteGame() {
         setWinner(null);
     };
 
-    const handleGoHome = (navigate: (path: string) => void) => {
+    const handleGoHome = () => {
         wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
         wsRef.current?.close();
         navigate("/");

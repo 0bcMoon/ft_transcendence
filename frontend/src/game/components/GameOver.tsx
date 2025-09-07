@@ -1,6 +1,7 @@
+import { types } from 'util';
 import { GameState } from '../engine/types';
 
-export interface GameOverProps {
+type GameOverProps = {
     gameState: GameState;
     onPlayAgain: () => void;
     onMainMenu: () => void;

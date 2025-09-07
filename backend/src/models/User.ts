@@ -403,7 +403,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot update email for oauth users" });
         }
         else if (!confirmtion_code) {
-            return await User.sendEmailConfirmation(req.user.id,  email, reply);
+            return await User.sendEmailConfirmation(req.user.id, email, reply);
         }
         else if (!User.confirmtion_code_match(req.user.id, email, confirmtion_code)) {
             return reply.status(400).send({ message: "invalid confirmation code" });
@@ -473,7 +473,7 @@ const User = {
         return await userRepository.createOauthUser(new_user);;
     },
 
-    intraLogin: async (user: Intra42OAuth2): Promise<number| undefined> => {
+    intraLogin: async (user: Intra42OAuth2): Promise<number | undefined> => {
 
         const existing_user = await userRepository.getUserByEmail(user.email);
 

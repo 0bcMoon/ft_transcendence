@@ -71,42 +71,40 @@ CREATE TABLE IF NOT EXISTS "blocks" (
 );
 -- -------------------- Game schema ------------------
 
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_username" ON "users" ("username");
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_email" ON "users" ("email");
-CREATE INDEX IF NOT EXISTS "idx_display_name" ON "users" ("display_name");
 
-CREATE TABLE IF NOT EXISTS "matches" (
+CREATE TABLE IF NOT EXISTS "games" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "match_uuid" TEXT UNIQUE NOT NULL,
-    "player_left_id" INT NOT NULL,
-    "player_right_id" INT NOT NULL,
-    "winner_id" INT,
-    "left_score" INT DEFAULT 0,
-    "right_score" INT DEFAULT 0,
-    "status" TEXT NOT NULL CHECK(status IN ('waiting','playing','ended')) DEFAULT 'waiting',
-    "started_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "ended_at" TIMESTAMP,
-    FOREIGN KEY (player_left_id) REFERENCES users(id),
-    FOREIGN KEY (player_right_id) REFERENCES users(id),
-    FOREIGN KEY (winner_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS "game_events" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-    "match_id" INT NOT NULL,
-    "event_type" TEXT NOT NULL, -- e.g. 'score', 'pause', 'resume'
-    "event_data" TEXT, -- JSON blob for details
+    "mode" TEXT NOT NULL CHECK(mode IN ('local_1v1', 'remote_1v1', 'multiplayer', 'tournament')),
+    "status" TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting', 'in-progress', 'finished')),
+    "max_players" INTEGER NOT NULL,
+    "duration" INTEGER DEFAULT 0,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (match_id) REFERENCES matches(id)
+    "ended_at" TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS "game_players" (
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "game_id" INTEGER NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    "team" TEXT DEFAULT NULL,
+    "position" TEXT DEFAULT NULL,
+    "score" INTEGER DEFAULT 0,
+    "goals_scored" INTEGER DEFAULT 0,
+    "goals_conceded" INTEGER DEFAULT 0,
+    "accuracy" REAL DEFAULT 0,
+    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS "leaderboard" (
-    "user_id" INT PRIMARY KEY,
-    "games_played" INT DEFAULT 0,
-    "games_won" INT DEFAULT 0,
-    "games_lost" INT DEFAULT 0,
-    "highest_score" INT DEFAULT 0,
-    "last_played" TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS "user_stats" (
+    "user_id" INTEGER PRIMARY KEY,
+    "total_matches" INTEGER DEFAULT 0,
+    "wins" INTEGER DEFAULT 0,
+    "losses" INTEGER DEFAULT 0,
+    "win_rate" REAL DEFAULT 0,
+    "avg_score" REAL DEFAULT 0,
+    "playtime" INTEGER DEFAULT 0,
+    "longest_win_streak" INTEGER DEFAULT 0,
+    "current_win_streak" INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

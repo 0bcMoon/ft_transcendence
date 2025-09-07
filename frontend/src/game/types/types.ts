@@ -61,3 +61,16 @@ export type ServerMessage =
     | { type: "leaveGame" }
 
 
+export type RemoteGame = {
+    gameStateRef: React.RefObject<GameState | null>;
+    countdown: number | null;
+    waiting: boolean;
+    isGameOver: boolean;
+    winner: "left" | "right" | null;
+    side: "left" | "right" | null;
+    playerNames: { left: string; right: string } | null;
+    finalScore: { left: number; right: number } | null;
+    handlePlayAgain: () => void;
+    handleGoHome: () => void;
+};
+

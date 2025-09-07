@@ -1,38 +1,29 @@
-import { useNavigate } from "react-router-dom";
 import GameCanvas from "../components/GameCanvas";
-import GameOverMenu from "../components/GameOverMenu";
-import WaitingScreen from "../components/WaitingScreen";
-import PlayerInfoBar from "../components/PlayerInfoBar";
 import { useRemoteGame } from "../hooks/useRemoteGame";
+import GameHeader from "../components/GameHeader";
+import PlayersHeader from "../components/PlayersHeader";
+import GameOverScreen from "../components/GameOverScreen";
+import WaitingOverlay from "../components/WaitingOverlay";
 
 export default function Game() {
-    const navigate = useNavigate();
     const game = useRemoteGame();
+
     return (
-        <div
-            className="h-screen w-full bg-gradient-to-br from-gray-900 via-black to-gray-800 flex flex-col items-center justify-center text-white font-sans">
-            <h1
-                className="text-4xl font-bold mb-6 tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
-                PING PONG
-            </h1>
+        <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
+            <div className="max-w-4xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
+                <GameHeader game={game} />
 
-            {game.playerNames && !game.isGameOver && !game.waiting && (
-                <PlayerInfoBar playerNames={game.playerNames} />
-            )}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
+                    {!game.isGameOver && !game.waiting && (<PlayersHeader game={game} />)}
 
-            {!game.isGameOver && (
-                <GameCanvas gameStateRef={game.gameStateRef} countdown={game.countdown} isGameOver={game.isGameOver}
-                    winner={game.winner} side={game.side} waiting={game.waiting} />
-            )}
+                    {!game.isGameOver && (<GameCanvas game={game} />)}
 
-            {game.isGameOver && game.finalScore && (
-                <GameOverMenu winner={game.winner} side={game.side} score={game.finalScore} onPlayAgain={game.handlePlayAgain}
-                    onExit={() => game.handleGoHome(navigate)}
-                />
-            )}
+                    {game.isGameOver && game.finalScore && (<GameOverScreen game={game} />)}
 
-            {game.waiting &&
-                <WaitingScreen />}
+                    {game.waiting && <WaitingOverlay />}
+                </div>
+            </div>
         </div>
     );
 }
+

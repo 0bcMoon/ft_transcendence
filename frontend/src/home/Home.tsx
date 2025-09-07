@@ -1,148 +1,181 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Home, MessageCircle, Trophy, Users, Gamepad2, Clock, Calendar, Award, ChevronRight, Zap } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import {
+    Trophy,
+    Clock,
+    Users,
+    Award,
+    Crown,
+    Users2,
+    Bot
+
+} from "lucide-react";
 import { useAuthStore } from "@/state/authStore";
-import '@/App.css'
+import api from "@/api/api.ts";
+import "@/App.css";
 
+interface StatCardProps {
+    icon: React.ReactNode;
+    iconColor: string;
+    bgColor: string;
+    label: string;
+    value: string | number;
+    subText: string;
+}
+interface Stats {
+    ranking: number | null;
+    wins: number;
+    playtime: number;
+}
+
+interface GameModeCardProps {
+    to: string;
+    icon: React.ReactNode;
+    iconColor: string;
+    bgColor: string;
+    title: string;
+    description: string;
+}
 export default function HomePage() {
-
     const user = useAuthStore((state) => state.user);
+    const [stats, setStats] = useState<Stats>({ ranking: null, wins: 0, playtime: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchStats() {
+            try {
+                const res = await api.get("/game/stats");
+                setStats(res.data);
+            } catch (err) {
+                console.error("Failed to load stats", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        if (user) fetchStats();
+    }, [user]);
 
     return (
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
-            <div className="max-w-4xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
-                {/* Header Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white mb-5 shadow-md">
-                    <h1 className="text-2xl font-bold mb-1">Welcome back, {user?.username}!</h1>
-                    <p className="text-blue-100">Ready to play some ping pong?</p>
-                    <div className="mt-5 flex gap-3">
-                        <Link
-                            to="/game"
-                            className="bg-white text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-opacity-90 transition-all flex items-center"
-                        >
-                            <Gamepad2 size={18} className="mr-2" />
-                            Play Now
-                        </Link>
-                        <Link
-                            to="/chat"
-                            className="bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center"
-                        >
-                            <MessageCircle size={18} className="mr-2" />
-                            Chat
-                        </Link>
+            <div className="max-w-5xl mx-auto w-full px-6 py-6">
+                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-2xl p-8 text-white mb-8">
+                    <div className="relative z-10">
+                        <h1 className="text-4xl font-extrabold text-center tracking-wide">
+                            PING PONG
+                        </h1>
                     </div>
                 </div>
 
-                {/* Stats Overview */}
-                <div className="grid grid-cols-3 gap-4 mb-5">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="bg-green-100 p-2 rounded-lg">
-                                <Trophy size={18} className="text-green-600" />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500">Ranking</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900">#42</h3>
-                        <p className="text-sm text-gray-500">Global position</p>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="bg-blue-100 p-2 rounded-lg">
-                                <Zap size={18} className="text-blue-600" />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500">Wins</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900">124</h3>
-                        <p className="text-sm text-gray-500">Total victories</p>
-                    </div>
-
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="bg-purple-100 p-2 rounded-lg">
-                                <Clock size={18} className="text-purple-600" />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500">Playtime</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900">24h</h3>
-                        <p className="text-sm text-gray-500">Last 7 days</p>
-                    </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-4 mb-5">
-                    <Link
-                        to="/game"
-                        className="bg-white rounded-xl p-5 flex flex-col items-center justify-center shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all"
-                    >
-                        <div className="bg-green-100 p-3 rounded-full mb-3">
-                            <Gamepad2 size={24} className="text-green-600" />
-                        </div>
-                        <h2 className="font-bold text-gray-900">Play Now</h2>
-                    </Link>
-
-                    <Link
-                        to="/chat"
-                        className="bg-white rounded-xl p-5 flex flex-col items-center justify-center shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all"
-                    >
-                        <div className="bg-yellow-100 p-3 rounded-full mb-3">
-                            <MessageCircle size={24} className="text-yellow-600" />
-                        </div>
-                        <h2 className="font-bold text-gray-900">Chat</h2>
-                    </Link>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <StatCard
+                        icon={<Crown size={22} />}
+                        iconColor="text-yellow-500"
+                        bgColor="bg-yellow-50"
+                        label="Global Ranking"
+                        value={loading ? "..." : stats.ranking ? `#${stats.ranking}` : "Unranked"}
+                        subText="Your position"
+                    />
+                    <StatCard
+                        icon={<Trophy size={22} />}
+                        iconColor="text-emerald-500"
+                        bgColor="bg-emerald-50"
+                        label="Total Wins"
+                        value={loading ? "..." : stats.wins}
+                        subText={`${loading ? "..." : stats.wins} victories`}
+                    />
+                    <StatCard
+                        icon={<Clock size={22} />}
+                        iconColor="text-purple-500"
+                        bgColor="bg-purple-50"
+                        label="Playtime"
+                        value={loading ? "..." : `${stats.playtime}h`}
+                        subText="Last 7 days"
+                    />
                 </div>
 
                 {/* Game Modes */}
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-5">
-                    <h2 className="font-bold text-gray-900 mb-4">Game Modes</h2>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Game Modes</h2>
                     <div className="space-y-3">
-                        <Link to="/game/casual" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                            <div className="bg-green-100 p-2 rounded-lg mr-3">
-                                <Users size={20} className="text-green-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-gray-900">Casual Match</p>
-                                <p className="text-sm text-gray-500">Play for fun</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-400" />
-                        </Link>
+                        <GameModeCard
+                            to="/game/local"
+                            icon={<Users2 size={20} />}
+                            iconColor="text-purple-500"
+                            bgColor="bg-orange-50"
+                            title="Local Game"
+                            description="Play with a friend"
+                        />
+                        <GameModeCard
+                            to="/game/quick"
+                            icon={<Users size={20} />}
+                            iconColor="text-emerald-500"
+                            bgColor="bg-emerald-50"
+                            title="Casual Match"
+                            description="Practice and have fun"
+                        />
+                        <GameModeCard
+                            to="/game/tournament"
+                            icon={<Award size={20} />}
+                            iconColor="text-purple-500"
+                            bgColor="bg-purple-50"
+                            title="Tournament"
+                            description="Join championships"
+                        />
+                        <GameModeCard
+                            to="/game/ai"
+                            icon={<Bot size={20} />}
+                            iconColor="text-purple-500"
+                            bgColor="bg-cyan-50"
+                            title="Play vs AI"
+                            description="Challenge our AI opponent"
+                        />
+                        <GameModeCard
+                            to="/game/multiplayer-4"
+                            icon={<Users size={20} />}
+                            iconColor="text-red-500"
+                            bgColor="bg-red-50"
+                            title="4-Player Remote"
+                            description="Play Pong with 4 players"
+                        />
 
-                        <Link to="/game/ranked" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                            <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                                <Trophy size={20} className="text-blue-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-gray-900">Ranked Match</p>
-                                <p className="text-sm text-gray-500">Competitive play</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-400" />
-                        </Link>
-
-                        <Link to="/game/tournament" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                            <div className="bg-purple-100 p-2 rounded-lg mr-3">
-                                <Award size={20} className="text-purple-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-gray-900">Tournament</p>
-                                <p className="text-sm text-gray-500">Join championship</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-400" />
-                        </Link>
-
-                        <Link to="/events" className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                            <div className="bg-red-100 p-2 rounded-lg mr-3">
-                                <Calendar size={20} className="text-red-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-medium text-gray-900">Events</p>
-                                <p className="text-sm text-gray-500">Special competitions</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-400" />
-                        </Link>
                     </div>
                 </div>
+
             </div>
         </div>
+    );
+}
+
+
+function StatCard({ icon, iconColor, bgColor, label, value, subText }: StatCardProps) {
+    return (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:border-blue-200 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+                <div className={`${bgColor} ${iconColor} p-3 rounded-xl`}>{icon}</div>
+                <span className="text-sm font-medium text-gray-500">{label}</span>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
+            <p className="text-sm text-gray-500">{subText}</p>
+        </div>
+    );
+}
+
+
+function GameModeCard({ to, icon, iconColor, bgColor, title, description }: GameModeCardProps) {
+    return (
+        <Link
+            to={to}
+            className="flex items-center p-4 hover:bg-gray-50 rounded-xl transition-all group" >
+            <div className={`${bgColor} ${iconColor} p-3 rounded-xl mr-4 group-hover:scale-105 transition-transform`}>
+                {icon}
+            </div>
+            <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{title}</h3>
+                <p className="text-sm text-gray-500">{description}</p>
+            </div>
+            <div className="text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all">
+                →
+            </div>
+        </Link>
     );
 }

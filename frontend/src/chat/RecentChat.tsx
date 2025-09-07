@@ -47,7 +47,7 @@ const Contact = ({ id, display_name, lastMessage, profilePicture }: ChatProfileP
                 alt="profile image"
                 name={display_name}
                 isOnline={false}
-                size="md" 
+                size="md"
                 className='m-3'
             />
             <div className="flex flex-col justify-evenly w-full">

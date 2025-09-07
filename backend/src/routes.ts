@@ -1,5 +1,4 @@
 import { FastifyPluginAsync } from 'fastify';
-import Auth from './auth/auth';
 import User from './models/User';
 import Game from './models/Game';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
@@ -8,78 +7,35 @@ import { requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo } 
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
 
-    fastify.get('/api/user', { onRequest: fastify.authenticate }, User.getUserProfile)
-
-    fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile)
-
-
-    fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers)
-    fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends)
-    fastify.delete('/user/friends/:user_id', { onRequest: fastify.authenticate }, User.unFriends) // unfriend
-
-
-    fastify.get('/user/block', { onRequest: fastify.authenticate }, User.getBlockedUsers)
-
-    fastify.post('/user/block', {
-        onRequest: fastify.authenticate,
-        schema: {
-            body: blockUserBody
-        }
-    }, User.handelBlock)
-
-    fastify.post('/user/requests', {
-        onRequest: fastify.authenticate,
-        schema: {
-            body: createRequestBody
-        }
-    }, User.createRequests)
-
-    fastify.patch('/user/requests', {
-        onRequest: fastify.authenticate,
-        schema: {
-            body: requestHandlerBody
-        }
-    },
-        User.HandelRequests
-    )
-
-    fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture)
-    fastify.patch('/user/update/info', {
-        onRequest: fastify.authenticate
-        , schema: {
-            body: updateUserInfo
-        }
-    }, User.updateUserInfo)
-
-    //TODO: add schema validation
-
-    fastify.post('/user/update/email', {
-        onRequest: fastify.authenticate
-        // , schema: {
-        //     body: {
-        //         type: 'object',
-        //         properties: {
-        //             email: { type: 'string', format: 'email' }
-        //         },
-        //         required: ['email']
-        //     }
-        // }
-    }, User.updateEmail)
-
-    fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
-
-    fastify.delete('/user/requests/:req_id', { onRequest: fastify.authenticate }, User.deleteRequest)
-
-    fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList)
-
-
-    fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages)
+    // === USER ROUTES ===
+    fastify.get('/api/user', { onRequest: fastify.authenticate }, User.getUserProfile);
+    fastify.get('/user/:id', { onRequest: fastify.authenticate }, User.getUsersProfile);
+    fastify.get('/users', { onRequest: fastify.authenticate }, User.findUsers);
+    fastify.get('/user/friends', { onRequest: fastify.authenticate }, User.getFriends);
+    fastify.delete('/user/friends/:user_id', { onRequest: fastify.authenticate }, User.unFriends);
+    fastify.get('/user/block', { onRequest: fastify.authenticate }, User.getBlockedUsers);
+    fastify.post('/user/block', { onRequest: fastify.authenticate, schema: { body: blockUserBody } }, User.handelBlock);
+    fastify.post('/user/requests', { onRequest: fastify.authenticate, schema: { body: createRequestBody } }, User.createRequests);
+    fastify.patch('/user/requests', { onRequest: fastify.authenticate, schema: { body: requestHandlerBody } }, User.HandelRequests);
+    fastify.patch('/user/update/profile_picture', { onRequest: fastify.authenticate }, User.updateProfilePicture);
+    fastify.patch('/user/update/info', { onRequest: fastify.authenticate, schema: { body: updateUserInfo } }, User.updateUserInfo);
+    fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests);
+    fastify.delete('/user/requests/:req_id', { onRequest: fastify.authenticate }, User.deleteRequest);
+    fastify.get('/chat/contacts', { onRequest: fastify.authenticate }, User.getContactList);
+    fastify.get('/chat/:id/messages', { onRequest: fastify.authenticate }, User.getMessages);
 
     // === GAME ROUTES ===
-    fastify.get('/game/matches', { onRequest: fastify.authenticate }, Game.getUserMatches);
-    fastify.get('/game/matches/:match_uuid', { onRequest: fastify.authenticate }, Game.getMatchDetails);
-    fastify.get('/game/leaderboard', { onRequest: fastify.authenticate }, Game.getLeaderboard);
-    fastify.post('/game/matches', { onRequest: fastify.authenticate }, Game.createTestMatch);
+    fastify.post('/game', { onRequest: fastify.authenticate }, Game.createGame);
+    fastify.get('/game/:id', { onRequest: fastify.authenticate }, Game.getGameById);
+    fastify.get('/games/recent', { onRequest: fastify.authenticate }, Game.getRecentGamesForUser);
+    fastify.patch('/game/:id/status', { onRequest: fastify.authenticate }, Game.updateGameStatus);
+    fastify.patch('/game/:id/finish', { onRequest: fastify.authenticate }, Game.finishGame);
+    fastify.post('/game/player', { onRequest: fastify.authenticate }, Game.addPlayerToGame);
+    fastify.patch('/game/player/stats', { onRequest: fastify.authenticate }, Game.updatePlayerStats);
+    fastify.get('/game/:id/players', { onRequest: fastify.authenticate }, Game.getPlayersInGame);
+    fastify.get('/user/stats', { onRequest: fastify.authenticate }, Game.getUserStats);
+    fastify.patch('/user/stats', { onRequest: fastify.authenticate }, Game.updateUserStats);
+
 
 };
 

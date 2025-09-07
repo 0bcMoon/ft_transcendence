@@ -1,149 +1,167 @@
-import assert from "assert";
-import db from "../../db/db";
+import assert from 'assert';
+import db from '../../db/db';
 
-export interface MatchRecord {
+export interface Game {
     id: number;
-    match_uuid: string;
-    player_left_id: number;
-    player_right_id: number;
-    winner_id: number | null;
-    left_score: number;
-    right_score: number;
-    status: "waiting" | "playing" | "ended";
-    started_at: Date;
+    mode: 'local_1v1' | 'remote_1v1' | 'multiplayer' | 'tournament';
+    status: 'waiting' | 'in-progress' | 'finished';
+    max_players: number;
+    duration: number;
+    created_at: Date;
     ended_at: Date | null;
 }
 
-export interface GameEventRecord {
+export interface GamePlayer {
     id: number;
-    match_id: number;
-    event_type: string;
-    event_data: string | null;
-    created_at: Date;
+    game_id: number;
+    user_id: number;
+    team: string | null;
+    position: string | null;
+    score: number;
+    goals_scored: number;
+    goals_conceded: number;
+    accuracy: number;
 }
 
-export interface LeaderboardRecord {
+export interface UserStats {
     user_id: number;
-    games_played: number;
-    games_won: number;
-    games_lost: number;
-    highest_score: number;
-    last_played: Date | null;
+    total_matches: number;
+    wins: number;
+    losses: number;
+    win_rate: number;
+    avg_score: number;
+    playtime: number;
+    longest_win_streak: number;
+    current_win_streak: number;
 }
 
 export const gameRepository = {
-    // === MATCHES ===
-    createMatch: async (
-        match_uuid: string,
-        player_left_id: number,
-        player_right_id: number
-    ): Promise<number> => {
-        const result = await db.run(
-            `INSERT INTO matches (match_uuid, player_left_id, player_right_id, status)
-             VALUES (?, ?, ?, 'waiting')`,
-            [match_uuid, player_left_id, player_right_id]
-        );
-        assert(result.changes === 1, "Failed to insert match");
-        return result.lastID; // DB row id
+    // -------------------- GAMES --------------------
+    createGame: async (mode: Game['mode'], max_players: number, status: Game['status'] = 'waiting'): Promise<number> => {
+        const query = `INSERT INTO games (mode, max_players, status) VALUES (?, ?, ?)`;
+        const result = await db.run(query, [mode, max_players, status]);
+        return result.lastID;
     },
 
-    startMatch: async (match_uuid: string) => {
-        await db.run(
-            `UPDATE matches SET status='playing', started_at=CURRENT_TIMESTAMP
-             WHERE match_uuid=?`,
-            [match_uuid]
-        );
+    updateGameStatus: async (gameId: number, status: Game['status']): Promise<boolean> => {
+        const query = `UPDATE games SET status = ? WHERE id = ?`;
+        const result = await db.run(query, [status, gameId]);
+        assert(result.changes <= 1, 'Unexpected number of rows updated');
+        return result.changes > 0;
     },
 
-    updateScore: async (
-        match_uuid: string,
-        left_score: number,
-        right_score: number
-    ) => {
-        await db.run(
-            `UPDATE matches SET left_score=?, right_score=? WHERE match_uuid=?`,
-            [left_score, right_score, match_uuid]
-        );
+    startMatch: async (gameId: number): Promise<boolean> => {
+        return gameRepository.updateGameStatus(gameId, 'in-progress');
     },
 
-    endMatch: async (
-        match_uuid: string,
-        winner_id: number
-    ) => {
-        await db.run(
-            `UPDATE matches
-             SET status='ended', winner_id=?, ended_at=CURRENT_TIMESTAMP
-             WHERE match_uuid=?`,
-            [winner_id, match_uuid]
-        );
+    finishGame: async (gameId: number, duration: number): Promise<boolean> => {
+        const query = `
+            UPDATE games
+            SET status = 'finished', duration = ?, ended_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+        const result = await db.run(query, [duration, gameId]);
+        assert(result.changes <= 1, 'Unexpected number of rows updated');
+        return result.changes > 0;
     },
 
-    getMatchesByUser: async (user_id: number) => {
-        return await db.all(
-            `SELECT * FROM matches
-         WHERE player_left_id = ? OR player_right_id = ?
-         ORDER BY started_at DESC`,
-            [user_id, user_id]
-        );
+    endMatch: async (gameId: number, duration: number): Promise<boolean> => {
+        return gameRepository.finishGame(gameId, duration);
     },
 
-    getMatchByUUID: async (match_uuid: string): Promise<MatchRecord | undefined> => {
-        return await db.get(`SELECT * FROM matches WHERE match_uuid=?`, [match_uuid]);
+    getGameById: async (gameId: number): Promise<Game | undefined> => {
+        return await db.get(`SELECT * FROM games WHERE id = ?`, [gameId]);
     },
 
-    // === GAME EVENTS ===
-    addEvent: async (
-        match_uuid: string,
-        event_type: string,
-        event_data?: object
-    ) => {
-        await db.run(
-            `INSERT INTO game_events (match_id, event_type, event_data)
-             VALUES (
-                (SELECT id FROM matches WHERE match_uuid=?),
-                ?, ?
-             )`,
-            [match_uuid, event_type, event_data ? JSON.stringify(event_data) : null]
-        );
+    getGameDetailsWithPlayers: async (gameId: number) => {
+        const game = await gameRepository.getGameById(gameId);
+        if (!game) return undefined;
+        const players = await gameRepository.getPlayersInGame(gameId);
+        return { ...game, players };
     },
 
-    getEventsForMatch: async (match_uuid: string): Promise<GameEventRecord[]> => {
-        return await db.all(
-            `SELECT ge.* FROM game_events ge
-             JOIN matches m ON m.id = ge.match_id
-             WHERE m.match_uuid=?
-             ORDER BY ge.created_at ASC`,
-            [match_uuid]
-        );
+    getRecentGamesForUser: async (userId: number, limit: number = 10) => {
+        const query = `
+            SELECT g.*, gp.score, gp.goals_scored, gp.goals_conceded
+            FROM games g
+            JOIN game_players gp ON g.id = gp.game_id
+            WHERE gp.user_id = ?
+            ORDER BY g.created_at DESC
+            LIMIT ?
+        `;
+        return await db.all(query, [userId, limit]);
     },
 
-    // === LEADERBOARD ===
-    updateLeaderboard: async (
-        user_id: number,
-        won: boolean,
-        score: number
-    ) => {
-        await db.run(
-            `INSERT INTO leaderboard (user_id, games_played, games_won, games_lost, highest_score, last_played)
-             VALUES (?, 1, ?, ?, ?, CURRENT_TIMESTAMP)
-             ON CONFLICT(user_id) DO UPDATE SET
-                games_played = games_played + 1,
-                games_won    = games_won + excluded.games_won,
-                games_lost   = games_lost + excluded.games_lost,
-                highest_score= MAX(highest_score, excluded.highest_score),
-                last_played  = CURRENT_TIMESTAMP`,
-            [user_id, won ? 1 : 0, won ? 0 : 1, score]
-        );
+    deleteGame: async (gameId: number): Promise<boolean> => {
+        const query = `DELETE FROM games WHERE id = ?`;
+        const result = await db.run(query, [gameId]);
+        assert(result.changes <= 1, 'Unexpected number of rows deleted');
+        return result.changes > 0;
     },
 
-    getTopPlayers: async (limit: number = 10): Promise<LeaderboardRecord[]> => {
-        return await db.all(
-            `SELECT l.*, u.username, u.display_name
-             FROM leaderboard l
-             JOIN users u ON u.id = l.user_id
-             ORDER BY games_won DESC, games_played DESC
-             LIMIT ?`,
-            [limit]
-        );
+    // -------------------- GAME PLAYERS --------------------
+    addPlayerToGame: async (gameId: number, userId: number, team: string | null = null, position: string | null = null): Promise<number> => {
+        const query = `INSERT INTO game_players (game_id, user_id, team, position) VALUES (?, ?, ?, ?)`;
+        const result = await db.run(query, [gameId, userId, team, position]);
+        return result.lastID;
+    },
+
+    updatePlayerStats: async (gameId: number, userId: number, score: number, goals_scored: number, goals_conceded: number, accuracy: number): Promise<boolean> => {
+        const query = `
+            UPDATE game_players
+            SET score = ?, goals_scored = ?, goals_conceded = ?, accuracy = ?
+            WHERE game_id = ? AND user_id = ?
+        `;
+        const result = await db.run(query, [score, goals_scored, goals_conceded, accuracy, gameId, userId]);
+        assert(result.changes <= 1, 'Unexpected number of rows updated');
+        return result.changes > 0;
+    },
+
+    updateScore: async (gameId: number, leftScore: number, rightScore: number): Promise<void> => {
+        await db.run(`UPDATE game_players SET score = ? WHERE game_id = ? AND position = 'left'`, [leftScore, gameId]);
+        await db.run(`UPDATE game_players SET score = ? WHERE game_id = ? AND position = 'right'`, [rightScore, gameId]);
+    },
+
+    getPlayersInGame: async (gameId: number): Promise<GamePlayer[]> => {
+        return await db.all(`SELECT * FROM game_players WHERE game_id = ?`, [gameId]);
+    },
+
+    // -------------------- USER STATS --------------------
+    getUserStats: async (userId: number): Promise<UserStats | undefined> => {
+        return await db.get(`SELECT * FROM user_stats WHERE user_id = ?`, [userId]);
+    },
+
+    updateUserStats: async (userId: number, stats: Partial<UserStats>): Promise<boolean> => {
+        const fields = Object.keys(stats).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(stats);
+        const query = `UPDATE user_stats SET ${fields} WHERE user_id = ?`;
+        const result = await db.run(query, [...values, userId]);
+        assert(result.changes <= 1, 'Unexpected number of rows updated');
+        return result.changes > 0;
+    },
+
+    updateUserStatsAfterMatch: async (userId: number, won: boolean, score: number, duration: number): Promise<void> => {
+        const stats = await gameRepository.getUserStats(userId);
+        if (!stats) {
+            await gameRepository.createUserStats(userId);
+            return gameRepository.updateUserStatsAfterMatch(userId, won, score, duration);
+        }
+        const total_matches = stats.total_matches + 1;
+        const wins = stats.wins + (won ? 1 : 0);
+        const losses = stats.losses + (won ? 0 : 1);
+        const win_rate = (wins / total_matches) * 100;
+        const avg_score = ((stats.avg_score * stats.total_matches) + score) / total_matches;
+        const playtime = stats.playtime + duration;
+        const current_win_streak = won ? stats.current_win_streak + 1 : 0;
+        const longest_win_streak = Math.max(stats.longest_win_streak, current_win_streak);
+
+        await gameRepository.updateUserStats(userId, { total_matches, wins, losses, win_rate, avg_score, playtime, current_win_streak, longest_win_streak });
+    },
+
+    createUserStats: async (userId: number): Promise<number> => {
+        const query = `INSERT INTO user_stats (user_id) VALUES (?)`;
+        const result = await db.run(query, [userId]);
+        return result.lastID;
     }
 };
+

@@ -1,35 +1,35 @@
 import { GAME_HEIGHT, GAME_WIDTH } from "./constants";
+import { qTable, getStateIndex } from "./qLearningPolicy";
 import type { GameState, Side } from "./types/types";
 
-/**
- * Human-like AI:
- * - Sees GameState at most once per reactionMs
- * - Predicts ball y at paddle x with wall bounces (no A*)
- * - Adds aim error and a deadzone to feel human and prevent jitter
- * - Optionally detours for power-ups if beneficial (heuristic)
- */
 export class AIController {
     private timer?: NodeJS.Timeout;
-    private lastSnapshot?: GameState;
+    private epsilon: number;
+    private lastState?: number;
+    private lastAction?: number;
 
     constructor(
         private getState: () => GameState,
         private updateIntent: (intent: { up: boolean; down: boolean }) => void,
         private side: Side,
         private config: {
-            reactionMs?: number;   // how often AI "looks" at the world
-            aimError?: number;     // random vertical error (px)
-            deadzone?: number;     // stop moving if within this error (px)
-            centerBias?: number;   // desire to drift toward center when ball is away (0..1)
-            maxChaseDist?: number; // if predicted impact far from paddle center, chase more aggressively
-            powerupAggro?: number; // 0..1: how likely to detour for good power-ups
+            reactionMs?: number;   // default 1000ms for spec
+            epsilon?: number;      // exploration rate
+            alpha?: number;        // learning rate
+            gamma?: number;        // discount factor
+            deadzone?: number;     // px threshold to stop moving
+            aimError?: number;     // px random offset for human feel
+            powerupAggro?: number; // 0..1 chance to chase power-ups
+            training?: boolean;    // enable live Q-updates
         } = {}
-    ) { }
+    ) {
+        this.epsilon = config.epsilon ?? 0.1;
+    }
 
     start() {
         this.stop();
-        const tick = () => this.thinkSafe();
-        this.timer = setInterval(tick, this.config.reactionMs ?? 1000);
+        const period = this.config.reactionMs ?? 1000; // 1s default
+        this.timer = setInterval(() => this.think(), period);
     }
 
     stop() {
@@ -37,122 +37,120 @@ export class AIController {
         this.timer = undefined;
     }
 
-    private thinkSafe() {
-        try { this.think(); } catch { /* avoid crashing loop on edge-case */ }
-    }
-
     private think() {
+        // 1) Single snapshot per tick
         const s = this.getState();
-        this.lastSnapshot = s;
-        if (s.status !== "playing") return;
+        if (s.status !== "playing") {
+            this.updateIntent({ up: false, down: false });
+            return;
+        }
 
         const paddle = s.paddles[this.side];
         const center = paddle.y + paddle.height / 2;
 
-        // 1) If power-ups exist and make sense, consider detour
+        // 2) Optional power-up detour
         const puTarget = this.choosePowerupTarget(s);
-        if (puTarget) {
-            const up = center > puTarget + (this.config.deadzone ?? 6);
-            const down = center < puTarget - (this.config.deadzone ?? 6);
-            return this.updateIntent({ up, down });
+        if (puTarget !== null) {
+            return this.moveToward(center, puTarget);
         }
 
-        // 2) Predict impact y at paddle x (with wall bounces)
-        const predictedY = this.predictBallImpactY(s);
+        // 3) Predict intercept Y from snapshot
+        const predictedY = this.predictImpactY(s);
 
-        // 3) Add aim error for human feel
+        // 4) Add human-like aim error
         const aimError = this.config.aimError ?? 8;
-        const targetY = predictedY + this.rand(-aimError, aimError);
+        const targetY = this.clamp(predictedY + this.rand(-aimError, aimError), 0, GAME_HEIGHT);
 
-        // 4) If ball is moving away, drift toward center
-        const movingAway =
-            (this.side === "left" && s.ball.speedX > 0) ||
-            (this.side === "right" && s.ball.speedX < 0);
+        // 5) Q-policy bias
+        const stateIndex = getStateIndex(s.ball.y, center);
+        const action = this.chooseAction(stateIndex);
+        const bias = action === 1 ? -10 : action === 2 ? 10 : 0;
+        const finalTarget = this.clamp(targetY + bias, 0, GAME_HEIGHT);
 
-        const driftCenter = GAME_HEIGHT / 2;
-        const centerBias = this.config.centerBias ?? 0.5;
-        const finalTarget = movingAway
-            ? this.lerp(targetY, driftCenter, centerBias)
-            : targetY;
+        // 6) Move toward target (simulated key presses)
+        this.moveToward(center, finalTarget);
 
-        // 5) Turn intents on/off like held keys
+        // 7) Live Q-learning update
+        if (this.config.training && this.lastState !== undefined && this.lastAction !== undefined) {
+            const reward = this.getReward(s);
+            this.updateQTable(this.lastState, this.lastAction, reward, stateIndex);
+        }
+
+        this.lastState = stateIndex;
+        this.lastAction = action;
+    }
+
+    private moveToward(center: number, targetY: number) {
         const deadzone = this.config.deadzone ?? 6;
-        const up = center > finalTarget + deadzone;
-        const down = center < finalTarget - deadzone;
+        const up = center > targetY + deadzone;
+        const down = center < targetY - deadzone;
         this.updateIntent({ up, down });
     }
 
-    // Predict y where ball will meet this paddle's x, reflecting on top/bottom walls.
-    private predictBallImpactY(s: GameState): number {
-        const ball = {
-            x: s.ball.x,
-            y: s.ball.y,
-            vx: s.ball.speedX,
-            vy: s.ball.speedY,
-            r: s.ball.radius,
-        };
+    private predictImpactY(s: GameState): number {
+        const ball = { x: s.ball.x, y: s.ball.y, vx: s.ball.speedX, vy: s.ball.speedY, r: s.ball.radius };
         const px = this.side === "left" ? s.paddles.left.x : s.paddles.right.x;
 
-        // If ball moving away, aim mid by default
-        const movingAway =
-            (this.side === "left" && ball.vx > 0) ||
-            (this.side === "right" && ball.vx < 0);
+        const movingAway = (this.side === "left" && ball.vx > 0) || (this.side === "right" && ball.vx < 0);
         if (movingAway) return GAME_HEIGHT / 2;
 
-        // Step until we cross paddle x or safety bounds
         let safety = 0;
         while ((this.side === "left" && ball.x > px) || (this.side === "right" && ball.x < px)) {
             ball.x += ball.vx;
             ball.y += ball.vy;
-
-            // reflect on top/bottom walls
             if (ball.y - ball.r < 0 || ball.y + ball.r > GAME_HEIGHT) {
                 ball.vy *= -1;
             }
-
-            // Prevent infinite loops if something's off
-            safety++;
-            if (safety > 4 * GAME_WIDTH) break;
+            if (++safety > 4 * GAME_WIDTH) break;
         }
         return this.clamp(ball.y, 0, GAME_HEIGHT);
     }
 
-    // Heuristic: if power-ups exist and one is near a plausible path,
-    // bias target to its y. Requires state.powerUps?: { x, y, type, active }[]
     private choosePowerupTarget(s: GameState): number | null {
-        const aggro = this.config.powerupAggro ?? 0; // 0 disables this path
+        const aggro = this.config.powerupAggro ?? 0;
         if (!aggro) return null;
+        const powerUps = (s as any).powerUps as { x: number; y: number; active: boolean }[] | undefined;
+        if (!powerUps?.length) return null;
 
-        const powerUps = (s as any).powerUps as
-            | { x: number; y: number; type: string; active: boolean }[]
-            | undefined;
-        if (!powerUps || !powerUps.length) return null;
-
-        // Prefer active/beneficial power-ups roughly on our side path
         const px = this.side === "left" ? s.paddles.left.x : s.paddles.right.x;
         const towardUs = this.side === "left" ? (x: number) => x < s.ball.x : (x: number) => x > s.ball.x;
+        const candidates = powerUps.filter(p => p.active && towardUs(p.x));
+        if (!candidates.length || Math.random() > aggro) return null;
 
-        const candidates = powerUps
-            .filter(p => p.active)
-            .filter(p => towardUs(p.x))
-            .sort((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px));
-
-        if (!candidates.length) return null;
-
-        // Roll the dice with aggro setting to avoid robotic behavior
-        if (Math.random() > aggro) return null;
-
-        // Aim for the closest candidate in x; AI still respects deadzone
-        return candidates[0].y;
+        return candidates.sort((a, b) => Math.abs(a.x - px) - Math.abs(b.x - px))[0].y;
     }
 
-    private clamp(v: number, lo: number, hi: number) {
-        return Math.max(lo, Math.min(hi, v));
+    private chooseAction(stateIndex: number): number {
+        if (Math.random() < this.epsilon) return Math.floor(Math.random() * 3);
+        const qValues = qTable[stateIndex];
+        return qValues.indexOf(Math.max(...qValues));
     }
-    private rand(min: number, max: number) {
-        return Math.random() * (max - min) + min;
+
+    private getReward(s: GameState): number {
+        const paddle = s.paddles[this.side];
+        const center = paddle.y + paddle.height / 2;
+        const ballY = s.ball.y;
+        const maxDist = Math.max(60, GAME_HEIGHT / 4);
+        const dist = Math.abs(ballY - center);
+        let reward = 1 - dist / maxDist;
+
+        const me = this.side === "left" ? s.score.left : s.score.right;
+        const opp = this.side === "left" ? s.score.right : s.score.left;
+        if (me > opp) reward += 1;
+        if (opp > me) reward -= 1;
+
+        return reward;
     }
-    private lerp(a: number, b: number, t: number) {
-        return a + (b - a) * this.clamp(t, 0, 1);
+
+    private updateQTable(prevState: number, action: number, reward: number, nextState: number) {
+        const alpha = this.config.alpha ?? 0.1;
+        const gamma = this.config.gamma ?? 0.8;
+        const oldQ = qTable[prevState][action];
+        const maxNextQ = Math.max(...qTable[nextState]);
+        qTable[prevState][action] = oldQ + alpha * (reward + gamma * maxNextQ - oldQ);
     }
+
+    private clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+    private rand(min: number, max: number) { return Math.random() * (max - min) + min; }
 }
+

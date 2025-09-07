@@ -3,7 +3,8 @@ import cors from "@fastify/cors";
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import wsRouter from "./websocket";
-import gameRoute from "./gameRoute";
+import gameSocket from "./gameSocket";
+import gameRoutes from "./gameRoutes";
 
 import routes from "./routes";
 import auth from "./auth.routes";
@@ -119,7 +120,7 @@ fastify.register(oauthPlugin, {
 fastify.register(websocket);
 fastify.register(multipart);
 fastify.register(routes);
-fastify.register(gameRoute);
+fastify.register(gameSocket);
 fastify.register(auth);
 fastify.register(wsRouter);
 
