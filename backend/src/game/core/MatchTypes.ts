@@ -34,11 +34,11 @@ export interface GameState {
     ball: { x: number; y: number; speedX: number; speedY: number; radius: number };
     paddles: { left: Paddle; right: Paddle };
     score: { left: number; right: number };
-    status: "waiting" | "playing" | "gameOver";
+    // status: "waiting" | "playing" | "gameOver";
 }
 
 export type ClientMessage =
-    | { type: "human"; username: string }
+    | { type: "remote_1v1"; username: string }
     | { type: "ready" }
     | { type: "move"; up?: boolean; down?: boolean }
     | { type: "playAgain" }

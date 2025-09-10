@@ -3,6 +3,7 @@ import type { GameState, Side } from "../types/types";
 
 
 export function launchBall(state: GameState, toward: Side) {
+
     state.ball.x = GAME_WIDTH / 2;
     state.ball.y = GAME_HEIGHT / 2;
 

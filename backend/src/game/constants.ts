@@ -11,10 +11,7 @@ export const BALL_SPEED_X = 6;
 export const BALL_SPEED_Y = 6;
 
 export const RESET_BALL_SPEED_Y = 3;
-export const RESET_BALL_SPEED_X = {
-    left: -3,
-    right: 3,
-};
+export const RESET_BALL_SPEED_X = { left: -3, right: 3, };
 
 export const TICK_RATE = 1000 / 60;
 

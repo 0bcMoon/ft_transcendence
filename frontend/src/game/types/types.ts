@@ -39,7 +39,7 @@ export type ClientMessage =
     | { type: "playAgain" }
     | { type: "redy" }
     | { type: "leaveGame" }
-    | { type: "human"; username: string }
+    | { type: "1v1"; username: string }
     | { type: "ai" };
 
 

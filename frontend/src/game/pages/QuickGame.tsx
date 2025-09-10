@@ -14,16 +14,15 @@ export default function Game() {
                 <GameHeader game={game} />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
-                    {!game.isGameOver && !game.waiting && (<PlayersHeader game={game} />)}
+                    {game.waiting && !game.isGameOver && <WaitingOverlay />}
 
-                    {!game.isGameOver && (<GameCanvas game={game} />)}
+                    {!game.isGameOver && !game.waiting && <PlayersHeader game={game} />}
 
-                    {game.isGameOver && game.finalScore && (<GameOverScreen game={game} />)}
+                    {!game.isGameOver && !game.waiting && <GameCanvas game={game} />}
 
-                    {game.waiting && <WaitingOverlay />}
+                    {game.isGameOver && game.finalScore && <GameOverScreen game={game} />}
                 </div>
             </div>
         </div>
     );
 }
-

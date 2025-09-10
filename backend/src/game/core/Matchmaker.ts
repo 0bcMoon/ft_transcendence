@@ -1,25 +1,13 @@
 import { WebSocket } from "ws";
 import { launchBall } from "../utils/ballUtils";
-import { Side, ClientMessage, ServerMessage, GameState } from "../types/types";
-import { aiManager } from "./AIManager";
 import { gameRepository } from "../../repository/gameRepository";
-
-import {
-    MAX_SCORE,
-    GAME_WIDTH,
-    GAME_HEIGHT,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT,
-    BALL_RADIUS,
-    BALL_SPEED_X,
-    BALL_SPEED_Y,
-    TICK_RATE,
-} from "../constants";
-
-import { Player, Match } from "./MatchTypes";
+import { initState } from "../utils/initState";
+import { Player, Match, Side, ClientMessage, ServerMessage } from "../types/types";
 import { movePaddle } from "../mechanics/movement";
-import { checkCollision } from "../mechanics/collision";
 import { shuffleQueue } from "../utils/shuffleQueue";
+
+import { MAX_SCORE, GAME_WIDTH, GAME_HEIGHT, TICK_RATE, } from "../constants";
+
 
 export class Matchmaker {
     private matches = new Map<number, Match>();
@@ -41,54 +29,40 @@ export class Matchmaker {
 
     removePlayer(id: number) {
         this.queue = this.queue.filter(p => p.id !== id);
+
         const match = this.findMatchByPlayer(id);
-        if (!match) return;
+        if (!match) {
+            const player = this.clients.get(id);
+            if (player && !this.isOpen(player.socket))
+                this.clients.delete(id);
+            return;
+        }
 
         const side = this.getPlayerSide(match, id)!;
         const opponentSide: Side = side === "left" ? "right" : "left";
         const opponent = match.players[opponentSide];
 
         if (opponent && this.isOpen(opponent.socket)) {
-            this.send(opponent.socket, {
-                type: "gameOver",
-                winner: opponentSide,
-                score: { ...match.state.score },
-            });
-            if (!this.queue.some(p => p.id === opponent.id) && !this.findMatchByPlayer(opponent.id)) {
-                this.queue.push(opponent);
-                this.playGame();
-            }
+            this.send(opponent.socket, { type: "gameOver", winner: opponentSide, score: match.state.score });
         }
+
+        const player = match.players[side];
+        if (!this.isOpen(player.socket)) {
+            this.clients.delete(player.id);
+        }
+
+        if (opponent && !this.isOpen(opponent.socket)) {
+            this.clients.delete(opponent.id);
+        }
+
         this.endMatch(match.game_id);
     }
 
+
     handleMessage(id: number, data: ClientMessage, socket?: WebSocket) {
-        if (data.type === "ai") {
-            const human = this.clients.get(id);
-            if (!human || !this.isOpen(human.socket))
-                return;
-
-            const match = aiManager.createVsAIMatch(human, data.username, this.createInitialState);
-            this.matches.set(Date.now(), match);
-            this.sendMatchFound(match);
-            match.state.status = "waiting";
-            return;
-        }
-        //-------------------------------------------//
-        if (data.type === "human") {
-            if (!data.username || !socket)
-                return;
+        if (data.type === "1v1") {
+            if (!data.username || !socket) return;
             this.addPlayer(id, data.username, socket);
-            return;
-        }
-
-        if (data.type === "playAgain") {
-            const player = this.clients.get(id);
-            if (!player || !this.isOpen(player.socket))
-                return;
-            const match = this.findMatchByPlayer(id);
-            if (match) this.endMatch(match.game_id);
-            this.addPlayer(player.id, player.username, player.socket);
             return;
         }
 
@@ -97,24 +71,38 @@ export class Matchmaker {
             return;
         }
 
-        const match = this.findMatchByPlayer(id);
-        const side = match ? this.getPlayerSide(match, id) : undefined;
-        if (!match || !side) return;
+        if (data.type === "playAgain") {
+            const player = this.clients.get(id);
+            if (!player || !this.isOpen(player.socket)) return;
+            this.addPlayer(player.id, player.username, player.socket);
+            return;
+        }
 
-        if (data.type === "ready") {
-            match.ready[side] = true;
-            if (match.ready.left && match.ready.right && match.state.status === "waiting") {
-                match.state.status = "playing";
-                this.startGameLoop(match);
+        if (data.type === "play") {
+            const match = this.findMatchByPlayer(id);
+            if (match) {
+                const side = this.getPlayerSide(match, id);
+                if (side) {
+                    match.ready[side] = true;
+                    if (match.ready.left && match.ready.right)
+                        this.startGameLoop(match);
+                }
             }
             return;
         }
 
-        if (data.type === "move" && match.state.status === "playing") {
-            movePaddle(match.state.paddles[side], data.up, data.down);
+        if (data.type === "move") {
+            const match = this.findMatchByPlayer(id);
+            if (match) {
+                const side = this.getPlayerSide(match, id);
+                if (side)
+                    movePaddle(match.state.paddles[side], data.up, data.down);
+            }
             return;
         }
     }
+
+
 
     private async playGame() {
         this.queue = this.queue.filter(p => this.isOpen(p.socket));
@@ -124,6 +112,8 @@ export class Matchmaker {
             const left = this.queue.shift()!;
             const right = this.queue.shift()!;
 
+            if (this.findMatchByPlayer(left.id) || this.findMatchByPlayer(right.id)) continue;
+
             const game_id = await gameRepository.createGame("remote_1v1", 2, "waiting");
 
             await gameRepository.addPlayerToGame(game_id, left.id, "A", "left");
@@ -132,13 +122,11 @@ export class Matchmaker {
             const match: Match = {
                 game_id,
                 players: { left, right },
-                state: this.createInitialState(),
+                state: initState(),
                 ready: { left: false, right: false },
                 startTime: Date.now(),
             };
-
             console.log(`Match created: game_id=${game_id}, left=${left.username}, right=${right.username}`);
-
             this.matches.set(game_id, match);
             this.sendMatchFound(match);
         }
@@ -166,25 +154,43 @@ export class Matchmaker {
         gameRepository.updateGameStatus(match.game_id, "in-progress");
         match.loop = setInterval(() => {
             const state = match.state;
+            const ball = state.ball;
+            const { left, right } = state.paddles;
 
-            if (match.aiSide && match.aiIntent)
-                movePaddle(state.paddles[match.aiSide], match.aiIntent.up, match.aiIntent.down);
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
 
-            state.ball.x += state.ball.speedX;
-            state.ball.y += state.ball.speedY;
+            if (ball.y - ball.radius < 0 || ball.y + ball.radius > GAME_HEIGHT)
+                ball.speedY *= -1;
 
-            if (state.ball.y - state.ball.radius < 0 || state.ball.y + state.ball.radius > GAME_HEIGHT)
-                state.ball.speedY *= -1;
+            if (
+                ball.x - ball.radius < left.x + left.width &&
+                ball.y > left.y &&
+                ball.y < left.y + left.height
+            ) {
+                ball.speedX *= -1;
+                ball.x = left.x + left.width + ball.radius;
+            }
 
-            checkCollision(state);
+            if (
+                ball.x + ball.radius > right.x &&
+                ball.y > right.y &&
+                ball.y < right.y + right.height
+            ) {
+                ball.speedX *= -1;
+                ball.x = right.x - ball.radius;
+            }
 
-            if (state.ball.x < 0) {
+            if (ball.x < 0) {
                 state.score.right++;
                 gameRepository.updateScore(match.game_id, state.score.left, state.score.right);
+                launchBall(match.state, "right");
                 this.checkGameOver(match, "right");
-            } else if (state.ball.x > GAME_WIDTH) {
+            }
+            else if (state.ball.x > GAME_WIDTH) {
                 state.score.left++;
                 gameRepository.updateScore(match.game_id, state.score.left, state.score.right);
+                launchBall(match.state, "left");
                 this.checkGameOver(match, "left");
             }
 
@@ -196,60 +202,13 @@ export class Matchmaker {
     private async checkGameOver(match: Match, scorer: Side) {
         if (match.state.score[scorer] >= MAX_SCORE) {
             const score = match.state.score;
-            const winnerId = match.players[scorer].id;
-            const loserSide = scorer === "left" ? "right" : "left";
-            const loserId = match.players[loserSide].id;
 
-            // Send game over to both clients
             this.send(match.players.left.socket, { type: "gameOver", winner: scorer, score });
             this.send(match.players.right.socket, { type: "gameOver", winner: scorer, score });
 
-            // 1️⃣ Mark game finished in DB
-            const duration = this.calculateMatchDuration(match); // implement this to track start time
-            await gameRepository.finishGame(match.game_id, duration);
-
-            // 2️⃣ Update game_players stats
-            await gameRepository.updatePlayerStats(
-                match.game_id,
-                match.players.left.id,
-                score.left,
-                0, // goals_scored if you track them
-                0, // goals_conceded if you track them
-                0  // accuracy if you track it
-            );
-            await gameRepository.updatePlayerStats(
-                match.game_id,
-                match.players.right.id,
-                score.right,
-                0,
-                0,
-                0
-            );
-
-            // 3️⃣ Update user_stats
-            await gameRepository.updateUserStatsAfterMatch(
-                winnerId,
-                true, // won
-                score[scorer],
-                duration
-            );
-            await gameRepository.updateUserStatsAfterMatch(
-                loserId,
-                false, // lost
-                score[loserSide],
-                duration
-            );
-
-            // Stop loop and clean up
             this.stopLoop(match);
             this.endMatch(match.game_id);
-        } else {
-            launchBall(match.state, scorer === "left" ? "right" : "left");
         }
-    }
-
-    private calculateMatchDuration(match: Match) {
-        return Math.floor((Date.now() - (match.startTime || Date.now())) / 1000); // seconds
     }
 
 
@@ -263,6 +222,7 @@ export class Matchmaker {
         if (!match) return;
         this.stopLoop(match);
         this.matches.delete(game_id);
+
         console.log("Match ended and removed:", game_id);
     }
 
@@ -286,34 +246,6 @@ export class Matchmaker {
         if (match.players.right.id === id)
             return "right";
         return undefined;
-    }
-
-    private createInitialState(): GameState {
-        return {
-            status: "waiting",
-            paddles: {
-                left: {
-                    x: 30,
-                    y: GAME_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-                    width: PADDLE_WIDTH,
-                    height: PADDLE_HEIGHT,
-                },
-                right: {
-                    x: GAME_WIDTH - 40,
-                    y: GAME_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-                    width: PADDLE_WIDTH,
-                    height: PADDLE_HEIGHT,
-                },
-            },
-            ball: {
-                x: GAME_WIDTH / 2,
-                y: GAME_HEIGHT / 2,
-                radius: BALL_RADIUS,
-                speedX: BALL_SPEED_X,
-                speedY: BALL_SPEED_Y,
-            },
-            score: { left: 0, right: 0 },
-        };
     }
 }
 

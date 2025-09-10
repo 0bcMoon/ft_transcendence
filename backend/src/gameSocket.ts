@@ -7,11 +7,11 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         fastify.log.info(`Game WebSocket connected: ${userId}`);
 
         socket.on("message", (raw) => {
-            let data;
-            data = JSON.parse(raw.toString());
-            fastify.log.warn(data);
+            let msg;
+            msg = JSON.parse(raw.toString());
+            fastify.log.warn(msg);
 
-            matchmaker.handleMessage(userId, data, socket);
+            matchmaker.handleMessage(userId, msg, socket);
         });
 
         socket.on("close", () => {

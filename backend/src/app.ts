@@ -4,7 +4,6 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import wsRouter from "./websocket";
 import gameSocket from "./gameSocket";
-import gameRoutes from "./gameRoutes";
 
 import routes from "./routes";
 import auth from "./auth.routes";

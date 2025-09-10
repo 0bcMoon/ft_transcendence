@@ -100,7 +100,7 @@ class Matchmaker {
         const side = match ? this.getPlayerSide(match, id) : undefined;
         if (!match || !side) return;
 
-        if (data.type === "start") {
+        if (data.type === "play") {
             match.ready[side] = true;
             if (match.ready.left && match.ready.right && match.state.status === "waiting") {
                 match.state.status = "playing";

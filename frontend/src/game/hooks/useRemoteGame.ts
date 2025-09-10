@@ -28,7 +28,7 @@ export function useRemoteGame() {
 
         ws.onopen = () => {
             if (username)
-                ws.send(JSON.stringify({ type: "human", username }));
+                ws.send(JSON.stringify({ type: "1v1", username }));
         };
 
         ws.onmessage = ({ data }) => {
@@ -36,7 +36,7 @@ export function useRemoteGame() {
 
             switch (msg.type) {
                 case "matchFound":
-                    setMatchId(msg.id); // store the match ID
+                    setMatchId(msg.id);
                     setSide(msg.side);
                     setPlayerNames({ left: msg.leftUsername, right: msg.rightUsername });
                     setCountdown(3);
@@ -47,7 +47,8 @@ export function useRemoteGame() {
                     break;
 
                 case "state":
-                    if (!isGameOver) gameStateRef.current = msg.state;
+                    if (!isGameOver)
+                        gameStateRef.current = msg.state;
                     break;
 
                 case "gameOver":
@@ -79,7 +80,7 @@ export function useRemoteGame() {
             return;
 
         if (countdown === 0) {
-            wsRef.current?.send(JSON.stringify({ type: "ready" }));
+            wsRef.current?.send(JSON.stringify({ type: "play" }));
             setCountdown(null);
             return;
         }

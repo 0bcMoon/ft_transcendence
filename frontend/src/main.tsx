@@ -5,7 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import Login from '@/auth/Login';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import Game from '@/game/Game.tsx';
+import GameMode from '@/game/pages/GameMode.tsx';
 import LocalGame from '@/game/LocalGame.tsx';
 import LocalGamePlay from '@/game/pages/LocalGame';
 import { AuthProvider } from '@/context/AuthContext';
@@ -33,7 +33,7 @@ const router = createBrowserRouter([
         element: <RootLayout />,
         children: [
             { index: true, element: <HomePage /> },
-            { path: "game", element: <Game /> },
+            { path: "game", element: <GameMode /> },
             { path: "users/:user_id", element: <UserProfile /> },
             { path: "users", element: <UsersPage /> },
             { path: "chat", element: <Chat /> },

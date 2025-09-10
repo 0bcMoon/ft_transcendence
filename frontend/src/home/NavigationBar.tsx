@@ -58,13 +58,13 @@ const Logout = () => {
 }
 
 const NavigationBar = () => {
-    const location = useLocation(); // Get current location
+    const location = useLocation();
 
     const navItemsData = [
 
         { link: "/", label: "Home", icon: Home },
+        { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/chat", label: "Chat", icon: MessageCircle },
-        // { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/stats", label: "Stats", icon: BarChart2 },
         { link: "/users", label: "Friends", icon: ContactRound },
         { link: "/history", label: "History", icon: History },
@@ -78,7 +78,6 @@ const NavigationBar = () => {
             className="flex flex-row items-center justify-around bg-white shadow-lg fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-100 p-2
                        md:flex-col md:justify-center md:gap-4 md:relative md:z-auto md:border-2 md:rounded-2xl md:h-[97svh] md:col-span-1"
         >
-            {/* Main navigation items */}
 
             {navItemsData.map((item) => {
                 const isActive = location.pathname.startsWith(item.link); // Basic active state check

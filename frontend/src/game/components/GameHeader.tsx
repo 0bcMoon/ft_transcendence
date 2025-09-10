@@ -15,10 +15,7 @@ export default function GameHeader({ game }: { game: any }) {
                                 : "Game in progress"}
                     </p>
                 </div>
-                <Link
-                    to="/"
-                    className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center"
-                >
+                <Link to="/" className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center" >
                     <ArrowLeft size={18} className="mr-2" />
                     Home
                 </Link>
