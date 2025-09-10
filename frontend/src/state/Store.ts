@@ -1,35 +1,17 @@
+import { Contacts } from '@/chat/types';
 import { User } from '@/types/types';
 import { create } from 'zustand';
 
 
-
-interface SwapStoreState {
-    swap: boolean;
-    setSwap: (state: boolean) => void;
+interface ActiveChatState {
+    active_chat?: Contacts
+    setActiveChat: (chat: Contacts| undefined) => void;
 }
 
-
-export const useSwapStore = create<SwapStoreState>((set) => ({
-    swap: false,
-    setSwap: (state: boolean) => set({ swap: state }),
+export const useActiveChatStore = create<ActiveChatState>((set) => ({
+    active_chat: undefined,
+    setActiveChat: (chat: Contacts| undefined) => set({ active_chat: chat }),
 }));
-
-
-interface ChatStoreState {
-    display_name: string | undefined;
-    profile_image: string,
-    id?: number;
-    setChat?: ({ display_name, profile_image }: ChatStoreState) => void;
-}
-
-export const useChatStore = create<ChatStoreState>((set) => ({
-    id: undefined,
-    display_name: undefined,
-    profile_image: '',
-    setChat: ({ display_name, profile_image }: ChatStoreState) =>
-        set({ display_name, profile_image }),
-}));
-
 
 interface SearchStoreState {
     searchQuery: string;

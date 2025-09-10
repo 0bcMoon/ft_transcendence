@@ -2,7 +2,7 @@ import {  useState } from 'react';
 import { Check, Shield, X } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import api from '@/api/api';
+import { login_api } from '@/api/api';
 
 interface IUpdateState {
     type: 'error' | 'success' | 'none';
@@ -18,7 +18,7 @@ function TwoFactorAuth({setCurrentStep}: {setCurrentStep: (step: 'two_factor_aut
     const { mutate,  isPending } = useMutation({
 
         mutationFn: async (confirmation_code: string) => {
-            const response = await api.get('/auth/login/2fa', {
+            const response = await login_api.get('/auth/login/2fa', {
                 params: { confirmation_code: confirmation_code }
             });
             return response.data;

@@ -89,7 +89,7 @@ const User = {
 
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
-        const user = await userRepository.getUserById(req.user.id, id);
+        const user = await userRepository.getUserWithRelationStatus(req.user.id, id);
         if (!user) return reply.status(200).send({ message: "User not found" });
         user.profile_picture = user.image_src + user.profile_picture;
         return reply.status(200).send(user);
@@ -113,7 +113,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot send friend request to yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id)
+        const user = await userRepository.getUserWithRelationStatus(req.user.id, user_id)
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -201,6 +201,7 @@ const User = {
                 if (!result) {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
+                await userRepository.createContactIfNotExist(req.user.id, user_id);
                 return reply.status(200).send({ message: 'friends request has been accepted' });
             case false:
                 const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
@@ -219,7 +220,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot block yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id)
+        const user = await userRepository.getUserWithRelationStatus(req.user.id, user_id)
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }
@@ -235,13 +236,13 @@ const User = {
                 break;
             case "blocked_by":
                 if (!action) {
-                    return reply.status(400).send({ message: "you have already blocked this user" });
+                    return reply.status(400).send({ message: "user is not blocked" });
                 }
                 const blockResult = await userRepository.blockUser(req.user.id, user_id);
                 if (blockResult) {
                     return reply.status(200).send({ message: 'user has been blocked' });
                 }
-                break;
+                return reply.status(400).send({ message: 'user has not been blocked' });
             case "friend":
                 if (action) {
                     await userRepository.deleteFriendship(req.user.id, user_id);
@@ -280,7 +281,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot unfriend yourself" });
         }
 
-        const user = await userRepository.getUserById(req.user.id, user_id);
+        const user = await userRepository.getUserWithRelationStatus(req.user.id, user_id);
         if (!user) {
             return reply.status(404).send({ message: "user does not exists" });
         }

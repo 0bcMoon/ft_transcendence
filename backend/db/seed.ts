@@ -65,7 +65,7 @@ db.serialize(async () => {
     }
 
     // Create random users
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 12; i++) {
         createUsers.run(
             faker.internet.username(),
             faker.person.fullName(),
@@ -82,10 +82,24 @@ db.serialize(async () => {
     insertContact.run(2, 3);
     insertContact.run(2, 1);
 
+    insertContact.run(1, 4);
+    insertContact.run(1, 5);
+
     createBlocks.run(1, 4);
+    createBlocks.run(5, 1);
 
     insertFriends.run(1, 2);
     insertFriends.run(1, 3);
+
+
+    for (let i = 0; i < 10; i++) {
+        createMessages.run(1, 4, faker.lorem.sentence());
+        createMessages.run(4, 1, faker.lorem.sentence());
+    }
+    for (let i = 0; i < 10; i++) {
+        createMessages.run(1, 5, faker.lorem.sentence());
+        createMessages.run(5, 1, faker.lorem.sentence());
+    }
 
     for (let i = 0; i < 10; i++) {
         createMessages.run(1, 2, faker.lorem.sentence());

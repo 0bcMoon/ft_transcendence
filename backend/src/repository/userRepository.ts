@@ -1,4 +1,3 @@
-import assert from 'assert';
 import db from '../../db/db';
 import bcrypt from 'bcrypt'
 import { CreateUser } from '../types/types';
@@ -19,6 +18,11 @@ export interface User {
 
 
 export const userRepository = {
+    createContactIfNotExist: async (user_id: number, contact_id: number) => {
+        const query: string = `INSERT OR IGNORE INTO contacts (user_id, contact_id) VALUES ($1, $2), ($2, $1)`;
+        const result = await db.run(query, [user_id, contact_id]);
+        return result.changes > 0;
+    },
     createUser: async (user: CreateUser): Promise<number> => {
         const query: string = `INSERT INTO users (username, password, display_name, email, image_src, profile_picture) VALUES (?, ?, ?, ?, ?, ?)`;
         const result = await db.run(query, [user.username, user.password, user.display_name, user.email, user.image_src, 'default.jpg']);
@@ -28,14 +32,12 @@ export const userRepository = {
     updateUserTwoFactorAuth: async (id: number, two_factor_enabled: boolean): Promise<boolean> => {
         const query: string = `UPDATE users SET two_factor_enabled = ? WHERE id = ?`;
         const result = await db.run(query, [two_factor_enabled, id]);
-        assert(result.changes === 1, "this is big problem"); // this assertion ensures that at most one row is updated and will get removed in production
         return result.changes > 0;
     },
 
     updateEmail: async (id: number, email: string): Promise<boolean> => {
         const query: string = `UPDATE users SET email = ? WHERE id = ?`;
         const result = await db.run(query, [email, id]);
-        assert(result.changes === 1, "this is big problem"); // this assertion ensures that at most one row is updated and will get removed in production
         return result.changes > 0;
     },
 
@@ -60,7 +62,7 @@ export const userRepository = {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
     },
 
-    getUserById: async (id: number, user_id: number): Promise<User | undefined> => {
+    getUserWithRelationStatus: async (id: number, user_id: number): Promise<User | undefined> => {
         const query: string = `
                         SELECT
                             u.id,
@@ -170,14 +172,12 @@ export const userRepository = {
     cancelFriendRequest: async (req_id: number, user_id: number) => {
         const query = `DELETE FROM requests WHERE id=? and sender_id = ?`
         const result = await db.run(query, [req_id, user_id])
-        assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
     deleteFriendRequest: async (req_id: number, user_id: number) => {
         const query = `DELETE FROM requests WHERE id=? and receiver_id = ?`
         const result = await db.run(query, [req_id, user_id])
-        assert(result.changes <= 1, "THIS IS BIG PROBLEM")
         return result.changes > 0;
     },
 
@@ -213,19 +213,16 @@ export const userRepository = {
         }
         const query: string = `INSERT INTO friends (sender_id, receiver_id)  VALUES (?, ?)`;
         const insertResult = await db.run(query, [other_user_id, user_id]);
-        assert(insertResult.changes == 1, "THIS IS BIG PROBLEM");
         return insertResult.changes > 0;
     },
     unblockUser: async (user_id: number, blocked_user_id: number) => {
         const query: string = `DELETE FROM blocks WHERE user_id = ? AND blocked_user_id = ?`;
         const result = await db.run(query, [user_id, blocked_user_id]);
-        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is deleted and will get removed in production
         return result.changes > 0;
     },
     blockUser: async (user_id: number, blocked_user_id: number) => {
-        const query: string = `INSERT INTO blocks (user_id, blocked_user_id) VALUES (?, ?)`;
+        const query: string = `INSERT OR IGNORE INTO  blocks (user_id, blocked_user_id) VALUES (?, ?)`;
         const result = await db.run(query, [user_id, blocked_user_id]);
-        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that exactly one row is inserted and will get removed in production
         return result.changes > 0;
     },
     deleteFriendship: async (user_id: number, friend_id: number) => {
@@ -233,16 +230,13 @@ export const userRepository = {
                                                         OR (sender_id = $2 AND receiver_id = $1)`;
 
         const result = await db.run(query, [user_id, friend_id]);
-        assert(result.changes == 1, "THIS IS BIG PROBLEM"); // this assertion ensures that at most one row is deleted and will get removed in production
         return result.changes > 0;
     },
     deleteRequests: async (user_id: number, block_user_id: number) => {
-        /// Deletes both sent and received requests between two users include chat requests
         const query: string = `DELETE FROM requests 
                             WHERE (sender_id = $1 AND receiver_id = $2)
                             OR (sender_id = $2 AND receiver_id = $1)`;
         const result = await db.run(query, [user_id, block_user_id]);
-        assert(result.changes >= 1, "THIS IS BIG PROBLEM");
         return result.changes > 0;
     },
     getBlockedUsers: async (user_id: number): Promise<User[] | undefined> => {

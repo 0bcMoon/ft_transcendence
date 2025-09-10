@@ -74,8 +74,8 @@ export const useBlockUser = ({ user_id }: IRequest) => {
                     ? 'User has been blocked successfully'
                     : 'User has been unblocked successfully'
             );
-            queryClient.invalidateQueries({ queryKey: ['search'] });
             queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Error: Could not Do this Action ");

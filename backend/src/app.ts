@@ -20,6 +20,7 @@ import multipart from '@fastify/multipart';
 import path from 'path';
 
 import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
+import chat from "./chat.routes";
 
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
@@ -116,6 +117,8 @@ fastify.register(oauthPlugin, {
     ],
 });
 
+// Routes
+fastify.register(chat);
 fastify.register(websocket);
 fastify.register(multipart);
 fastify.register(routes);

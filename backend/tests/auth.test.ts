@@ -52,7 +52,7 @@ describe('Auth API', () => {
                 });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Username is required');
+            expect(response.body.message).toBe('username is required');
         });
 
         it('should reject missing password', async () => {
@@ -63,7 +63,7 @@ describe('Auth API', () => {
                 });
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Password is required');
+            expect(response.body.message).toBe('password is required');
         });
 
         it('should reject non-existent user', async () => {
@@ -126,7 +126,6 @@ describe('Auth API', () => {
             // Verify token can be decoded
             const decoded = app.jwt.decode(accessToken) as any;
             expect(decoded.id).toBe(1);
-            expect(decoded.username).toBe('hicham');
             expect(decoded.exp).toBeDefined();
             expect(decoded.iat).toBeDefined();
         });

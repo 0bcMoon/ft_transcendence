@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "messages" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
+CREATE INDEX IF NOT EXISTS idx_messages_createdat ON messages(created_at);
 
 CREATE TABLE IF NOT EXISTS "contacts" (
     "id" INTEGER,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS "contacts" (
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (contact_id) REFERENCES users(id),
+    UNIQUE(user_id, contact_id)
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
@@ -67,6 +69,7 @@ CREATE TABLE IF NOT EXISTS "blocks" (
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (blocked_user_id) REFERENCES users(id),
+    UNIQUE(user_id, blocked_user_id),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 -- -------------------- Game schema ------------------

@@ -75,13 +75,12 @@ const NavigationBar = () => {
 
     return (
         <nav
-            className="flex flex-row items-center justify-around bg-white shadow-lg fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-100 p-2
-                       md:flex-col md:justify-center md:gap-4 md:relative md:z-auto md:border-2 md:rounded-2xl md:h-[97svh] md:col-span-1"
+            className="lg:flex hidden flex-row items-center justify-around bg-white shadow-lg fixed bottom-0 left-0 right-0 z-50 border-t-2 border-gray-100 p-2
+                       md:flex-col md:justify-center md:gap-4 md:relative md:z-auto md:border-2 md:rounded-2xl md:h-[97svh] md:col-span-1 col-span-1"
         >
             {/* Main navigation items */}
-
             {navItemsData.map((item) => {
-                const isActive = location.pathname.startsWith(item.link); // Basic active state check
+                const isActive = location.pathname === (item.link); // Basic active state check
                 return <NavigationItem key={item.label} {...item} isActive={isActive} />
 
             })}

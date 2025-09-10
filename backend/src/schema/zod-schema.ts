@@ -2,18 +2,16 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
     username: z.
-        string().
-        min(1, 'Username is required').
+        string({ required_error: 'username is required'}).
         min(3, 'Username must be at least 3 characters').
         max(24, 'Username must be at most 20 characters'),
     password: z.
-        string().
+        string({ required_error: 'password is required'}).
         min(1, 'Password is required').
         min(8, 'Password must be at least 8 characters'),
 }, {
     invalid_type_error: 'bad request body',
     required_error: 'bad request body',
-
 });
 
 
@@ -106,3 +104,12 @@ export const updateUserInfo = z.object({
         || data.display_name || data.username,
         { message: 'At least one field must be updated' });
 
+export const updateEmailSchema = z.object({
+    email: z
+        .string({ required_error: "Email is required" })
+        .email("Invalid email address"),
+    confirmation_code: z.string().length(8, "Confirmation code must be 8 characters long").optional()
+}, {
+    invalid_type_error: 'bad request body',
+    required_error: 'bad request body',
+});
