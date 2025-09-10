@@ -2,29 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { ContactSidebar } from './ContactSidebar';
 import { ChatArea } from './ChatArea';
 import toast from 'react-hot-toast';
+import { useActiveChatStore } from '@/state/Store';
 
 function Chat() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { setActiveChat } = useActiveChatStore();
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-
-        const websocket = new WebSocket('ws://localhost:3000/chat');
-        websocket.onopen = () => {
-            toast.success('WebSocket connection established');
-        };
-        websocket.onclose = () => {
-            toast.error('WebSocket connection closed');
-        };
-
-        websocket.onerror = (error) => {
-            toast.error('WebSocket error');
-            console.error('WebSocket error:', error);
+        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/chat`);
+        websocket.onerror = () => {
+            toast.error('Connection error. Please try again later.');
         };
         ws.current = websocket;
-
         return () => {
-            toast.success('WebSocket connection closed');
+            setActiveChat(undefined)
             websocket.close();
         };
     }, []);

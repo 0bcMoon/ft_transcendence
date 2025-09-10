@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, MessageSquare, MoreVertical, Shield } from 'lucide-react';
-import {  Contacts, } from './types';
+import { Search, MessageSquare } from 'lucide-react';
+import { Contacts, } from './types';
 import { useActiveChatStore } from '@/state/Store';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
@@ -83,6 +83,40 @@ interface ContactSidebarProps {
     isOpen: boolean;
     onClose: () => void;
 }
+export function formatTimeToReadable(timeString: string | null): string {
+    if (!timeString) {
+        return '';
+    }
+    const date = new Date(timeString);
+    if (isNaN(date.getTime())) {
+        return '';
+    }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const inputDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const timeFormat = date.toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    if (inputDate.getTime() === today.getTime()) {
+        return timeFormat;
+    } else if (inputDate.getTime() === yesterday.getTime()) {
+        return `Yesterday at ${timeFormat}`;
+    } else {
+        const fullDate = date.toLocaleDateString([], {
+            month: 'numeric',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        return `${fullDate} ${timeFormat}`;
+    }
+}
 
 export const ContactSidebar: React.FC<ContactSidebarProps> = ({
     isOpen,
@@ -90,7 +124,7 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
 }) => {
 
     // TODO: add lo
-    const {data: chats} = useQuery<Contacts[]>({
+    const { data: chats } = useQuery<Contacts[]>({
         queryKey: ['contacts'],
         queryFn: async () => {
             const response = await api.get('/chat/contacts');
@@ -98,7 +132,7 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
         },
     });
 
-    const { activeChat, setActiveChat } = useActiveChatStore();
+    const { active_chat, setActiveChat } = useActiveChatStore();
 
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -167,27 +201,25 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
                                         onClick={() => handleChatSelect(chat)}
                                         className={`relative flex items-center p-4 rounded-lg cursor-pointer 
                                                     transition-all duration-200 hover:bg-gray-50 group 
-                                                    ${activeChat?.id === chat.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                                            }`}
+                                                    ${active_chat?.id === chat.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
                                     >
                                         {/* Avatar */}
                                         <div
                                             className="relative cursor-pointer"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                            }}
+                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             <img
                                                 src={chat.profile_picture}
                                                 alt={chat.display_name}
                                                 className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 hover:ring-blue-200 transition-all duration-200"
                                             />
-                                            <div
+                                            {!(chat.relation_status === 'blocking' || chat.relation_status === 'blocked_by') && (
+                                                <div
                                                     // TODO: for online find a better way
-                                                className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white 
-                                                            ${true ? 'bg-green-500' : 'bg-gray-400'
-                                                    }`}
-                                            />
+                                                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white 
+                                                            ${true ? 'bg-green-500' : 'bg-gray-400'}`}
+                                                />
+                                            )}
                                         </div>
 
                                         {/* Chat Info */}
@@ -196,46 +228,20 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
                                                 <h3 className="font-semibold text-gray-900 truncate">
                                                     {chat.display_name}
                                                 </h3>
-                                                <span className="text-xs text-gray-500">
-                                                    {chat.messsage_time? new Date(chat.messsage_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                                                </span>
+                                                {!(chat.relation_status === 'blocking' || chat.relation_status === 'blocked_by') && (
+                                                    <span className="text-xs text-gray-500">
+                                                        {formatTimeToReadable(chat.messsage_time)}
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-sm text-gray-600 truncate mt-1">
-                                                {chat.relation_status === 'blocking' ? (
-                                                    <span className="text-red-500 italic">User blocked</span>
+
+                                                {(chat.relation_status === 'blocking' || chat.relation_status === 'blocked_by') ? (
+                                                    <span className="text-red-500 italic">User Block </span>
                                                 ) : (
                                                     chat.content || <span className="text-gray-400 italic">No messages yet</span>
                                                 )}
                                             </p>
-                                        </div>
-
-                                        {/* More Options */}
-                                        <div
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <div className="relative group/menu">
-                                                <button className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
-                                                    <MoreVertical className="w-4 h-4 text-gray-400" />
-                                                </button>
-
-                                                {/* Dropdown Menu */}
-                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 z-10">
-                                                    <button
-                                                        onClick={() => { }}
-                                                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors duration-200"
-                                                    >
-                                                        View Profile
-                                                    </button>
-                                                    <button
-                                                        // onClick={() => onBlockUser(chat.user.id)}
-                                                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 rounded-b-lg transition-colors duration-200 flex items-center"
-                                                    >
-                                                        <Shield className="w-4 h-4 mr-2" />
-                                                        {chat.relation_status === 'blocking' ? 'Unblock User' : 'Block User'}
-                                                    </button>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 ))}

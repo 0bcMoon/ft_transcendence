@@ -13,25 +13,24 @@ const chatConnections: Map<number, WebSocket> = new Map();
 
 export default async function(fastify: FastifyInstance) {
     fastify.get('/chat', { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
-        // Check if the user already has an active connection kill it
-        // This is to ensure that a user can only have one active WebSocket connection at a
         if (chatConnections.has(req.user.id)) {
             chatConnections.get(req.user.id)?.close();
         }
-        // Add the new connection to the set
         chatConnections.set(req.user.id, socket)
         socket.on('message', async (message) => {
-            const recvMessage = JSON.parse(message.toString()) as RecvMessage;
+            const payload = JSON.parse(message.toString()) as RecvMessage;
             const result = await chatRepository.createMessage(
                 req.user.id, 
-                recvMessage.receiver_id, 
-                recvMessage.content 
+                payload.receiver_id, 
+                payload.content 
             )
             if (!result)
                 return;
-            const resultString = JSON.stringify(result);
-            chatConnections.get(req.user.id)?.send(resultString);
-            chatConnections.get(result.receiver_id)?.send(resultString);
+            const sender_string = JSON.stringify(result);
+            result.is_own = false;
+            const receiver_string = JSON.stringify(result);
+            chatConnections.get(req.user.id)?.send(sender_string);
+            chatConnections.get(payload.receiver_id)?.send(receiver_string);
 
         });
 

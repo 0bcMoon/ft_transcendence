@@ -5,13 +5,11 @@ import { userRepository } from './userRepository';
 
 
 interface Message {
-    user_id: number
-    id: number,
-    sender_id: number,
-    receiver_id: number,
-    content: string,
-    created_at: Date,
-
+    id: string;
+    sender_id: number;
+    content: string;
+    created_at: string;
+    is_own: boolean;
 }
 
 export interface Contacts {
@@ -33,22 +31,25 @@ const chatRepository = {
         await db.run(query, [user_id, contact_id]);
         return user;
     },
-    //TODO: add  RETURNING *; to the end of the query when moving to PG
     createMessage: async (sender_id: number, receiver_id: number, content: string): Promise<Message | undefined> => {
+        const user = await userRepository.getUserWithRelationStatus(sender_id, receiver_id);
+        if (!user)
+            return undefined
+        if (user.relation_status === 'blocked_by' || user.relation_status === 'blocking')
+            return undefined
         const query = 'INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)';
         const result = await db.run(query, [sender_id, receiver_id, content]);
-        return chatRepository.getLastMessage(result.lastID, sender_id);
+        return chatRepository.getLastMessage(sender_id, result.lastID);
     },
-    getLastMessage: async (message_id: number, user_id: number): Promise<Message | undefined> => {
+    getLastMessage: async (user_id: number, message_id: number): Promise<Message | undefined> => {
         const query: string = `SELECT
                                     m.id,
                                     m.sender_id,
-                                    m.receiver_id,
                                     m.content,
                                     m.created_at,
                                     CASE
-                                    WHEN m.sender_id = $1 THEN true
-                                    WHEN m.receiver_id = $1 THEN false
+                                        WHEN m.sender_id = $1 THEN true
+                                        WHEN m.receiver_id = $1 THEN false
                                     END as is_own
                                 FROM messages m
                                 WHERE m.id = $2

@@ -236,13 +236,13 @@ const User = {
                 break;
             case "blocked_by":
                 if (!action) {
-                    return reply.status(400).send({ message: "you have already blocked this user" });
+                    return reply.status(400).send({ message: "user is not blocked" });
                 }
                 const blockResult = await userRepository.blockUser(req.user.id, user_id);
                 if (blockResult) {
                     return reply.status(200).send({ message: 'user has been blocked' });
                 }
-                break;
+                return reply.status(400).send({ message: 'user has not been blocked' });
             case "friend":
                 if (action) {
                     await userRepository.deleteFriendship(req.user.id, user_id);

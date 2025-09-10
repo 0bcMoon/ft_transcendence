@@ -16,6 +16,7 @@ import Loader from '@/vendor/loader';
 import Modal from '@/component/Model';
 import toast from 'react-hot-toast';
 import { useActiveChatStore } from '@/state/Store';
+import { Contacts } from '@/chat/types';
 
 
 
@@ -33,11 +34,9 @@ const StartChat = ({ relation_status, id}: User) => {
             const response = await api.get('/chat/contact', { params: { id: id } })
             return response.data;
         },
-        onSuccess: (data: any) => {
-            toast.success("Chat started successfully");
-            setActiveChat(data)
-            console.log(data);
-            navigate(`/chat`);
+        onSuccess: (data: Contacts) => {
+            setActiveChat(data);
+            navigate("/chat");
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Error: Could not start chat");
@@ -50,11 +49,6 @@ const StartChat = ({ relation_status, id}: User) => {
             return;
     }
 
-
-    //FIXME: : use the new chat store
-    // const setChat = (a: any) => { }
-
-    //TODO: on start chat add user to contact list if not already present
     const startChat = () => {
         mutate();
     }

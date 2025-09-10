@@ -4,13 +4,13 @@ import { create } from 'zustand';
 
 
 interface ActiveChatState {
-    activeChat?: Contacts
-    setActiveChat: (chat: Contacts) => void;
+    active_chat?: Contacts
+    setActiveChat: (chat: Contacts| undefined) => void;
 }
 
 export const useActiveChatStore = create<ActiveChatState>((set) => ({
-    activeChat: undefined,
-    setActiveChat: (chat: Contacts) => set({ activeChat: chat }),
+    active_chat: undefined,
+    setActiveChat: (chat: Contacts| undefined) => set({ active_chat: chat }),
 }));
 
 interface SearchStoreState {
