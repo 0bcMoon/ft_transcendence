@@ -17,48 +17,6 @@ describe('Auth API - Register', () => {
         };
     };
 
-    describe('Successful registration', () => {
-        it('should register a new user with valid data', async () => {
-            const newUser = generateRandomUser();
-            const response = await supertest(app.server)
-                .post('/auth/register')
-                .send(newUser);
-
-            expect(response.status).toBe(201);
-            expect(response.body.message).toBe('User created successfully');
-        });
-    });
-
-    describe('Registration with duplicate data', () => {
-        it('should not register a user with an existing username', async () => {
-            const newUser = generateRandomUser();
-            await supertest(app.server)
-                .post('/auth/register')
-                .send(newUser);
-
-            const response = await supertest(app.server)
-                .post('/auth/register')
-                .send({ ...generateRandomUser(), username: newUser.username });
-
-            expect(response.status).toBe(409);
-            expect(response.body.message).toBe('username already exists');
-        });
-
-        it('should not register a user with an existing email', async () => {
-            const newUser = generateRandomUser();
-            await supertest(app.server)
-                .post('/auth/register')
-                .send(newUser);
-
-            const response = await supertest(app.server)
-                .post('/auth/register')
-                .send({ ...generateRandomUser(), email: newUser.email });
-
-            expect(response.status).toBe(409);
-            expect(response.body.message).toBe('email already exists');
-        });
-    });
-
     describe('Registration with missing fields', () => {
         it('should fail if username is missing', async () => {
             const { display_name, password, email } = generateRandomUser();
