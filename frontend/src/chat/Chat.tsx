@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ContactSidebar } from './ContactSidebar';
 import { ChatArea } from './ChatArea';
 import toast from 'react-hot-toast';
-import { useActiveChatStore } from '@/state/Store';
 
 function Chat() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { setActiveChat } = useActiveChatStore();
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
@@ -16,7 +14,6 @@ function Chat() {
         };
         ws.current = websocket;
         return () => {
-            setActiveChat(undefined)
             websocket.close();
         };
     }, []);
