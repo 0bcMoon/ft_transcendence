@@ -28,7 +28,7 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                         <input
                             name="current_password"
                             type={showPasswords.current ? 'text' : 'password'}
-                            className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
+                    className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                             placeholder="Enter current password"
                             autoComplete="current-password"
                             readOnly={readOnly}
@@ -56,7 +56,7 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                             <input
                                 name="new_password"
                                 type={showPasswords.new ? 'text' : 'password'}
-                                className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
+                                className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                                 placeholder="Enter new password"
                                 autoComplete="new-password"
                                 readOnly={readOnly}
@@ -83,7 +83,7 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                             <input
                                 name="confirm_password"
                                 type={showPasswords.confirm ? 'text' : 'password'}
-                                className='w-full px-4 py-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors '
+                                className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors  border-gray-300'
                                 placeholder="Confirm new password"
                                 autoComplete="new-password"
                                 readOnly={readOnly}
