@@ -116,12 +116,22 @@ export const userRepository = {
     },
 
     getFriends: async (user_id: number) => {
-        const query: string = `SELECT u.id, u.display_name, u.profile_picture, u.image_src
+        const query: string = `SELECT 
+                                u.id,
+                                u.username,
+                                u.display_name,
+                                u.profile_picture,
+                                u.image_src
                             FROM users u
                             INNER join friends f on f.sender_id = u.id 
                             WHERE f.receiver_id = $1
                             UNION
-                            SELECT u.id, u.display_name, u.profile_picture, u.image_src
+                            SELECT 
+                                u.id,
+                                u.username,
+                                u.display_name,
+                                u.profile_picture,
+                                u.image_src
                             FROM users u
                             INNER join friends f on f.receiver_id= u.id 
                             WHERE f.sender_id = $1
@@ -147,11 +157,12 @@ export const userRepository = {
 
     },
     findUsers: async (search: string): Promise<User[] | undefined> => {
-        const query: string = `SELECT id,
-                            username,
-                            display_name,
-                            profile_picture,
-                            image_src
+        const query: string = `SELECT 
+                                    id,
+                                    username,
+                                    display_name,
+                                    profile_picture,
+                                    image_src
                             FROM users WHERE username LIKE $1 OR display_name LIKE $1`;
         const searchTermWithWildcards = `%${search}%`;
         return await db.all(query, [searchTermWithWildcards]);
@@ -185,21 +196,33 @@ export const userRepository = {
     getFriendRequests: async (user_id: number) => {
         const query: string = `
                             SELECT 
-                            r.id req_id,
-                            u.id,
-                            u.display_name,
-                            r.request_type,
-                            u.profile_picture,
-                            u.image_src,
-                            u.username,
-                            CASE
-                                WHEN u.id = r.receiver_id THEN 'sent'
-                                ELSE 'received'
-                            END AS request_type 
+                                r.id req_id,
+                                u.id,
+                                u.display_name,
+                                u.profile_picture,
+                                u.image_src,
+                                u.username,
+                                r.created_at
                             FROM users u
                             JOIN requests r
-                            ON r.receiver_id=u.id and r.sender_id=$1
-                            OR r.sender_id=u.id and r.receiver_id=$1
+                                ON r.sender_id=u.id AND r.receiver_id=$1
+                            WHERE r.request_type = 'friend'
+                            `;
+        return await db.all(query, [user_id]);
+    },
+    getPendingRequest: async (user_id: number) => {
+        const query: string = `
+                            SELECT 
+                                r.id req_id,
+                                u.id,
+                                u.display_name,
+                                u.profile_picture,
+                                u.image_src,
+                                u.username,
+                                r.created_at
+                            FROM users u
+                            JOIN requests r
+                                ON r.receiver_id=u.id and r.sender_id=$1
                             WHERE r.request_type = 'friend'
                             `;
         return await db.all(query, [user_id]);
@@ -241,9 +264,15 @@ export const userRepository = {
     },
     getBlockedUsers: async (user_id: number): Promise<User[] | undefined> => {
 
-        const query: string = `SELECT u.id, u.display_name, u.username , u.profile_picture, u.image_src
+        const query: string = `SELECT 
+                                u.id,
+                                u.display_name,
+                                u.username,
+                                u.profile_picture,
+                                u.image_src,
+                                b.created_at
                             FROM users u
-                            JOIN blocks b ON u.id = b.blocked_user_id
+                                JOIN blocks b ON u.id = b.blocked_user_id
                             WHERE b.user_id = $1`;
         return db.all(query, [user_id]);
     },

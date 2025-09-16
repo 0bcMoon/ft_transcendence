@@ -6,19 +6,18 @@ import { IFormData } from "@/zod/zod-schema";
 
 interface IRequest {
 
-    req_id?: number | null;
-    user_id: number;
+    req_id: number ;
+    user_id?: number;
 }
 
-export const useCancelRequest = ({ req_id, user_id }: IRequest) => {
+export const useCancelRequest = () => {
     const queryClient = useQueryClient(); // should only call in a component or hook (cause it uses React context)
     return useMutation({
-        mutationFn: () => api.delete(`/user/requests/${req_id}`),
+        mutationFn: async ({ req_id }: IRequest) => await api.delete(`/user/requests/${req_id}`),
         // unused variables parameter is removed, as it was not being used in the original code
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
-
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['users', variables.user_id] });
+            queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
             toast.success("Request cancelled successfully");
         },
         onError: (error: any) => {
@@ -27,14 +26,14 @@ export const useCancelRequest = ({ req_id, user_id }: IRequest) => {
     });
 };
 
-export const useAcceptRequest = ({ req_id, user_id }: IRequest) => {
+export const useAcceptRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: () => api.patch("/user/requests", { req_id, user_id, action: true, type: 'friend' }),
-        onSuccess: () => {
+        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: true, type: 'friend' }),
+        onSuccess: (_, variables) => {
             toast.success("Request accepted successfully");
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-            queryClient.invalidateQueries({ queryKey: ["users", user_id] });
+            queryClient.invalidateQueries({ queryKey: ['friendRequests'] });
+            queryClient.invalidateQueries({ queryKey: ["users", variables.user_id] });
         },
 
         onError: (error: any) => {
@@ -44,15 +43,15 @@ export const useAcceptRequest = ({ req_id, user_id }: IRequest) => {
 };
 
 
-export const useDenyRequest = ({ req_id, user_id }: IRequest) => {
+export const useDenyRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: () => api.patch("/user/requests", { req_id, user_id, action: false, type: 'friend' }),
-        onSuccess: () => {
+        mutationFn: ({ req_id, user_id }: IRequest) => api.patch("/user/requests", { req_id, user_id, action: false, type: 'friend' }),
+        onSuccess: (_, variables) => {
             toast.success("Request has been deny successfully");
             // TODO: maybe use searchStore to update the search results
-            queryClient.invalidateQueries({ queryKey: ["search"] });
-            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+            queryClient.invalidateQueries({ queryKey: ['friendRequests'] });
+            queryClient.invalidateQueries({ queryKey: ['users', variables.user_id] });
         },
 
         onError: (error: any) => {
@@ -61,12 +60,10 @@ export const useDenyRequest = ({ req_id, user_id }: IRequest) => {
     });
 };
 
-
-
-export const useBlockUser = ({ user_id }: IRequest) => {
+export const useBlockUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ action }: { action: boolean }) => api.post("/user/block", { user_id, action }),
+        mutationFn: ({ action, user_id }: { action: boolean, user_id: number }) => api.post("/user/block", { user_id, action }),
         onSuccess: (_, variables) => {
             const action = variables.action; // true for block, false for unblock
             toast.success(
@@ -74,7 +71,9 @@ export const useBlockUser = ({ user_id }: IRequest) => {
                     ? 'User has been blocked successfully'
                     : 'User has been unblocked successfully'
             );
-            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+            queryClient.invalidateQueries({ queryKey: ['users', variables.user_id] });
+            queryClient.invalidateQueries({ queryKey: ['blockedUsers'] });
+
             queryClient.invalidateQueries({ queryKey: ['contacts'] });
         },
         onError: (error: any) => {
@@ -85,17 +84,16 @@ export const useBlockUser = ({ user_id }: IRequest) => {
 
 // TODO: may be make this a generic function to send requests
 
-export const useSendRequest = ({ user_id }: { user_id: number }) => {
+export const useSendRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationKey: ["friend-request", user_id],
-        mutationFn: async () => {
+        mutationFn: async ({ user_id }: { user_id: number }) => {
             const response = await api.post(`/user/requests`, { user_id, type: "friend" });
             return response.data;
         },
-        onSuccess: async () => {
+        onSuccess: async (_, variables) => {
             toast.success("Friend request sent successfully");
-            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+            queryClient.invalidateQueries({ queryKey: ['users', variables.user_id] });
         },
         onError: async (error: any) => {
             toast.error(error.response?.data?.message || "Internal Server Error");
@@ -104,16 +102,17 @@ export const useSendRequest = ({ user_id }: { user_id: number }) => {
 };
 
 
-export const useUnFriend = ({ user_id }: { user_id: number }) => {
+export const useUnFriend = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async () => {
+        mutationFn: async ({ user_id }: { user_id: number }) => {
             const response = await api.delete(`/user/friends/${user_id}`);
             return response.data;
         },
-        onSuccess: async (data) => {
+        onSuccess: async (data, variables) => {
             toast.success(data.message || "Unfriended successfully");
-            queryClient.invalidateQueries({ queryKey: ['users', user_id] });
+            queryClient.invalidateQueries({ queryKey: ['users', variables.user_id] });
+            queryClient.invalidateQueries({ queryKey: ['friends'] });
         },
         onError: async (error: any) => {
             toast.error(error.response?.data?.message || "Internal Server Error");

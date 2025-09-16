@@ -1,16 +1,15 @@
-import { Contacts } from '@/chat/types';
-import { User } from '@/types/types';
+import { RemoteUser } from '@/types/types';
 import { create } from 'zustand';
 
 
 interface ActiveChatState {
-    active_chat?: Contacts
-    setActiveChat: (chat: Contacts| undefined) => void;
+    active_chat?: RemoteUser
+    setActiveChat: (chat: RemoteUser | undefined) => void;
 }
 
 export const useActiveChatStore = create<ActiveChatState>((set) => ({
     active_chat: undefined,
-    setActiveChat: (chat: Contacts| undefined) => set({ active_chat: chat }),
+    setActiveChat: (chat: RemoteUser | undefined) => set({ active_chat: chat }),
 }));
 
 interface SearchStoreState {
@@ -91,14 +90,14 @@ export const useValidationStore = create<ValidationErrors>((set) => ({
 
 
 export interface UserState {
-    user: User | null;
-    setUser: (user: User | null) => void;
+    user: RemoteUser | null;
+    setUser: (user: RemoteUser | null) => void;
 }
 
 
 export const useUserStore = create<UserState>((set) => ({
     user: null,
-    setUser: (user: User | null) => set({ user }),
+    setUser: (user: RemoteUser | null) => set({ user }),
 }));
 
 export interface EmailUpdate {

@@ -6,9 +6,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '@/api/api';
 import toast from 'react-hot-toast';
-import { formatTimeToReadable } from './ContactSidebar';
 import { useNavigate } from 'react-router-dom';
 import Modal from './components/Modal';
+import { formatTimeToReadable } from '@/component/helper';
 
 interface ChatAreaProps {
     onSidebarToggle: () => void;

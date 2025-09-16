@@ -1,4 +1,4 @@
-import { User, X, Trophy, Users, Zap, ArrowLeft, Loader2 } from 'lucide-react';
+import { X, Trophy, Users, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -16,16 +16,13 @@ import Loader from '@/vendor/loader';
 import Modal from '@/component/Model';
 import toast from 'react-hot-toast';
 import { useActiveChatStore } from '@/state/Store';
-import { Contacts } from '@/chat/types';
+import { RemoteUser } from '@/types/types';
 
 
 
 
-type RelationshipStatus = 'friend' | 'pending' | "waiting" | 'blocking' | 'block_by' | 'none';
 
-
-
-const StartChat = ({ relation_status, id}: User) => {
+const StartChat = ({ relation_status, id }: { relation_status: string, id: number }) => {
 
     const navigate = useNavigate();
     const setActiveChat = useActiveChatStore(state => state.setActiveChat);
@@ -34,7 +31,7 @@ const StartChat = ({ relation_status, id}: User) => {
             const response = await api.get('/chat/contact', { params: { id: id } })
             return response.data;
         },
-        onSuccess: (data: Contacts) => {
+        onSuccess: (data: RemoteUser) => {
             setActiveChat(data);
             navigate("/chat");
         },
@@ -86,11 +83,11 @@ const ProfileStatus = ({ value, icon: Icon, text, className, bgColor }: ProfileS
     )
 }
 
-const PlayPingPong = ({ relation_status }: User) => {
+const PlayPingPong = ({ relation_status }: RemoteUser) => {
 
     switch (relation_status) {
         case 'blocking':
-        case 'block_by':
+        case 'blocked_by':
             return
     }
 
@@ -106,22 +103,22 @@ const PlayPingPong = ({ relation_status }: User) => {
     )
 }
 
-const BlockAction = ({ id, relation_status }: User) => {
+const BlockAction = ({ id, relation_status }: RemoteUser) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { mutate: blockAction, isPending } = useBlockUser({ user_id: id });
+    const { mutate: blockAction, isPending } = useBlockUser();
     switch (relation_status) {
         case 'blocking':
             break;
         default:
-            relation_status = undefined;
+            relation_status = 'none';
     }
 
 
     const display_object: Record<string, any> = {
 
         'blocking': {
-            action: () => blockAction({ action: false }),
+            action: () => blockAction({ action: false, user_id: id }),
             title: "Confirm Unblock",
             message: `Are you sure you want to unblock this user? You will be able to interact with them again.`,
             type: 'warning',
@@ -129,9 +126,9 @@ const BlockAction = ({ id, relation_status }: User) => {
             display_text: 'Unblock',
 
         },
-        'else': {
+        'none': {
             display_text: 'Block',
-            action: () => blockAction({ action: true }),
+            action: () => blockAction({ action: true, user_id: id }),
             title: "Confirm Block",
             message: `Are you sure you want to block this user? You will no longer be able to interact with them.`,
             type: 'danger',
@@ -149,18 +146,18 @@ const BlockAction = ({ id, relation_status }: User) => {
             duration-300"
             >
                 {isPending ? <Loader2 className='text-white animate-spin' /> : <BlockIcon className='text-white' />}
-                <p className="font-semibold text-white">{display_object[relation_status || 'else'].display_text}</p>
+                <p className="font-semibold text-white">{display_object[relation_status].display_text}</p>
             </button>
 
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onDeny={() => setIsModalOpen(false)}
-                onAccept={() => { display_object[relation_status ?? 'else'].action(); setIsModalOpen(false) }}
-                title={display_object[relation_status ?? 'else'].title}
-                message={display_object[relation_status ?? 'else'].message}
-                acceptText={display_object[relation_status ?? 'else'].acceptText}
-                type={display_object[relation_status ?? 'else'].type}
+                onAccept={() => { display_object[relation_status].action(); setIsModalOpen(false) }}
+                title={display_object[relation_status].title}
+                message={display_object[relation_status].message}
+                acceptText={display_object[relation_status].acceptText}
+                type={display_object[relation_status].type}
                 denyText="Cancel"
             />
         </>
@@ -168,21 +165,21 @@ const BlockAction = ({ id, relation_status }: User) => {
 }
 
 
-const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
+const FriendRequestDenyOrAccept = ({ req_id, id }: RemoteUser) => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest({ req_id, user_id: id });
-    const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest({ req_id, user_id: id });
+    const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest();
+    const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest();
 
     const isPending = isPendingAccept || isPendingDeny;
 
     const handleAccept = () => {
-        acceptRequest();
+        acceptRequest({ req_id: req_id!, user_id: id });
         setIsModalOpen(false);
     }
 
     const handleDeny = () => {
-        denyRequest();
+        denyRequest({ req_id: req_id!, user_id: id });
         setIsModalOpen(false);
     }
 
@@ -212,7 +209,7 @@ const FriendRequestDenyOrAccept = ({ req_id, id }: User) => {
         </>
     )
 }
-const FriendRequestAction = (data: User) => {
+const FriendRequestAction = (data: RemoteUser) => {
 
     switch (data.relation_status) {
         case 'friend':
@@ -226,12 +223,12 @@ const FriendRequestAction = (data: User) => {
 }
 
 
-const FriendAction = ({ req_id, relation_status, id }: User) => {
+const FriendAction = ({ req_id, relation_status, id }: RemoteUser) => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { mutate: cancelRequest, isPending: isCanceling } = useCancelRequest({ req_id, user_id: id });
-    const { mutate: sendRequest, isPending: isSending } = useSendRequest({ user_id: id });
-    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend({ user_id: id });
+    const { mutate: cancelRequest, isPending: isCanceling } = useCancelRequest();
+    const { mutate: sendRequest, isPending: isSending } = useSendRequest();
+    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend();
 
     const isPending = isCanceling || isSending || isUnfriending;
 
@@ -240,7 +237,7 @@ const FriendAction = ({ req_id, relation_status, id }: User) => {
         'friend': {
             display_text: 'Unfriend',
             icon: <UserXLineIcon />,
-            action: unfriend,
+            action: () => unfriend({ user_id: id }),
             title: "Confirm Unfriend",
             message: "Are you sure you want to unfriend this user? This action cannot be undone.",
             acceptText: "Unfriend",
@@ -249,7 +246,7 @@ const FriendAction = ({ req_id, relation_status, id }: User) => {
         'pending': {
             display_text: 'Cancel Request',
             icon: <X className='text-white' />,
-            action: cancelRequest,
+            action: () => cancelRequest({ req_id: req_id!, user_id: id }),
             title: "Cancel Friend Request",
             message: "Are you sure you want to cancel your friend request to this user?",
             acceptText: "Cancel Request",
@@ -258,7 +255,7 @@ const FriendAction = ({ req_id, relation_status, id }: User) => {
         'none': {
             display_text: 'Add Friend',
             icon: <AddFriendIcon />,
-            action: sendRequest,
+            action: () => sendRequest({ user_id: id }),
             title: "Send Friend Request",
             message: "Do you want to send a friend request to this user?",
             acceptText: "Send",
@@ -299,15 +296,6 @@ const fetchUsersById = async (user_id: number) => {
     return response.data;
 }
 
-interface User {
-
-    id: number;
-    req_id: number | null;
-    relation_status?: RelationshipStatus
-    username?: string;
-    display_name?: string;
-    profile_picture?: string;
-}
 
 const UserProfile = () => {
 
@@ -316,7 +304,7 @@ const UserProfile = () => {
     const navigate = useNavigate();
     const user_id = s_user_id ? parseInt(s_user_id, 10) : undefined;
 
-    const { data, isLoading, isError } = useQuery<User>({
+    const { data, isLoading, isError } = useQuery<RemoteUser>({
         queryKey: ['users', user_id],
         queryFn: () => fetchUsersById(user_id!),
         enabled: !!user_id,
@@ -417,7 +405,7 @@ const UserProfile = () => {
 
                         </div>
                         <div className="flex flex-row items-center p-4 gap-4 w-full h-1/2">
-                            <StartChat {...data} />
+                            <StartChat relation_status={data.relation_status} id={data.id}  />
                             <PlayPingPong {...data} />
                             <FriendRequestAction {...data} />
                             <BlockAction {...data} />

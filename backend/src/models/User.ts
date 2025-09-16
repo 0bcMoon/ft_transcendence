@@ -102,8 +102,7 @@ const User = {
             users = await userRepository.getAllUsers(req.user.id);
         else
             users = await userRepository.findUsers(search);
-        const updatedUsers = users?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture }));
-
+        const updatedUsers = users?.map(user => ({ ...user, profile_picture: user.image_src + user.profile_picture, image_src: undefined }));
         return reply.status(200).send(updatedUsers || []);
     },
 
@@ -150,9 +149,25 @@ const User = {
                 return reply.status(400).send({ message: "invalid request type" });
         }
     },
+    getFriendRequests: async (req: FastifyRequest, reply: FastifyReply) => {
+        const { type } = req.query as { type: string };
+        if (!type) {
+            return reply.status(400).send({ message: "type is required" });
+        }
 
+        switch (type) {
+            case "received":
+                const receivedRequests = await userRepository.getFriendRequests(req.user.id);
+                return reply.status(200).send(receivedRequests.map(request => ({ ...request, profile_picture: request.image_src + request.profile_picture, image_src: undefined })));
+            case "pending":
+                const pendingRequests = await userRepository.getPendingRequest(req.user.id);
+                return reply.status(200).send(pendingRequests.map(request => ({ ...request, profile_picture: request.image_src + request.profile_picture, image_src: undefined })));
+            default:
+                return reply.status(400).send({ message: "invalid request type" });
+        }
+
+    },
     getRequests: async (req: FastifyRequest, reply: FastifyReply) => {
-
         const { type } = req.query as { type: string };
         if (!type) {
             return reply.status(400).send({ message: "type is required" });
@@ -404,7 +419,7 @@ const User = {
             return reply.status(400).send({ message: "you cannot update email for oauth users" });
         }
         else if (!confirmtion_code) {
-            return await User.sendEmailConfirmation(req.user.id,  email, reply);
+            return await User.sendEmailConfirmation(req.user.id, email, reply);
         }
         else if (!User.confirmtion_code_match(req.user.id, email, confirmtion_code)) {
             return reply.status(400).send({ message: "invalid confirmation code" });
@@ -474,7 +489,7 @@ const User = {
         return await userRepository.createOauthUser(new_user);;
     },
 
-    intraLogin: async (user: Intra42OAuth2): Promise<number| undefined> => {
+    intraLogin: async (user: Intra42OAuth2): Promise<number | undefined> => {
 
         const existing_user = await userRepository.getUserByEmail(user.email);
 

@@ -10,9 +10,7 @@ import { useUpdateProfilePicture, useUpdateUserProfile } from '@/api/mutations';
 import { useAuthStore } from '@/state/authStore';
 import { Check, X } from 'lucide-react';
 import EmailSettings from './EmailSettings';
-import TwoFactorModal from './TwoFactorModal';
 import SecuritySettings from './SecuritySettings';
-// import SecuritySettings from './SecuritySettings';
 
 interface IUpdateState {
     type: 'error' | 'success';
@@ -216,9 +214,6 @@ function Settings() {
                 <EmailSettings />
                 <SecuritySettings />
                 {/* <TwoFactorModal /> */}
-
-
-
             </div>
         </div>
     );

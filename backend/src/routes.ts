@@ -60,6 +60,7 @@ const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> 
     }, User.updateEmail)
 
     fastify.get('/user/requests', { onRequest: fastify.authenticate }, User.getRequests)
+    fastify.get('/user/friend-requests', { onRequest: fastify.authenticate }, User.getFriendRequests)
 
     fastify.delete('/user/requests/:req_id', { onRequest: fastify.authenticate }, User.deleteRequest)
 

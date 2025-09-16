@@ -11,7 +11,6 @@ import { AuthProvider } from '@/context/AuthContext';
 
 import RootLayout from '@/RootLayout'
 import NotFound from '@/NotFound.tsx';
-import UsersPage from '@/users/UsersPage';
 import UserProfile from '@/users/UserProfile';
 import Settings from '@/settings/Settings';
 import HomePage from './home/Home';
@@ -20,7 +19,7 @@ import QuickGame from './game/pages/QuickGame';
 import AIGame from './game/pages/AIGame';
 import TournamentLobby from './game/pages/TournamentLobby';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { StrictMode } from 'react';
+import FriendsPage from './users/FriendsPage';
 
 const router = createBrowserRouter([
     {
@@ -30,13 +29,14 @@ const router = createBrowserRouter([
             { index: true, element: <HomePage /> },
             { path: "game", element: <Game /> },
             { path: "users/:user_id", element: <UserProfile /> },
-            { path: "users", element: <UsersPage /> },
+            { path: "users", element: <FriendsPage /> },
             { path: "chat", element: <Chat /> },
             { path: "settings", element: <Settings /> },
             { path: "game/local", element: <LocalGame /> },
             { path: "*", element: <NotFound /> }, // Relative path to parent '/'
         ],
     },
+
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
