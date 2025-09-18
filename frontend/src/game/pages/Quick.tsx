@@ -5,7 +5,7 @@ import PlayersHeader from "../components/PlayersHeader";
 import GameOverScreen from "../components/GameOverScreen";
 import WaitingOverlay from "../components/WaitingOverlay";
 
-export default function Game() {
+export default function Quick() {
     const game = useRemoteGame();
 
     return (
@@ -15,11 +15,8 @@ export default function Game() {
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
                     {game.waiting && !game.isGameOver && <WaitingOverlay />}
-
                     {!game.isGameOver && !game.waiting && <PlayersHeader game={game} />}
-
                     {!game.isGameOver && !game.waiting && <GameCanvas game={game} />}
-
                     {game.isGameOver && game.finalScore && <GameOverScreen game={game} />}
                 </div>
             </div>

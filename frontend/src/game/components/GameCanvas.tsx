@@ -1,129 +1,106 @@
 import { useEffect, useRef } from "react";
+import { RemoteGame, Side } from "../types/types";
 
-import { RemoteGame } from "../types/types";
-
-type GameCanvasProps = {
+interface GameCanvasProps {
     game: RemoteGame;
+}
+
+const PADDLE_COLORS: Partial<Record<Side, string>> = {
+    left: "#3b82f6",
+    right: "#6366f1",
+    top: "#ec4899",
+    bottom: "#10b981"
 };
 
-export default function GameCanvas(props: GameCanvasProps) {
+export default function GameCanvas({ game }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (!canvas || !ctx) return;
-
-        const colors = {
-            background: "#1e293b",
-            paddle: {
-                left: "#3b82f6",
-                right: "#6366f1"
-            },
-            ball: "#f9fafb",
-            centerLine: "#94a3b8",
-            score: {
-                default: "#94a3b8",
-                highlight: "#f9fafb"
-            },
-            countdown: {
-                overlay: "rgba(30, 41, 59, 0.8)",
-                circle: "#1e293b",
-                border: "#3b82f6",
-                text: "#ec4899"
-            }
-        };
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
         let frameId: number;
 
-        const draw = () => {
+        function draw() {
+            if (!canvas || !ctx) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = colors.background;
+            ctx.fillStyle = "#1e293b";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-            gradient.addColorStop(0, "rgba(59, 130, 246, 0.05)"); // Blue with opacity
-            gradient.addColorStop(1, "rgba(99, 102, 241, 0.05)"); // Indigo with opacity
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Center line (always vertical for 1v1, can extend for other modes)
+            ctx.beginPath();
+            ctx.setLineDash([15, 15]);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.setLineDash([]);
 
-            const state = props.game.gameStateRef.current;
+            const state = game.gameStateRef.current;
 
-            if (!props.game.waiting) {
-                if (!props.game.isGameOver && props.game.countdown === null && state) {
-                    ctx.beginPath();
-                    ctx.setLineDash([15, 15]);
-                    ctx.moveTo(canvas.width / 2, 0);
-                    ctx.lineTo(canvas.width / 2, canvas.height);
-                    ctx.strokeStyle = colors.centerLine;
-                    ctx.lineWidth = 4;
-                    ctx.stroke();
-                    ctx.setLineDash([]);
+            if (state && !game.isGameOver && !game.waiting) {
+                // Draw paddles for all present sides
+                Object.entries(state.paddles).forEach(([side, paddle]) => {
+                    if (!paddle) return;
+                    ctx.fillStyle = PADDLE_COLORS[side as Side] || "#94a3b8";
+                    drawRoundedRect(ctx, paddle.x, paddle.y, paddle.width, paddle.height, 4);
+                });
+
+                // Draw ball
+                ctx.beginPath();
+                ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "#f9fafb";
+                ctx.fill();
+
+                // Draw scores for all present sides
+                ctx.font = "32px Arial";
+                ctx.textAlign = "center";
+                // For 1v1, show left/right scores; for 4p, you can extend this
+                if (state.score.left !== undefined) {
+                    ctx.fillStyle = game.side === "left" ? "#f9fafb" : "#94a3b8";
+                    ctx.fillText(state.score.left.toString(), canvas.width / 4, 40);
                 }
-
-                if (state && !props.game.isGameOver) {
-                    const { paddles, ball, score } = state;
-
-                    ctx.fillStyle = colors.paddle.left;
-                    drawRoundedRect(ctx, paddles.left.x, paddles.left.y, paddles.left.width, paddles.left.height, 4);
-
-                    ctx.fillStyle = colors.paddle.right;
-                    drawRoundedRect(ctx, paddles.right.x, paddles.right.y, paddles.right.width, paddles.right.height, 4);
-
-                    ctx.beginPath();
-                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = colors.ball;
-                    ctx.fill();
-
-                    ctx.font = "32px Arial";
-                    ctx.textAlign = "center";
-
-                    ctx.fillStyle = props.game.side === "left" ? colors.score.highlight : colors.score.default;
-                    ctx.fillText(score.left.toString(), canvas.width / 4, 40);
-
-                    ctx.fillStyle = props.game.side === "right" ? colors.score.highlight : colors.score.default;
-                    ctx.fillText(score.right.toString(), canvas.width / 2 + canvas.width / 4, 40);
-                }
-
-                if (props.game.countdown && !props.game.isGameOver) {
-                    const centerX = canvas.width / 2;
-                    const centerY = canvas.height / 2;
-
-                    ctx.fillStyle = colors.countdown.overlay;
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
-                    ctx.fillStyle = colors.countdown.circle;
-                    ctx.fill();
-
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
-                    ctx.lineWidth = 6;
-                    ctx.strokeStyle = colors.countdown.border;
-                    ctx.stroke();
-
-                    ctx.fillStyle = colors.countdown.text;
-                    ctx.font = "bold 64px Arial";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(props.game.countdown.toString(), centerX, centerY);
-                }
-
-                if (props.game.isGameOver) {
-                    ctx.fillStyle = "rgba(0,0,0,0.7)";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "48px Arial";
-                    ctx.textAlign = "center";
+                if (state.score.right !== undefined) {
+                    ctx.fillStyle = game.side === "right" ? "#f9fafb" : "#94a3b8";
+                    ctx.fillText(state.score.right.toString(), (canvas.width * 3) / 4, 40);
                 }
             }
 
-            frameId = requestAnimationFrame(draw);
-        };
+            // Countdown
+            if (game.countdown && !game.isGameOver) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                ctx.fillStyle = "rgba(30,41,59,0.8)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Helper function for drawing rounded rectangles
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
+                ctx.fillStyle = "#1e293b";
+                ctx.fill();
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = "#3b82f6";
+                ctx.stroke();
+
+                ctx.fillStyle = "#ec4899";
+                ctx.font = "bold 64px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(game.countdown.toString(), centerX, centerY);
+            }
+
+            // Game over overlay
+            if (game.isGameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.7)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            frameId = requestAnimationFrame(draw);
+        }
+
         function drawRoundedRect(
             ctx: CanvasRenderingContext2D,
             x: number,
@@ -148,7 +125,7 @@ export default function GameCanvas(props: GameCanvasProps) {
 
         draw();
         return () => cancelAnimationFrame(frameId);
-    }, [props.game]);
+    }, [game]);
 
     return (
         <canvas

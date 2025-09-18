@@ -1,6 +1,19 @@
-// --- Core types ---
+export type Position = "top" | "right" | "bottom" | "left";
+export type Side = Position;
 
-export type Side = "left" | "right";
+export interface Player {
+    id: number;
+    username: string;
+    socket: WebSocket | null;
+    mode?: GameMode;
+    position?: Position;
+    avatar?: string;
+}
+
+export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
+
+/** Flexible paddles for any mode */
+export type Paddles = Partial<Record<Side, Paddle>>;
 
 export interface Paddle {
     x: number;
@@ -9,68 +22,58 @@ export interface Paddle {
     height: number;
 }
 
-export interface Ball {
-    x: number;
-    y: number;
-    radius: number;
-    speedX: number;
-    speedY: number;
-}
-
-export interface Score {
-    left: number;
-    right: number;
-}
+/** Flexible scores for any mode */
+export type Scores = Partial<Record<Side, number>>;
 
 export interface GameState {
-    status: "waiting" | "playing" | "ended";
-    paddles: {
-        left: Paddle;
-        right: Paddle;
+    ball: {
+        x: number;
+        y: number;
+        speedX: number;
+        speedY: number;
+        radius: number;
     };
-    ball: Ball;
-    score: Score;
+    paddles: Paddles;
+    score: Scores;
 }
 
-// --- Messages from client to server ---
+export interface Match {
+    game_id: number;
+    players: Partial<Record<Side, Player>>;
+    state: GameState;
+    ready: Partial<Record<Side, boolean>>;
+    startTime: number;
+    loop?: NodeJS.Timeout;
+    mode: GameMode;
+}
 
-export type ClientMessage =
-    | { type: "move"; up: boolean; down: boolean }
-    | { type: "playAgain" }
-    | { type: "redy" }
-    | { type: "leaveGame" }
-    | { type: "1v1"; username: string }
-    | { type: "ai" };
-
+/** Flexible player names/avatars for any mode */
+export type PlayerNames = Partial<Record<Side, string>>;
+export type PlayerAvatars = Partial<Record<Side, string>>;
 
 export type ServerMessage =
     | {
-        id: string,
         type: "matchFound";
+        mode: GameMode;
         side: Side;
-        leftUsername: string;
-        rightUsername: string;
+        playerNames: PlayerNames;
+        playerAvatars: PlayerAvatars;
+        id: string;
     }
     | { type: "state"; state: GameState }
-    | {
-        type: "gameOver";
-        winner: Side;
-        score: Score;
-    }
-    | { type: "matchEnded" }
-    | { type: "leaveGame" }
+    | { type: "gameOver"; winner: Side; score: Scores }
+    | { type: "leaveGame" };
 
-
-export type RemoteGame = {
-    gameStateRef: React.RefObject<GameState | null>;
+export interface RemoteGame {
+    gameStateRef: React.MutableRefObject<GameState | null>;
+    side: Side | null;
     countdown: number | null;
-    waiting: boolean;
     isGameOver: boolean;
-    winner: "left" | "right" | null;
-    side: "left" | "right" | null;
-    playerNames: { left: string; right: string } | null;
-    finalScore: { left: number; right: number } | null;
+    winner: Side | null;
+    waiting: boolean;
+    playerNames: PlayerNames | null;
+    playerAvatars: PlayerAvatars | null;
+    finalScore: Scores | null;
     handlePlayAgain: () => void;
     handleGoHome: () => void;
-};
-
+}

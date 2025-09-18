@@ -17,7 +17,8 @@ import UserProfile from '@/users/UserProfile';
 import Settings from '@/settings/Settings';
 import HomePage from './home/Home';
 import Register from './auth/Register';
-import QuickGame from './game/pages/QuickGame';
+import Quick from './game/pages/Quick';
+import Multiplayer from './game/pages/Multiplayer';
 import AIGame from './game/pages/AIGame';
 import DashboardPage from './dashboard/DashboardPage'
 import { StrictMode } from 'react';
@@ -45,14 +46,14 @@ const router = createBrowserRouter([
             { path: "game/tournament/create", element: <TournamentCreate /> },
             { path: "game/tournament/join", element: <TournamentJoin /> },
             { path: "game/tournament/bracket", element: <TournamentBrackets /> },
-
-            { path: "*", element: <NotFound /> }, // Relative path to parent '/'
+            { path: "*", element: <NotFound /> },
         ],
     },
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
-    { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
-    { path: "game/quick", element: <QuickGame /> },
+    { path: "/game/local/play", element: <LocalGamePlay /> },
+    { path: "game/quick", element: <Quick /> },
+    { path: "game/multiplayer", element: <Multiplayer /> },
     { path: "game/ai", element: <AIGame /> },
     { path: "game/tournament", element: <TournamentLobby /> },
 

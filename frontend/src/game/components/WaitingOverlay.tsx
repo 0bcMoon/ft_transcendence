@@ -1,30 +1,36 @@
-import { Gamepad2 } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function WaitingOverlay() {
     const navigate = useNavigate();
+
     return (
-        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="text-center max-w-sm w-full px-6 py-8 bg-white/70 rounded-2xl shadow-lg border border-gray-100">
-
-                <div className="relative inline-flex items-center justify-center mb-6">
-                    <span className="absolute w-20 h-20 border-4 border-blue-200 rounded-full"></span>
-                    <span className="absolute w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
-                    <Gamepad2 size={28} className="text-blue-600 relative z-10" />
-                </div>
-
-                <h2 className="text-2xl font-bold text-gray-900 mb-2"> Finding Opponent </h2>
-                <p className="text-gray-500 mb-6 text-sm">
-                    Please wait while we match you with another player...
-                </p>
-
-                <button
-                    onClick={() => navigate("/")}
-                    className="text-gray-500 hover:text-gray-700 transition-colors text-sm font-medium" >
-                    Cancel & return home
-                </button>
+        <div className="flex flex-col items-center justify-center w-full h-96 bg-white rounded-lg border border-gray-200 shadow-sm">
+            {/* Simple Loading Spinner */}
+            <div className="relative w-16 h-16 mb-6">
+                <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <Search size={24} className="absolute inset-0 m-auto text-blue-500" />
             </div>
+
+            {/* Content */}
+            <div className="text-center space-y-2 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900">
+                    Finding opponent
+                </h2>
+                <p className="text-gray-600 text-sm">
+                    Please wait while we match you with another player
+                </p>
+            </div>
+
+            {/* Cancel Button */}
+            <button
+                onClick={() => navigate("/")}
+                className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
+            >
+                <X size={16} />
+                <span>Cancel</span>
+            </button>
         </div>
     );
 }
-

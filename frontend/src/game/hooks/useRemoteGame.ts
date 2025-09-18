@@ -1,86 +1,100 @@
 import { useEffect, useRef, useState } from "react";
-import { GameState, ServerMessage } from "../types/types";
+import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
 
 const WS_URL = "ws://localhost:3000/game";
 
-export function useRemoteGame() {
-    const username = useAuthStore((state) => state.user?.username);
+interface UseRemoteGameResult {
+    gameStateRef: React.MutableRefObject<GameState | null>;
+    side: Side | null;
+    countdown: number | null;
+    isGameOver: boolean;
+    winner: Side | null;
+    waiting: boolean;
+    playerNames: PlayerNames | null;
+    playerAvatars: PlayerAvatars | null;
+    finalScore: Scores | null;
+    handlePlayAgain: () => void;
+    handleGoHome: () => void;
+}
+
+export function useRemoteGame(): UseRemoteGameResult {
+    const user = useAuthStore((state) => state.user);
+    const username = user?.username;
+    const avatar = user?.profile_picture;
     const wsRef = useRef<WebSocket | null>(null);
     const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef({ up: false, down: false });
-
-    const [side, setSide] = useState<"left" | "right" | null>(null);
-    const [matchId, setMatchId] = useState<string | null>(null);
-
-    const [countdown, setCountdown] = useState<number | null>(null);
-    const [isGameOver, setIsGameOver] = useState(false);
-    const [winner, setWinner] = useState<"left" | "right" | null>(null);
-    const [waiting, setWaiting] = useState(true);
-    const [playerNames, setPlayerNames] = useState<{ left: string; right: string } | null>(null);
-    const [finalScore, setFinalScore] = useState<{ left: number; right: number } | null>(null);
     const navigate = useNavigate();
 
+    const [side, setSide] = useState<Side | null>(null);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const [isGameOver, setIsGameOver] = useState(false);
+    const [winner, setWinner] = useState<Side | null>(null);
+    const [waiting, setWaiting] = useState(true);
+    const [playerNames, setPlayerNames] = useState<PlayerNames | null>(null);
+    const [playerAvatars, setPlayerAvatars] = useState<PlayerAvatars | null>(null);
+    const [finalScore, setFinalScore] = useState<Scores | null>(null);
+
     useEffect(() => {
+        if (!username) return;
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
 
         ws.onopen = () => {
-            if (username)
-                ws.send(JSON.stringify({ type: "1v1", username }));
+            ws.send(JSON.stringify({ type: "joinGame", mode: "1v1", username, avatar }));
         };
 
         ws.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
 
-            switch (msg.type) {
-                case "matchFound":
-                    setMatchId(msg.id);
-                    setSide(msg.side);
-                    setPlayerNames({ left: msg.leftUsername, right: msg.rightUsername });
-                    setCountdown(3);
-                    setIsGameOver(false);
-                    setWinner(null);
-                    setFinalScore(null);
-                    setWaiting(false);
-                    break;
+            if (msg.type === "matchFound") {
+                setSide(msg.side);
+                setPlayerNames(msg.playerNames);
+                setPlayerAvatars(msg.playerAvatars);
+                setCountdown(3);
+                setIsGameOver(false);
+                setWinner(null);
+                setFinalScore(null);
+                setWaiting(false);
+                return;
+            }
+            if (msg.type === "state" && !isGameOver) {
+                gameStateRef.current = msg.state;
+                return;
+            }
 
-                case "state":
-                    if (!isGameOver)
-                        gameStateRef.current = msg.state;
-                    break;
+            if (msg.type === "gameOver") {
+                setIsGameOver(true);
+                setWinner(msg.winner);
+                setFinalScore(msg.score);
+                setCountdown(null);
+                setWaiting(false);
+                return;
+            }
 
-                case "gameOver":
-                    setIsGameOver(true);
-                    setWinner(msg.winner);
-                    setFinalScore(msg.score);
-                    setCountdown(null);
-                    setWaiting(false);
-                    break;
-
-                case "leaveGame":
-                    setWaiting(true);
-                    setSide(null);
-                    setPlayerNames(null);
-                    setIsGameOver(false);
-                    setWinner(null);
-                    setFinalScore(null);
-                    setCountdown(null);
-                    gameStateRef.current = null;
-                    break;
+            if (msg.type === "leaveGame") {
+                setWaiting(true);
+                setSide(null);
+                setPlayerNames(null);
+                setPlayerAvatars(null);
+                setIsGameOver(false);
+                setWinner(null);
+                setFinalScore(null);
+                setCountdown(null);
+                gameStateRef.current = null;
             }
         };
 
         return () => ws.close();
-    }, [username]);
+    }, [username, avatar]);
 
     useEffect(() => {
-        if (countdown === null)
-            return;
+        if (countdown === null) return;
 
         if (countdown === 0) {
-            wsRef.current?.send(JSON.stringify({ type: "play" }));
+            wsRef.current?.send(JSON.stringify({ type: "ready" }));
             setCountdown(null);
             return;
         }
@@ -95,10 +109,8 @@ export function useRemoteGame() {
             if (!side || countdown !== null || isGameOver) return;
 
             const { up, down } = keysPressed.current;
-
             if (up || down)
                 wsRef.current.send(JSON.stringify({ type: "move", up, down }));
-
         }, 16);
 
         return () => clearInterval(interval);
@@ -117,7 +129,6 @@ export function useRemoteGame() {
 
         window.addEventListener("keydown", downHandler);
         window.addEventListener("keyup", upHandler);
-
         return () => {
             window.removeEventListener("keydown", downHandler);
             window.removeEventListener("keyup", upHandler);
@@ -125,7 +136,7 @@ export function useRemoteGame() {
     }, []);
 
     const handlePlayAgain = () => {
-        wsRef.current?.send(JSON.stringify({ type: "playAgain" }));
+        wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "1v1" }));
         keysPressed.current = { up: false, down: false };
         setIsGameOver(false);
         setWaiting(true);
@@ -148,10 +159,9 @@ export function useRemoteGame() {
         winner,
         waiting,
         playerNames,
+        playerAvatars,
         finalScore,
         handlePlayAgain,
         handleGoHome,
-        matchId,
     };
 }
-

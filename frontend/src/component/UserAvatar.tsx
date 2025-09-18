@@ -1,5 +1,6 @@
 import React from 'react';
 import { User } from 'lucide-react';
+import { log } from 'console';
 
 interface UserAvatarProps {
     src?: string;
@@ -36,6 +37,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         lg: 'w-4 h-4 -bottom-1 -right-1',
         xl: 'w-5 h-5 -bottom-1 -right-1',
     };
+
 
     const iconSizeClasses = {
         sm: 'w-4 h-4',

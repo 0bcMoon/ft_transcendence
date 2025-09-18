@@ -1,28 +1,40 @@
-export default function PlayersHeader({ game }: { game: any }) {
+import { RemoteGame } from "../types/types";
+
+type PlayersHeaderProps = {
+    game: RemoteGame;
+};
+
+export default function PlayersHeader(props: PlayersHeaderProps) {
     return (
-        <div className="bg-gray-50 px-5 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between max-w-md mx-auto">
-                <div className="flex items-center">
+        <div className="bg-white px-6 py-5 border-b border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between max-w-2xl mx-auto">
+                <div className="flex items-center space-x-3">
                     <img
-                        src={"/default-avatar.png"}
-                        className="w-8 h-8 rounded-full mr-3 border border-gray-200 object-cover"
+                        src={props.game.playerAvatars?.left}
+                        alt={props.game.playerNames?.left}
+                        className="w-12 h-12 rounded-full border-2 border-gray-300 object-cover"
                     />
-                    <span className="font-medium text-gray-900">{game.playerNames.left}</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                        {props.game.playerNames?.left}
+                    </span>
                 </div>
 
-                <div className="px-3 py-1 bg-white rounded-full text-xs font-medium text-gray-600 shadow-sm">
-                    VS
+                <div className="px-4 py-2 bg-gray-100 rounded-lg">
+                    <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">VS</span>
                 </div>
 
-                <div className="flex items-center">
-                    <span className="font-medium text-gray-900">{game.playerNames.right}</span>
+                {/* Right Player */}
+                <div className="flex items-center space-x-3">
+                    <span className="text-lg font-semibold text-gray-900">
+                        {props.game.playerNames?.right}
+                    </span>
                     <img
-                        src={"/default-avatar.png"}
-                        className="w-8 h-8 rounded-full ml-3 border border-gray-200 object-cover"
+                        src={props.game.playerAvatars?.right}
+                        alt={props.game.playerNames?.right || 'Player 2'}
+                        className="w-12 h-12 rounded-full border-2 border-gray-300 object-cover"
                     />
                 </div>
             </div>
         </div>
     );
 }
-
