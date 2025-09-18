@@ -23,9 +23,9 @@ export default async function(fastify: FastifyInstance) {
         socket.on('message', async (message) => {
             const recvMessage = JSON.parse(message.toString()) as RecvMessage;
             const result = await messageRepository.createMessage(
-                req.user.id, 
-                recvMessage.receiver_id, 
-                recvMessage.content 
+                req.user.id,
+                recvMessage.receiver_id,
+                recvMessage.content
             )
             if (!result)
                 return;

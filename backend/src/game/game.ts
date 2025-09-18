@@ -1,0 +1,122 @@
+import { WebSocket } from "ws";
+import { clients, queues } from "./state";
+import { processQueue, isPlayerInAnyQueue } from "./queue";
+import { findMatchByPlayer, getPlayerSide, isOpen, send } from "./utils";
+import { endMatch, startGameLoop } from "./match";
+import { movePaddle } from "./mechanics/movement";
+import { Player, Side, ClientMessage, GameMode } from "./types/types";
+
+export interface MatchmakerAPI {
+    addPlayer: (id: number, username: string, avatar: string, mode: GameMode, socket: WebSocket | null) => void;
+    removePlayer: (id: number) => void;
+    handleMessage: (id: number, data: ClientMessage, socket?: WebSocket) => void;
+}
+
+function addPlayer(id: number, username: string, avatar: string, mode: GameMode, socket: WebSocket | null): void {
+    const player: Player = { id, username, avatar, socket, mode };
+    clients.set(id, player);
+
+    if (findMatchByPlayer(id))
+        return;
+    if (isPlayerInAnyQueue(id))
+        return;
+    if (!isOpen(socket))
+        return;
+
+    if (!queues.has(mode))
+        queues.set(mode, []);
+
+    const queue = queues.get(mode)!;
+    queue.push(player);
+
+    processQueue(mode);
+}
+
+
+function removePlayer(id: number): void {
+    for (const [mode, queue] of queues.entries())
+        queues.set(mode, queue.filter((p) => p.id !== id));
+
+    const match = findMatchByPlayer(id);
+    if (!match) {
+        const player = clients.get(id);
+        if (player && !isOpen(player.socket))
+            clients.delete(id);
+        return;
+    }
+
+    const side = getPlayerSide(match, id)!;
+
+    for (const [oppSide, oppPlayer] of Object.entries(match.players) as [Side, Player][]) {
+        if (oppSide !== side && oppPlayer && isOpen(oppPlayer.socket)) {
+            send(oppPlayer.socket, { type: "gameOver", winner: oppSide, score: match.state.score, });
+        }
+        if (oppPlayer && !isOpen(oppPlayer.socket))
+            clients.delete(oppPlayer.id);
+    }
+
+    const player = match.players[side];
+    if (!player)
+        return;
+    if (!player.socket || !isOpen(player.socket))
+        clients.delete(player.id);
+
+    endMatch(match.game_id);
+}
+
+
+function handleMessage(id: number, data: ClientMessage, socket?: WebSocket): void {
+    switch (data.type) {
+        case "joinGame":
+            if (!data.username || !socket) return;
+            addPlayer(id, data.username, data.avatar, data.mode, socket);
+            return;
+
+        case "leaveGame":
+            removePlayer(id);
+            return;
+
+        case "playAgain":
+            {
+                const player = clients.get(id);
+                if (!player || !isOpen(player.socket)) return;
+                const mode = data.mode || player.mode || "1v1";
+                addPlayer(player.id, player.username, player.avatar, mode, player.socket);
+            }
+            return;
+
+        case "ready":
+            {
+                const match = findMatchByPlayer(id);
+                if (!match) return;
+                const side = getPlayerSide(match, id);
+                if (!side) return;
+                match.ready[side] = true;
+
+                // Start game when all present sides are ready (supports 1v1, 4p, etc.)
+                const allReady = (Object.keys(match.players) as Side[]).every(s => match.ready[s]);
+                if (allReady)
+                    startGameLoop(match);
+            }
+            return;
+
+        case "move":
+            {
+                const match = findMatchByPlayer(id);
+                if (!match) return;
+                const side = getPlayerSide(match, id);
+                if (!side) return;
+                movePaddle(match.state.paddles[side], side, data.up, data.down, data.left, data.right);
+            }
+            return;
+
+        // Extend with other message types as needed (e.g. tournament, spectate...)
+    }
+}
+
+
+export const matchmaker: MatchmakerAPI = {
+    addPlayer,
+    removePlayer,
+    handleMessage,
+};

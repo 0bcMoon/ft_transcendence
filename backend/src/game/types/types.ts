@@ -1,29 +1,16 @@
 import type { WebSocket } from "ws";
-import { AIController } from "../AIController";
 
 export interface Player {
     id: number;
     username: string;
+    avatar: string;
     socket: WebSocket | null;
+    mode?: GameMode;
 }
 
+export type Side = "left" | "right" | "top" | "bottom";
 
-
-export interface Match {
-    game_id: number; // DB games.id (INTEGER AUTOINCREMENT)
-    players: Record<Side, Player>; // left/right players
-    state: GameState; // current game state
-    loop?: NodeJS.Timeout; // game loop interval
-    ready: Record<Side, boolean>; // ready status per side
-    aiSide?: Side; // if AI is playing, which side
-    aiIntent?: { up: boolean; down: boolean }; // AI movement intent
-    aiController?: AIController; // optional AI controller instance
-    startTime: number;
-}
-
-export type Side = "left" | "right";
-
-interface Paddle {
+export interface Paddle {
     x: number;
     y: number;
     width: number;
@@ -31,24 +18,37 @@ interface Paddle {
 }
 
 export interface GameState {
-    ball: { x: number; y: number; speedX: number; speedY: number; radius: number };
-    paddles: { left: Paddle; right: Paddle };
-    score: { left: number; right: number };
-    // status: "waiting" | "playing" | "gameOver";
+    ball: {
+        x: number;
+        y: number;
+        speedX: number;
+        speedY: number;
+        radius: number
+    };
+    paddles: Partial<Record<Side, Paddle>>;
+    score: Partial<Record<Side, number>>;
+}
+
+export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
+
+export interface Match {
+    game_id: number;
+    players: Partial<Record<Side, Player>>;
+    ready: Partial<Record<Side, boolean>>;
+    state: GameState;
+    startTime: number;
+    loop?: ReturnType<typeof setInterval>;
+    mode: GameMode;
 }
 
 export type ClientMessage =
-    | { type: "ai"; username: string }
-    | { type: "multiplayer"; username: string }
-    | { type: "tournament"; username: string }
-    | { type: "1v1"; username: string }
-    | { type: "play" }
-    | { type: "move"; up?: boolean; down?: boolean }
-    | { type: "playAgain" }
-    | { type: "leaveGame" }
+    | { type: "joinGame"; mode: GameMode; username: string; avatar: string }
+    | { type: "ready" }
+    | { type: "move"; up?: boolean; down?: boolean, left?: boolean, right: boolean }
+    | { type: "playAgain"; mode?: GameMode }
+    | { type: "leaveGame" };
 
-export type ServerMessage =
-    | { type: "matchFound"; side: Side; leftUsername: string; rightUsername: string; id: string }
-    | { type: "state"; state: GameState }
-    | { type: "gameOver"; winner: Side; score: { left: number; right: number } };
-
+export interface TournamentMatch extends Match {
+    bracketId: number;
+    round: number;
+}

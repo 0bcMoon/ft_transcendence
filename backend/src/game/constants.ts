@@ -1,4 +1,7 @@
+import { deflate } from "zlib";
+
 export const MAX_SCORE = 5;
+export const GAME_SIZE = 30;
 
 export const GAME_WIDTH = 800;
 export const GAME_HEIGHT = 600;
