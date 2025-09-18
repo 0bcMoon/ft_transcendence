@@ -58,15 +58,15 @@ const Logout = () => {
 }
 
 const NavigationBar = () => {
-    const location = useLocation(); // Get current location
+    const location = useLocation();
 
     const navItemsData = [
 
         { link: "/", label: "Home", icon: Home },
-        { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/game", label: "Game", icon: Gamepad2 },
-        { link: "/users", label: "Friends", icon: ContactRound },
+        { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/stats", label: "Stats", icon: BarChart2 },
+        { link: "/users", label: "Friends", icon: ContactRound },
         { link: "/history", label: "History", icon: History },
         { link: "/settings", label: "Settings", icon: Settings },
         { link: "/profile", label: "Profile", icon: User },

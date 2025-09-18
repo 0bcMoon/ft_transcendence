@@ -1,19 +1,41 @@
 import { useEffect, useRef, useState } from "react";
-import { GameState, Side } from "../types/types";
+import { useLocation } from "react-router-dom";
+import { GameState, Side, Scores, PlayerNames } from "../types/types";
+import { GameSession } from "../types/types";
 
-export function useLocalGame() {
+interface LocationState {
+    player1: string;
+    player2: string;
+}
+
+export function useLocalGame(): GameSession {
+    const location = useLocation();
+    // Defensive: fallback if location.state is missing
+    const state = (location.state ?? {}) as Partial<LocationState>;
+    const player1 = state.player1 ?? "Player 1";
+    const player2 = state.player2 ?? "Player 2";
+
+    const playerNames: PlayerNames = { left: player1, right: player2 };
+
     const gameStateRef = useRef<GameState | null>(null);
-    const keysPressed = useRef({ w: false, s: false, ArrowUp: false, ArrowDown: false });
+    const keysPressed = useRef({
+        w: false,
+        s: false,
+        ArrowUp: false,
+        ArrowDown: false,
+    });
     const loopRef = useRef<number | null>(null);
 
     const [isGameOver, setIsGameOver] = useState(false);
     const [winner, setWinner] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(3);
+    const [finalScore, setFinalScore] = useState<Scores | null>(null);
 
     const MAX_SCORE = 5;
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 600;
 
     const initState = (): GameState => ({
-        status: "end",
         paddles: {
             left: { x: 30, y: 260, width: 10, height: 80 },
             right: { x: 760, y: 260, width: 10, height: 80 },
@@ -25,29 +47,30 @@ export function useLocalGame() {
     useEffect(() => {
         gameStateRef.current = initState();
         setCountdown(3);
+        setIsGameOver(false);
+        setWinner(null);
+        setFinalScore(null);
     }, []);
 
-    // Countdown effect
     useEffect(() => {
         if (countdown === null) return;
-
         if (countdown === 0) {
             startGame();
             setCountdown(null);
             return;
         }
-
-        const timer = setTimeout(() => setCountdown(prev => prev! - 1), 1000);
+        const timer = setTimeout(() => setCountdown((prev) => prev! - 1), 1000);
         return () => clearTimeout(timer);
     }, [countdown]);
 
-    // Keyboard input
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, pressed: boolean) => {
-            if (e.key in keysPressed.current) {
-                keysPressed.current[e.key as keyof typeof keysPressed.current] = pressed;
+            const key = e.key as keyof typeof keysPressed.current;
+            if (key in keysPressed.current) {
+                keysPressed.current[key] = pressed;
             }
         };
+
         const downHandler = (e: KeyboardEvent) => handleKey(e, true);
         const upHandler = (e: KeyboardEvent) => handleKey(e, false);
 
@@ -62,12 +85,12 @@ export function useLocalGame() {
 
     const startGame = () => {
         if (!gameStateRef.current) return;
-        gameStateRef.current.status = "playing";
         loopRef.current = requestAnimationFrame(gameLoop);
     };
 
     const gameLoop = () => {
-        const state = gameStateRef.current!;
+        const state = gameStateRef.current;
+        if (!state) return;
         movePaddles(state);
         moveBall(state);
         loopRef.current = requestAnimationFrame(gameLoop);
@@ -75,60 +98,71 @@ export function useLocalGame() {
 
     const movePaddles = (state: GameState) => {
         const speed = 8;
-        const canvasHeight = 600;
-        if (keysPressed.current.w) state.paddles.left.y -= speed;
-        if (keysPressed.current.s) state.paddles.left.y += speed;
-        if (keysPressed.current.ArrowUp) state.paddles.right.y -= speed;
-        if (keysPressed.current.ArrowDown) state.paddles.right.y += speed;
+        const paddles = state.paddles;
 
-        state.paddles.left.y = Math.max(0, Math.min(canvasHeight - state.paddles.left.height, state.paddles.left.y));
-        state.paddles.right.y = Math.max(0, Math.min(canvasHeight - state.paddles.right.height, state.paddles.right.y));
+        // Defensive: ensure paddles exist
+        const left = paddles.left;
+        const right = paddles.right;
+
+        if (!left || !right) return;
+
+        if (keysPressed.current.w) left.y -= speed;
+        if (keysPressed.current.s) left.y += speed;
+        if (keysPressed.current.ArrowUp) right.y -= speed;
+        if (keysPressed.current.ArrowDown) right.y += speed;
+
+        left.y = Math.max(0, Math.min(CANVAS_HEIGHT - left.height, left.y));
+        right.y = Math.max(0, Math.min(CANVAS_HEIGHT - right.height, right.y));
     };
 
     const moveBall = (state: GameState) => {
-        if (state.status !== "playing") return; // ️ Prevent ball movement before countdown ends
+        if (!state.paddles.left || !state.paddles.right) return;
 
-        state.ball.x += state.ball.speedX;
-        state.ball.y += state.ball.speedY;
-
-        if (state.ball.y - state.ball.radius < 0 || state.ball.y + state.ball.radius > 600) {
-            state.ball.speedY *= -1;
-        }
-
-        const { left, right } = state.paddles;
         const ball = state.ball;
+        const left = state.paddles.left;
+        const right = state.paddles.right;
+
+        ball.x += ball.speedX;
+        ball.y += ball.speedY;
+
+        if (ball.y - ball.radius < 0 || ball.y + ball.radius > CANVAS_HEIGHT) {
+            ball.speedY *= -1;
+        }
 
         if (
             ball.x - ball.radius < left.x + left.width &&
             ball.y > left.y &&
-            ball.y < left.y + left.height
+            ball.y < left.y + left.height &&
+            ball.speedX < 0
         ) {
-            ball.speedX *= -1;
+            ball.speedX = Math.abs(ball.speedX);
             ball.x = left.x + left.width + ball.radius;
         }
 
         if (
             ball.x + ball.radius > right.x &&
             ball.y > right.y &&
-            ball.y < right.y + right.height
+            ball.y < right.y + right.height &&
+            ball.speedX > 0
         ) {
-            ball.speedX *= -1;
+            ball.speedX = -Math.abs(ball.speedX);
             ball.x = right.x - ball.radius;
         }
 
         if (ball.x < 0) {
-            state.score.right++;
+            state.score.right = (state.score.right ?? 0) + 1;
             checkGameOver(state, "right");
-        } else if (ball.x > 800) {
-            state.score.left++;
+        } else if (ball.x > CANVAS_WIDTH) {
+            state.score.left = (state.score.left ?? 0) + 1;
             checkGameOver(state, "left");
         }
     };
 
     const checkGameOver = (state: GameState, scorer: Side) => {
-        if (state.score[scorer] >= MAX_SCORE) {
-            state.status = "ended";
+        const scoreValue = state.score[scorer] ?? 0;
+        if (scoreValue >= MAX_SCORE) {
             setIsGameOver(true);
+            setFinalScore({ ...state.score });
             setWinner(scorer);
             if (loopRef.current) cancelAnimationFrame(loopRef.current);
         } else {
@@ -147,15 +181,22 @@ export function useLocalGame() {
         gameStateRef.current = initState();
         setIsGameOver(false);
         setWinner(null);
+        setFinalScore(null);
         setCountdown(3);
     };
 
+    // For local games, we set unused remote fields to sensible defaults
     return {
         gameStateRef,
         countdown,
         isGameOver,
         winner,
+        finalScore,
         handlePlayAgain,
+        playerNames,
+        waiting: false,
+        side: null,
+        playerAvatars: null,
+        handleGoHome: () => { },
     };
 }
-

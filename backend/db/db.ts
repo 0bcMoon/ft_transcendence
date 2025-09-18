@@ -17,8 +17,8 @@ sqliteDB.exec(data.toString(), (err) => {
 })
 
 interface RunResult {
-  lastID: number;
-  changes: number;
+    lastID: number;
+    changes: number;
 }
 
 const db = {
@@ -36,7 +36,7 @@ const db = {
 
     exec: <T = any>(sql: string, params: any[] = []): Promise<T[]> => {
         return new Promise((resolve, reject) => {
-            sqliteDB.exec(sql,  (err) => {
+            sqliteDB.exec(sql, (err) => {
                 if (err) reject(err);
                 else resolve([]);
             });

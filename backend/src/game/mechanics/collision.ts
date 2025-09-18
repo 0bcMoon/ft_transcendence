@@ -1,10 +1,9 @@
-import type { GameState } from "../types/types";
+import type { GameState } from "../core/MatchTypes.ts";
 
 export function checkCollision(state: GameState) {
     const { left, right } = state.paddles;
     const ball = state.ball;
 
-    // Left paddle
     if (
         ball.x - ball.radius < left.x + left.width &&
         ball.y > left.y &&
@@ -14,7 +13,6 @@ export function checkCollision(state: GameState) {
         ball.x = left.x + left.width + ball.radius;
     }
 
-    // Right paddle
     if (
         ball.x + ball.radius > right.x &&
         ball.y > right.y &&

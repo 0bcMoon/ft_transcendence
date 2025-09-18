@@ -4,9 +4,8 @@ import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
 import Login from '@/auth/Login';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import Game from '@/game/Game.tsx';
 import LocalGame from '@/game/LocalGame.tsx';
-import LocalGamePlay from '@/game/LocalGamePlay.tsx';
+import LocalGamePlay from '@/game/pages/LocalGame';
 import { AuthProvider } from '@/context/AuthContext';
 
 import RootLayout from '@/RootLayout'
@@ -15,11 +14,17 @@ import UserProfile from '@/users/UserProfile';
 import Settings from '@/settings/Settings';
 import HomePage from './home/Home';
 import Register from './auth/Register';
-import QuickGame from './game/pages/QuickGame';
+import Quick from './game/pages/Quick';
+import Multiplayer from './game/pages/Multiplayer';
 import AIGame from './game/pages/AIGame';
+import DashboardPage from './dashboard/DashboardPage'
+
 import TournamentLobby from './game/pages/TournamentLobby';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import TournamentCreate from './game/pages/CreateTournament';
+import TournamentJoin from './game/pages/JoinTournament';
+import TournamentBrackets from './game/pages/TournamentBracket';
 import FriendsPage from './users/FriendsPage';
+import GameMode from './game/pages/GameMode';
 
 const router = createBrowserRouter([
     {
@@ -27,20 +32,26 @@ const router = createBrowserRouter([
         element: <RootLayout />,
         children: [
             { index: true, element: <HomePage /> },
-            { path: "game", element: <Game /> },
+            { path: "game", element: <GameMode /> },
             { path: "users/:user_id", element: <UserProfile /> },
             { path: "users", element: <FriendsPage /> },
             { path: "chat", element: <Chat /> },
+            { path: "stats", element: <DashboardPage /> },
             { path: "settings", element: <Settings /> },
             { path: "game/local", element: <LocalGame /> },
-            { path: "*", element: <NotFound /> }, // Relative path to parent '/'
+            { path: "game/tournament", element: <TournamentLobby /> },
+            { path: "game/tournament/create", element: <TournamentCreate /> },
+            { path: "game/tournament/join", element: <TournamentJoin /> },
+            { path: "game/tournament/bracket", element: <TournamentBrackets /> },
+            { path: "*", element: <NotFound /> },
         ],
     },
 
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
-    { path: "/game/local/play", element: <LocalGamePlay /> }, // Moved outside RootLayout
-    { path: "game/quick", element: <QuickGame /> },
+    { path: "/game/local/play", element: <LocalGamePlay /> },
+    { path: "game/quick", element: <Quick /> },
+    { path: "game/multiplayer", element: <Multiplayer /> },
     { path: "game/ai", element: <AIGame /> },
     { path: "game/tournament", element: <TournamentLobby /> },
     { path: "*", element: <NotFound /> },
@@ -54,7 +65,6 @@ createRoot(document.getElementById("root")!).render(
             <AuthProvider>
                 <RouterProvider router={router} />
             </AuthProvider>
-            <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
  //   </StrictMode>,
 );

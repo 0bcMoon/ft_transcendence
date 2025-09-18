@@ -1,5 +1,9 @@
 import { WebSocket } from "ws";
-import { Side, ClientMessage, ServerMessage, GameState } from "./types/types";
+import { launchBall } from "../utils/ballUtils";
+import { Side, ClientMessage, ServerMessage, GameState } from "../types/types";
+import { aiManager } from "./AIManager";
+import { gameRepository } from "../../repository/gameRepository";
+
 import {
     MAX_SCORE,
     GAME_WIDTH,
@@ -9,51 +13,34 @@ import {
     BALL_RADIUS,
     BALL_SPEED_X,
     BALL_SPEED_Y,
-    RESET_BALL_SPEED_X,
-    RESET_BALL_SPEED_Y,
     TICK_RATE,
-} from "./constants";
+} from "../constants";
 
-interface Player {
-    id: string;
-    username: string;
-    socket: WebSocket;
-}
+import { Player, Match } from "./MatchTypes";
+import { movePaddle } from "../mechanics/movement";
+import { checkCollision } from "../mechanics/collision";
+import { shuffleQueue } from "../utils/shuffleQueue";
 
-interface Match {
-    id: string;
-    players: Record<Side, Player>;
-    state: GameState;
-    loop?: NodeJS.Timeout;
-    ready: Record<Side, boolean>;
-}
-
-class Matchmaker {
-    // Tracks latest socket/username per player so playAgain can always requeue
-    private clients = new Map<string, Player>();
+export class Matchmaker {
+    private matches = new Map<number, Match>(); // now keyed by game_id from DB
+    private clients = new Map<number, Player>();
     private queue: Player[] = [];
-    private matches = new Map<string, Match>();
 
-    addPlayer(id: string, username: string, socket: WebSocket) {
-        // Refresh registry with latest socket/username
+    addPlayer(id: number, username: string, socket: WebSocket | null) {
         const player: Player = { id, username, socket };
         this.clients.set(id, player);
-
-        // Skip if already in a match or already queued
-        if (this.findMatchByPlayer(id)) return;
-        if (this.queue.some(p => p.id === id)) return;
-
-        // Only enqueue if socket is open
-        if (!this.isOpen(socket)) return;
-
+        if (this.findMatchByPlayer(id))
+            return;
+        if (this.queue.some(p => p.id === id))
+            return;
+        if (!this.isOpen(socket))
+            return;
         this.queue.push(player);
-        this.tryMatch();
+        this.playGame();
     }
 
-    removePlayer(id: string) {
+    removePlayer(id: number) {
         this.queue = this.queue.filter(p => p.id !== id);
-
-        // If in a match, end it and requeue opponent if possible
         const match = this.findMatchByPlayer(id);
         if (!match) return;
 
@@ -67,29 +54,43 @@ class Matchmaker {
                 winner: opponentSide,
                 score: { ...match.state.score },
             });
-
             if (!this.queue.some(p => p.id === opponent.id) && !this.findMatchByPlayer(opponent.id)) {
                 this.queue.push(opponent);
-                this.tryMatch();
+                this.playGame();
             }
         }
-
-        this.endMatch(match.id);
+        this.endMatch(match.game_id);
     }
 
-    handleMessage(id: string, data: ClientMessage) {
-        if (data.type === "playAgain") {
-            const player = this.clients.get(id);
-            if (!player || !this.isOpen(player.socket)) return;
+    handleMessage(id: number, data: ClientMessage, socket?: WebSocket) {
+        if (data.type === "ai") {
+            const human = this.clients.get(id);
+            if (!human || !this.isOpen(human.socket))
+                return;
 
-            const match = this.findMatchByPlayer(id);
-            if (match) this.endMatch(match.id);
-
-            this.addPlayer(player.id, player.username, player.socket);
-
+            const match = aiManager.createVsAIMatch(human, data.username, this.createInitialState);
+            this.matches.set(Date.now(), match);
+            this.sendMatchFound(match);
+            match.state.status = "waiting";
+            return;
+        }
+        //-------------------------------------------//
+        if (data.type === "human") {
+            if (!data.username || !socket)
+                return;
+            this.addPlayer(id, data.username, socket);
             return;
         }
 
+        if (data.type === "playAgain") {
+            const player = this.clients.get(id);
+            if (!player || !this.isOpen(player.socket))
+                return;
+            const match = this.findMatchByPlayer(id);
+            if (match) this.endMatch(match.game_id);
+            this.addPlayer(player.id, player.username, player.socket);
+            return;
+        }
 
         if (data.type === "leaveGame") {
             this.removePlayer(id);
@@ -100,7 +101,7 @@ class Matchmaker {
         const side = match ? this.getPlayerSide(match, id) : undefined;
         if (!match || !side) return;
 
-        if (data.type === "start") {
+        if (data.type === "ready") {
             match.ready[side] = true;
             if (match.ready.left && match.ready.right && match.state.status === "waiting") {
                 match.state.status = "playing";
@@ -110,45 +111,44 @@ class Matchmaker {
         }
 
         if (data.type === "move" && match.state.status === "playing") {
-            this.movePaddle(match.state.paddles[side], data.up, data.down);
+            movePaddle(match.state.paddles[side], data.up, data.down);
             return;
         }
     }
 
-    private tryMatch() {
-        // Clean queue of disconnected players
+    private async playGame() {
         this.queue = this.queue.filter(p => this.isOpen(p.socket));
+        shuffleQueue(this.queue);
 
-        // Shuffle queue for randomness
-        for (let i = this.queue.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.queue[i], this.queue[j]] = [this.queue[j], this.queue[i]];
-        }
-
-        // Keep creating matches while 2+ players in the queue
         while (this.queue.length >= 2) {
             const left = this.queue.shift()!;
             const right = this.queue.shift()!;
-
-            // Defensive: skip if either somehow already matched
             if (this.findMatchByPlayer(left.id) || this.findMatchByPlayer(right.id)) continue;
 
-            const matchId = `match_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+            // Create game in DB
+            const game_id = await gameRepository.createGame("remote_1v1", 2, "waiting");
+
+            // Add players to DB
+            await gameRepository.addPlayerToGame(game_id, left.id, "A", "left");
+            await gameRepository.addPlayerToGame(game_id, right.id, "B", "right");
+
             const match: Match = {
-                id: matchId,
+                game_id,
                 players: { left, right },
                 state: this.createInitialState(),
                 ready: { left: false, right: false },
             };
 
-            this.matches.set(matchId, match);
+            console.log(`Match created: game_id=${game_id}, left=${left.username}, right=${right.username}`);
+
+            this.matches.set(game_id, match);
             this.sendMatchFound(match);
         }
     }
 
-
     private sendMatchFound(match: Match) {
         this.send(match.players.left.socket, {
+            id: match.game_id.toString(),
             type: "matchFound",
             side: "left",
             leftUsername: match.players.left.username,
@@ -156,6 +156,7 @@ class Matchmaker {
         });
 
         this.send(match.players.right.socket, {
+            id: match.game_id.toString(),
             type: "matchFound",
             side: "right",
             leftUsername: match.players.left.username,
@@ -164,81 +165,55 @@ class Matchmaker {
     }
 
     private startGameLoop(match: Match) {
+        gameRepository.updateGameStatus(match.game_id, "in-progress");
         match.loop = setInterval(() => {
             const state = match.state;
 
-            // Ball movement
+            if (match.aiSide && match.aiIntent)
+                movePaddle(state.paddles[match.aiSide], match.aiIntent.up, match.aiIntent.down);
+
             state.ball.x += state.ball.speedX;
             state.ball.y += state.ball.speedY;
 
-            // Top/bottom walls
-            if (state.ball.y - state.ball.radius < 0 || state.ball.y + state.ball.radius > GAME_HEIGHT) {
+            if (state.ball.y - state.ball.radius < 0 || state.ball.y + state.ball.radius > GAME_HEIGHT)
                 state.ball.speedY *= -1;
-            }
 
-            // Paddles
-            this.checkCollision(state);
+            checkCollision(state);
 
-            // Scoring
             if (state.ball.x < 0) {
                 state.score.right++;
+                gameRepository.updateScore(match.game_id, state.score.left, state.score.right);
                 this.checkGameOver(match, "right");
             } else if (state.ball.x > GAME_WIDTH) {
                 state.score.left++;
+                gameRepository.updateScore(match.game_id, state.score.left, state.score.right);
                 this.checkGameOver(match, "left");
             }
 
-            // Broadcast
             this.send(match.players.left.socket, { type: "state", state });
             this.send(match.players.right.socket, { type: "state", state });
         }, TICK_RATE);
     }
 
-    private checkCollision(state: GameState) {
-        const { left, right } = state.paddles;
-        const ball = state.ball;
-
-        // Left paddle
-        if (
-            ball.x - ball.radius < left.x + left.width &&
-            ball.y > left.y &&
-            ball.y < left.y + left.height
-        ) {
-            ball.speedX *= -1;
-            ball.x = left.x + left.width + ball.radius;
-        }
-
-        // Right paddle
-        if (
-            ball.x + ball.radius > right.x &&
-            ball.y > right.y &&
-            ball.y < right.y + right.height
-        ) {
-            ball.speedX *= -1;
-            ball.x = right.x - ball.radius;
-        }
-    }
-
     private checkGameOver(match: Match, scorer: Side) {
         if (match.state.score[scorer] >= MAX_SCORE) {
-            match.state.status = "ended";
-            const score = { ...match.state.score };
+            const score = match.state.score;
+            const winnerId = match.players[scorer].id;
+            const loserSide = scorer === "left" ? "right" : "left";
+            const loserId = match.players[loserSide].id;
+
+            gameRepository.endMatch(match.game_id, winnerId, /*duration*/ 0);
+            gameRepository.updateUserStatsAfterMatch(winnerId, true, score[scorer]);
+            gameRepository.updateUserStatsAfterMatch(loserId, false, score[loserSide]);
 
             this.send(match.players.left.socket, { type: "gameOver", winner: scorer, score });
             this.send(match.players.right.socket, { type: "gameOver", winner: scorer, score });
 
             this.stopLoop(match);
-            this.endMatch(match.id);
+            this.endMatch(match.game_id);
         } else {
-            this.resetBall(match.state, scorer);
+            launchBall(match.state, scorer === "left" ? "right" : "left");
         }
-    }
-
-    private resetBall(state: GameState, direction: Side) {
-        state.ball.x = GAME_WIDTH / 2;
-        state.ball.y = GAME_HEIGHT / 2;
-        state.ball.speedX = RESET_BALL_SPEED_X[direction];
-        state.ball.speedY = RESET_BALL_SPEED_Y;
     }
 
     private stopLoop(match: Match) {
@@ -246,41 +221,33 @@ class Matchmaker {
         match.loop = undefined;
     }
 
-    private endMatch(id: string) {
-        const match = this.matches.get(id);
+    private endMatch(game_id: number) {
+        const match = this.matches.get(game_id);
         if (!match) return;
         this.stopLoop(match);
-        this.matches.delete(id);
-        console.log("Match ended and removed:", id);
+        this.matches.delete(game_id);
+        console.log("Match ended and removed:", game_id);
     }
 
-    private movePaddle(paddle: GameState["paddles"][Side], up?: boolean, down?: boolean) {
-        const speed = 8;
-        const maxY = GAME_HEIGHT - paddle.height;
-        if (up) paddle.y = Math.max(0, paddle.y - speed);
-        if (down) paddle.y = Math.min(maxY, paddle.y + speed);
+    private send(socket: WebSocket | null, msg: ServerMessage) {
+        if (this.isOpen(socket)) socket!.send(JSON.stringify(msg));
     }
 
-    private send(socket: WebSocket, msg: ServerMessage) {
-        if (this.isOpen(socket)) {
-            socket.send(JSON.stringify(msg));
-        }
+    private isOpen(socket: WebSocket | null) {
+        return !!socket && socket.readyState === WebSocket.OPEN;
     }
 
-    private isOpen(socket: WebSocket) {
-        return socket.readyState === WebSocket.OPEN;
-    }
-
-    private findMatchByPlayer(id: string) {
-        for (const match of this.matches.values()) {
+    private findMatchByPlayer(id: number) {
+        for (const match of this.matches.values())
             if (match.players.left.id === id || match.players.right.id === id) return match;
-        }
         return undefined;
     }
 
-    private getPlayerSide(match: Match, id: string): Side | undefined {
-        if (match.players.left.id === id) return "left";
-        if (match.players.right.id === id) return "right";
+    private getPlayerSide(match: Match, id: number): Side | undefined {
+        if (match.players.left.id === id)
+            return "left";
+        if (match.players.right.id === id)
+            return "right";
         return undefined;
     }
 

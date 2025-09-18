@@ -1,6 +1,5 @@
-import { matchmaker } from "./game/core/Matchmaker";
+import { matchmaker } from "./game/game";
 import { FastifyPluginAsync } from "fastify";
-
 
 const gameRoute: FastifyPluginAsync = async (fastify) => {
     fastify.get("/game", { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
@@ -8,10 +7,11 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         fastify.log.info(`Game WebSocket connected: ${userId}`);
 
         socket.on("message", (raw) => {
-            let data;
-            data = JSON.parse(raw.toString());
+            let msg;
+            msg = JSON.parse(raw.toString());
+            // fastify.log.info(msg);
 
-            matchmaker.handleMessage(userId, data, socket);
+            matchmaker.handleMessage(userId, msg, socket);
         });
 
         socket.on("close", () => {

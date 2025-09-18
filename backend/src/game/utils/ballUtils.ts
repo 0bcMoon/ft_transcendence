@@ -1,30 +1,18 @@
-import { GAME_WIDTH, GAME_HEIGHT, BALL_RADIUS } from "../constants";
+import { GAME_WIDTH, GAME_HEIGHT, BALL_RADIUS, BALL_SPEED_X, BALL_SPEED_Y } from "../constants";
 import type { GameState, Side } from "../types/types";
 
-export function launchBall(
-    state: GameState,
-    direction?: Side,
-    baseSpeed = 6,         // starting speed in px/tick
-    rallyBoost = 0         // extra speed from rally count
-) {
+
+export function launchBall(state: GameState, toward: Side) {
+
     state.ball.x = GAME_WIDTH / 2;
     state.ball.y = GAME_HEIGHT / 2;
+
+    const dirX = toward === "left" ? -1 : 1;
+    state.ball.speedX = dirX * BALL_SPEED_X;
+
+    const dirY = Math.random() < 0.5 ? -1 : 1;
+    state.ball.speedY = dirY * BALL_SPEED_Y;
+
     state.ball.radius = BALL_RADIUS;
-
-    const dirX = direction ? (direction === "left" ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1);
-
-    const maxAngle = Math.PI / 4; // 45°
-    const angle = (Math.random() * (maxAngle * 2) - maxAngle) / 2; // ±22.5°
-
-    let vx = Math.cos(angle) * dirX;
-    let vy = Math.sin(angle);
-
-    const length = Math.sqrt(vx * vx + vy * vy);
-    vx /= length;
-    vy /= length;
-
-    const speed = baseSpeed + rallyBoost;
-    state.ball.speedX = vx * speed;
-    state.ball.speedY = vy * speed;
 }
 

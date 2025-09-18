@@ -1,119 +1,138 @@
 import { useEffect, useRef } from "react";
-import { GameState } from "../types/types";
+import { GameSession, Side } from "../types/types";
 
 interface GameCanvasProps {
-    gameStateRef: React.MutableRefObject<GameState | null>;
-    countdown: number | null;
-    isGameOver: boolean;
-    winner: "left" | "right" | null;
-    side: "left" | "right" | null;
-    waiting: boolean;
+    game: GameSession;
 }
 
-export default function GameCanvas({
-    gameStateRef,
-    countdown,
-    isGameOver,
-    winner,
-    side,
-    waiting,
-}: GameCanvasProps) {
+const PADDLE_COLORS: Partial<Record<Side, string>> = {
+    left: "#3b82f6",
+    right: "#6366f1",
+    top: "#ec4899",
+    bottom: "#10b981"
+};
+
+export default function GameCanvas({ game }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (!canvas || !ctx) return;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
         let frameId: number;
 
-        const draw = () => {
-            const width = canvas.width;
-            const height = canvas.height;
+        function draw() {
+            if (!canvas || !ctx) return;
 
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = "#000";
-            ctx.fillRect(0, 0, width, height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const state = gameStateRef.current;
+            // Center line (always vertical for 1v1, can extend for other modes)
+            ctx.beginPath();
+            ctx.setLineDash([15, 15]);
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.setLineDash([]);
 
-            if (!waiting) {
-                if (!isGameOver && countdown === null && state) {
-                    ctx.beginPath();
-                    ctx.setLineDash([15, 15]);
-                    ctx.moveTo(width / 2, 0);
-                    ctx.lineTo(width / 2, height);
-                    ctx.strokeStyle = "#FFFFFF";
-                    ctx.lineWidth = 4;
-                    ctx.stroke();
-                    ctx.setLineDash([]);
+            const state = game.gameStateRef.current;
+
+            if (state && !game.isGameOver && !game.waiting) {
+                // Draw paddles for all present sides
+                Object.entries(state.paddles).forEach(([side, paddle]) => {
+                    if (!paddle) return;
+                    ctx.fillStyle = PADDLE_COLORS[side as Side] || "#94a3b8";
+                    drawRoundedRect(ctx, paddle.x, paddle.y, paddle.width, paddle.height, 4);
+                });
+
+                // Draw ball
+                ctx.beginPath();
+                ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = "#f9fafb";
+                ctx.fill();
+
+                // Draw scores for all present sides
+                ctx.font = "32px Arial";
+                ctx.textAlign = "center";
+                // For 1v1, show left/right scores; for 4p, you can extend this
+                if (state.score.left !== undefined) {
+                    ctx.fillStyle = game.side === "left" ? "#f9fafb" : "#94a3b8";
+                    ctx.fillText(state.score.left.toString(), canvas.width / 4, 40);
                 }
-
-                if (state && !isGameOver && !countdown) {
-                    const { paddles, ball, score } = state;
-
-                    ctx.fillStyle = "#fff";
-                    ctx.fillRect(paddles.left.x, paddles.left.y, paddles.left.width, paddles.left.height);
-                    ctx.fillRect(paddles.right.x, paddles.right.y, paddles.right.width, paddles.right.height);
-
-                    ctx.beginPath();
-                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.font = "32px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText(score.left.toString(), width / 2 - 60, 40);
-                    ctx.fillText(score.right.toString(), width / 2 + 60, 40);
-                }
-
-                if (countdown && !isGameOver) {
-                    const centerX = width / 2;
-                    const centerY = height / 2;
-
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-                    ctx.fillRect(0, 0, width, height);
-
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
-                    ctx.fillStyle = "#000";
-                    ctx.fill();
-
-                    ctx.lineWidth = 6;
-                    ctx.strokeStyle = "#fff";
-                    ctx.stroke();
-
-                    ctx.fillStyle = "#ec4899";
-                    ctx.font = "bold 64px Arial";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(countdown.toString(), centerX, centerY);
-                }
-
-                if (isGameOver) {
-                    ctx.fillStyle = "rgba(0,0,0,0.7)";
-                    ctx.fillRect(0, 0, width, height);
-                    ctx.fillStyle = "#fff";
-                    ctx.font = "48px Arial";
-                    ctx.textAlign = "center";
+                if (state.score.right !== undefined) {
+                    ctx.fillStyle = game.side === "right" ? "#f9fafb" : "#94a3b8";
+                    ctx.fillText(state.score.right.toString(), (canvas.width * 3) / 4, 40);
                 }
             }
 
+            // Countdown
+            if (game.countdown && !game.isGameOver) {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                ctx.fillStyle = "rgba(30,41,59,0.8)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
+                ctx.fillStyle = "#1e293b";
+                ctx.fill();
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = "#3b82f6";
+                ctx.stroke();
+
+                ctx.fillStyle = "#ec4899";
+                ctx.font = "bold 64px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(game.countdown.toString(), centerX, centerY);
+            }
+
+            // Game over overlay
+            if (game.isGameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.7)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
             frameId = requestAnimationFrame(draw);
-        };
+        }
+
+        function drawRoundedRect(
+            ctx: CanvasRenderingContext2D,
+            x: number,
+            y: number,
+            width: number,
+            height: number,
+            radius: number
+        ) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
 
         draw();
         return () => cancelAnimationFrame(frameId);
-    }, [gameStateRef, countdown, isGameOver, winner, side, waiting]);
+    }, [game]);
 
     return (
-        <div className="w-full max-w-screen-md aspect-[4/3] relative rounded-xl overflow-hidden shadow-2xl border-4 border-gray-700">
-            <canvas
-                ref={canvasRef}
-                className="absolute top-0 left-0 w-full h-full"
-                width={800}
-                height={600}
-            />
-        </div>
+        <canvas
+            ref={canvasRef}
+            width={800}
+            height={600}
+            className="w-full rounded-lg shadow-sm"
+        />
     );
 }
-
