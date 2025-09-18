@@ -15,6 +15,7 @@ import {
     validatorCompiler,
     ZodTypeProvider,
 } from "fastify-type-provider-zod";
+
 // This import is essential. It loads the types from the plugin.
 import multipart from '@fastify/multipart';
 import path from 'path';
