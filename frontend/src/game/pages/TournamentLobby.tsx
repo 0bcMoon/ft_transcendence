@@ -27,14 +27,14 @@ export default function TournamentLobby() {
     const navigate = useNavigate();
     const username = useAuthStore((state) => state.user?.username) || "Guest";
 
-    const [tournament, setTournament] = useState<Tournament | null>(null);
+    // const [tournament, setTournament] = useState<Tournament | null>(null);
     const [userMatch, setUserMatch] = useState<Match | null>(null);
 
     useEffect(() => {
         const stored = sessionStorage.getItem("tournament");
         if (stored) {
             const t: Tournament = JSON.parse(stored);
-            setTournament(t);
+            // setTournament(t);
 
             // Find if user is in an in-progress match
             const match = t.matches.find(

@@ -12,7 +12,6 @@ export interface Player {
 
 export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
 
-/** Flexible paddles for any mode */
 export type Paddles = Partial<Record<Side, Paddle>>;
 
 export interface Paddle {
@@ -22,7 +21,6 @@ export interface Paddle {
     height: number;
 }
 
-/** Flexible scores for any mode */
 export type Scores = Partial<Record<Side, number>>;
 
 export interface GameState {
@@ -47,7 +45,6 @@ export interface Match {
     mode: GameMode;
 }
 
-/** Flexible player names/avatars for any mode */
 export type PlayerNames = Partial<Record<Side, string>>;
 export type PlayerAvatars = Partial<Record<Side, string>>;
 
@@ -64,7 +61,7 @@ export type ServerMessage =
     | { type: "gameOver"; winner: Side; score: Scores }
     | { type: "leaveGame" };
 
-export interface RemoteGame {
+export interface GameSession {
     gameStateRef: React.MutableRefObject<GameState | null>;
     side: Side | null;
     countdown: number | null;
@@ -76,4 +73,14 @@ export interface RemoteGame {
     finalScore: Scores | null;
     handlePlayAgain: () => void;
     handleGoHome: () => void;
+}
+
+export interface LocalGame {
+    gameStateRef: React.MutableRefObject<GameState | null>;
+    countdown: number | null;
+    isGameOver: boolean;
+    winner: Side | null;
+    finalScore: Scores | null;
+    handlePlayAgain: () => void;
+    playerNames: PlayerNames;
 }

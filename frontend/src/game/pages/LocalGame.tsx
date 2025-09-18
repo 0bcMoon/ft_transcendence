@@ -7,7 +7,6 @@ import PlayersHeader from "../components/PlayersHeader";
 
 export default function LocalGame() {
     const navigate = useNavigate();
-
     const game = useLocalGame();
 
     return (

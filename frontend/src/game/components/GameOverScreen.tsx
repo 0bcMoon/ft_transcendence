@@ -1,8 +1,8 @@
 import { Trophy, RotateCcw, Home } from "lucide-react";
-import { RemoteGame } from "../types/types";
+import { GameSession } from "../types/types";
 
 type GameOverScreenProps = {
-    game: RemoteGame;
+    game: GameSession;
 };
 
 export default function GameOverScreen(props: GameOverScreenProps) {

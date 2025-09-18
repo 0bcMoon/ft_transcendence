@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { RemoteGame, Side } from "../types/types";
+import { GameSession, Side } from "../types/types";
 
 interface GameCanvasProps {
-    game: RemoteGame;
+    game: GameSession;
 }
 
 const PADDLE_COLORS: Partial<Record<Side, string>> = {

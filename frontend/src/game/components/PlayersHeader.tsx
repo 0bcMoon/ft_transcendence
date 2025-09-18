@@ -1,7 +1,7 @@
-import { RemoteGame } from "../types/types";
+import { GameSession } from "../types/types";
 
 type PlayersHeaderProps = {
-    game: RemoteGame;
+    game: GameSession;
 };
 
 export default function PlayersHeader(props: PlayersHeaderProps) {
