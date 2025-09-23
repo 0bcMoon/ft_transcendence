@@ -66,54 +66,53 @@ function removePlayer(id: number): void {
 
 
 function handleMessage(id: number, data: ClientMessage, socket?: WebSocket): void {
-    switch (data.type) {
-        case "joinGame":
-            if (!data.username || !socket) return;
-            addPlayer(id, data.username, data.avatar, data.mode, socket);
-            return;
+    if (data.type === "joinGame") {
+        if (!data.username || !socket) return;
+        addPlayer(id, data.username, data.avatar, data.mode, socket);
+        return;
+    }
 
-        case "leaveGame":
-            removePlayer(id);
-            return;
+    if (data.type === "leaveGame") {
+        removePlayer(id);
+        return;
+    }
 
-        case "playAgain":
-            {
-                const player = clients.get(id);
-                if (!player || !isOpen(player.socket)) return;
-                const mode = data.mode || player.mode || "1v1";
-                addPlayer(player.id, player.username, player.avatar, mode, player.socket);
-            }
-            return;
+    if (data.type === "playAgain") {
+        const player = clients.get(id);
+        if (!player || !isOpen(player.socket)) return;
 
-        case "ready":
-            {
-                const match = findMatchByPlayer(id);
-                if (!match) return;
-                const side = getPlayerSide(match, id);
-                if (!side) return;
+        const mode = data.mode || player.mode || "1v1";
+        addPlayer(player.id, player.username, player.avatar, mode, player.socket);
+        return;
+    }
+
+    if (data.type === "ready") {
+        const match = findMatchByPlayer(id);
+        if (match) {
+            const side = getPlayerSide(match, id);
+            if (side) {
                 match.ready[side] = true;
-
-                // Start game when all present sides are ready (supports 1v1, 4p, etc.)
-                const allReady = (Object.keys(match.players) as Side[]).every(s => match.ready[s]);
-                if (allReady)
+                if (match.ready.left && match.ready.right) {
                     startGameLoop(match);
+                }
             }
+        }
+        return;
+    }
+
+    if (data.type === "move") {
+        const match = findMatchByPlayer(id);
+        if (!match)
             return;
 
-        case "move":
-            {
-                const match = findMatchByPlayer(id);
-                if (!match) return;
-                const side = getPlayerSide(match, id);
-                if (!side) return;
-                movePaddle(match.state.paddles[side], side, data.up, data.down, data.left, data.right);
-            }
+        const side = getPlayerSide(match, id);
+        if (!side)
             return;
 
-        // Extend with other message types as needed (e.g. tournament, spectate...)
+        movePaddle(match.state.paddles[side], side, data.up, data.down, data.left, data.right);
+        return;
     }
 }
-
 
 export const matchmaker: MatchmakerAPI = {
     addPlayer,

@@ -1,5 +1,11 @@
 export type Position = "top" | "right" | "bottom" | "left";
+export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
 export type Side = Position;
+
+export type Paddles = Partial<Record<Side, Paddle>>;
+export type Scores = Partial<Record<Side, number>>;
+export type PlayerNames = Partial<Record<Side, string>>;
+export type PlayerAvatars = Partial<Record<Side, string>>;
 
 export interface Player {
     id: number;
@@ -10,9 +16,13 @@ export interface Player {
     avatar?: string;
 }
 
-export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
+export interface KeysPressed {
+    w: boolean;
+    s: boolean;
+    ArrowUp: boolean;
+    ArrowDown: boolean;
+}
 
-export type Paddles = Partial<Record<Side, Paddle>>;
 
 export interface Paddle {
     x: number;
@@ -21,7 +31,6 @@ export interface Paddle {
     height: number;
 }
 
-export type Scores = Partial<Record<Side, number>>;
 
 export interface GameState {
     ball: {
@@ -45,8 +54,6 @@ export interface Match {
     mode: GameMode;
 }
 
-export type PlayerNames = Partial<Record<Side, string>>;
-export type PlayerAvatars = Partial<Record<Side, string>>;
 
 export type ServerMessage =
     | {
