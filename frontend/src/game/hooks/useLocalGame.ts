@@ -13,14 +13,27 @@ export function useLocalGame() {
     const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef<KeysPressed>({ w: false, s: false, ArrowUp: false, ArrowDown: false });
     const loopId = useRef<number | null>(null);
-    const isGameOverRef = useRef(false); // <-- ref to track game over immediately
+    const isGameOverRef = useRef(false);
 
     const [isGameOver, setIsGameOver] = useState(false);
     const [winner, setWinner] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(3);
     const [finalScore, setFinalScore] = useState<Scores | null>(null);
+    const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
 
     const [side] = useState<Side>("left");
+
+    useEffect(() => {
+        const updateScore = () => {
+            const currentScore = gameStateRef.current?.score;
+            if (currentScore) {
+                setScore({ left: currentScore.left, right: currentScore.right });
+            }
+            requestAnimationFrame(updateScore);
+        };
+        updateScore();
+        return () => { };
+    }, []);
 
     useEffect(() => {
         gameStateRef.current = initState();
@@ -47,10 +60,10 @@ export function useLocalGame() {
                 cancelAnimationFrame(loopId.current);
                 loopId.current = null;
             }
-            isGameOverRef.current = true; // <-- stop immediately
+            isGameOverRef.current = true;
             setIsGameOver(true);
             setWinner(scorer);
-            setFinalScore({ ...state.score }); // freeze final score
+            setFinalScore({ ...state.score });
         } else {
             resetBall(state, scorer);
         }
@@ -105,7 +118,7 @@ export function useLocalGame() {
         }
         gameStateRef.current = initState();
         setIsGameOver(false);
-        isGameOverRef.current = false; // reset ref
+        isGameOverRef.current = false;
         setWinner(null);
         setFinalScore(null);
         setCountdown(3);
@@ -121,6 +134,7 @@ export function useLocalGame() {
         playerNames,
         playerAvatars,
         handlePlayAgain,
+        score, // <--- this is new
     };
 }
 

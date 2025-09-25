@@ -5,13 +5,15 @@ import { useNavigate } from "react-router-dom";
 
 const WS_URL = "ws://localhost:3000/game";
 
+type KeysPressed = { up: boolean; down: boolean };
+
 export function useRemoteGame() {
     const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
 
     const wsRef = useRef<WebSocket | null>(null);
     const gameStateRef = useRef<GameState | null>(null);
-    const keysPressed = useRef({ up: false, down: false });
+    const keysPressed = useRef<KeysPressed>({ up: false, down: false });
 
     const [side, setSide] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
@@ -20,6 +22,16 @@ export function useRemoteGame() {
     const [playerNames, setPlayerNames] = useState<PlayerNames | null>(null);
     const [playerAvatars, setPlayerAvatars] = useState<PlayerAvatars | null>(null);
     const [finalScore, setFinalScore] = useState<Scores | null>(null);
+    const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
+
+    const isGameOverRef = useRef(isGameOver);
+    const countdownRef = useRef(countdown);
+    useEffect(() => {
+        isGameOverRef.current = isGameOver;
+    }, [isGameOver]);
+    useEffect(() => {
+        countdownRef.current = countdown;
+    }, [countdown]);
 
     useEffect(() => {
         if (!user?.username) return;
@@ -28,47 +40,62 @@ export function useRemoteGame() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-            ws.send(JSON.stringify({
-                type: "joinGame",
-                mode: "1v1",
-                username: user.username,
-                avatar: user.profile_picture,
-            }));
+            ws.send(
+                JSON.stringify({
+                    type: "joinGame",
+                    mode: "1v1",
+                    username: user.username,
+                    avatar: user.profile_picture,
+                })
+            );
         };
 
-        ws.onmessage = ({ data }) => handleServerMessage(JSON.parse(data));
+        ws.onmessage = ({ data }) => {
+            const msg: ServerMessage = JSON.parse(data);
 
-        return () => ws.close();
+            switch (msg.type) {
+                case "matchFound": {
+                    setSide(msg.side);
+                    setPlayerNames(msg.playerNames);
+                    setPlayerAvatars(msg.playerAvatars);
+                    setCountdown(3);
+                    setIsGameOver(false);
+                    setWinner(null);
+                    setFinalScore(null);
+                    setScore({ left: 0, right: 0 });
+                    break;
+                }
+
+                case "state": {
+                    if (!isGameOverRef.current) {
+                        gameStateRef.current = msg.state;
+                        if (msg.state?.score) {
+                            setScore({ ...msg.state.score });
+                        }
+                    }
+                    break;
+                }
+
+                case "gameOver": {
+                    setIsGameOver(true);
+                    setWinner(msg.winner);
+                    setFinalScore(msg.score);
+                    setCountdown(null);
+                    break;
+                }
+
+                case "leaveGame": {
+                    resetGameState();
+                    break;
+                }
+            }
+        };
+
+        return () => {
+            ws.close();
+            wsRef.current = null;
+        };
     }, [user]);
-
-    const handleServerMessage = (msg: ServerMessage) => {
-        switch (msg.type) {
-            case "matchFound":
-                setSide(msg.side);
-                setPlayerNames(msg.playerNames);
-                setPlayerAvatars(msg.playerAvatars);
-                setCountdown(3);
-                setIsGameOver(false);
-                setWinner(null);
-                setFinalScore(null);
-                break;
-
-            case "state":
-                if (!isGameOver) gameStateRef.current = msg.state;
-                break;
-
-            case "gameOver":
-                setIsGameOver(true);
-                setWinner(msg.winner);
-                setFinalScore(msg.score);
-                setCountdown(null);
-                break;
-
-            case "leaveGame":
-                resetGameState();
-                break;
-        }
-    };
 
     useEffect(() => {
         if (countdown === null) return;
@@ -83,10 +110,8 @@ export function useRemoteGame() {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)
-                return;
-            if (!side || countdown !== null || isGameOver)
-                return;
+            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+            if (!side || countdownRef.current !== null || isGameOverRef.current) return;
 
             const { up, down } = keysPressed.current;
             if (up || down) {
@@ -95,14 +120,12 @@ export function useRemoteGame() {
         }, 16);
 
         return () => clearInterval(interval);
-    }, [side, countdown, isGameOver]);
+    }, [side]);
 
     useEffect(() => {
         const handleKey = (pressed: boolean, key: string) => {
-            if (key === "ArrowUp" || key === "w")
-                keysPressed.current.up = pressed;
-            if (key === "ArrowDown" || key === "s")
-                keysPressed.current.down = pressed;
+            if (key === "ArrowUp" || key === "w") keysPressed.current.up = pressed;
+            if (key === "ArrowDown" || key === "s") keysPressed.current.down = pressed;
         };
 
         const down = (e: KeyboardEvent) => handleKey(true, e.key);
@@ -124,6 +147,7 @@ export function useRemoteGame() {
         setWinner(null);
         setFinalScore(null);
         setCountdown(null);
+        setScore({ left: 0, right: 0 });
         gameStateRef.current = null;
     };
 
@@ -148,6 +172,7 @@ export function useRemoteGame() {
         playerNames,
         playerAvatars,
         finalScore,
+        score,
         handlePlayAgain,
         handleGoHome,
     };

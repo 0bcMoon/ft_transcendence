@@ -1,7 +1,7 @@
 import GameCanvas from "../components/GameCanvas";
 import { useRemoteGame4p } from "../hooks/useRemoteGame4p";
 import GameHeader from "../components/GameHeader";
-import PlayersHeader from "../components/PlayersHeader";
+import PlayersHeader from "../components/PlayersHeader4p";
 import GameOverScreen from "../components/GameOverScreen";
 import WaitingOverlay from "../components/WaitingOverlay";
 
@@ -11,16 +11,43 @@ export default function MultiPlayer() {
     return (
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
             <div className="max-w-4xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
-                <GameHeader game={game} />
+                <GameHeader />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
                     {game.waiting && !game.isGameOver && <WaitingOverlay />}
 
-                    {!game.isGameOver && !game.waiting && <PlayersHeader game={game} />}
+                    {game.playerNames && (
+                        <PlayersHeader
+                            playerNames={game.playerNames}
+                            playerAvatars={game.playerAvatars}
+                        />
+                    )}
 
-                    {!game.isGameOver && !game.waiting && <GameCanvas game={game} />}
+                    {game.playerNames && !game.isGameOver && (
+                        <GameCanvas
+                            gameStateRef={game.gameStateRef}
+                            side={game.side}
+                            isGameOver={game.isGameOver}
+                            countdown={game.countdown}
+                        />
+                    )}
 
-                    {game.isGameOver && game.finalScore && <GameOverScreen game={game} />}
+                    {/* Show game over screen */}
+                    {game.isGameOver && game.finalScore && game.playerNames && (
+                        <GameOverScreen
+                            winnerSide={game.winner === game.side}
+                            finalScore={{
+                                left: game.finalScore.left ?? 0,
+                                right: game.finalScore.right ?? 0,
+                            }}
+                            playerNames={{
+                                left: game.playerNames.left ?? "Player 1",
+                                right: game.playerNames.right ?? "Player 2",
+                            }}
+                            handlePlayAgain={game.handlePlayAgain}
+                            handleGoHome={game.handleGoHome}
+                        />
+                    )}
                 </div>
             </div>
         </div>

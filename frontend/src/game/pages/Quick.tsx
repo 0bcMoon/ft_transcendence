@@ -14,18 +14,15 @@ export default function Quick() {
                 <GameHeader />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
-                    {/* Show waiting overlay if no players yet */}
                     {!game.playerNames && <WaitingOverlay />}
-
-                    {/* Show player headers once players are assigned */}
-                    {game.playerNames && (
+                    {!game.isGameOver && game.playerNames && (
                         <PlayersHeader
                             playerNames={game.playerNames}
                             playerAvatars={game.playerAvatars}
+                            scores={game.gameStateRef.current?.score}
                         />
                     )}
 
-                    {/* Render game canvas if game has started and not over */}
                     {game.playerNames && !game.isGameOver && (
                         <GameCanvas
                             gameStateRef={game.gameStateRef}
@@ -56,4 +53,3 @@ export default function Quick() {
         </div>
     );
 }
-

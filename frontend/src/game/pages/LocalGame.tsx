@@ -14,10 +14,11 @@ export default function LocalGame() {
                 <GameHeader />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
-                    {game.playerNames && (
+                    {!game.isGameOver && (
                         <PlayersHeader
                             playerNames={game.playerNames}
                             playerAvatars={game.playerAvatars}
+                            scores={game.gameStateRef.current?.score}
                         />
                     )}
 
@@ -37,7 +38,6 @@ export default function LocalGame() {
                             handlePlayAgain={game.handlePlayAgain}
                             navigate={navigate} />)}
                 </div>
-
             </div>
         </div>
     );
