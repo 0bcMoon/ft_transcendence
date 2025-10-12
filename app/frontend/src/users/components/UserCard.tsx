@@ -20,6 +20,7 @@ interface UserCardProps {
     actions?: ActionButton[];
     showRequestDate?: boolean;
     showBlockedDate?: boolean;
+    showOnlineStatus?: boolean;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -27,6 +28,7 @@ const UserCard: React.FC<UserCardProps> = ({
     actions = [],
     showRequestDate = false,
     showBlockedDate = false,
+    showOnlineStatus = false,
 }) => {
 
     const navigate = useNavigate();
@@ -46,6 +48,11 @@ const UserCard: React.FC<UserCardProps> = ({
                         alt={user.display_name}
                         className="w-16 h-16 rounded-full object-cover"
                     />
+                    {showOnlineStatus && (
+                        <div
+                            className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white 
+                                    ${user.online_status ? 'bg-green-500' : 'bg-gray-400'}`}
+                        />)}
                 </div>
 
                 {/* Details */}
@@ -88,7 +95,7 @@ const UserCard: React.FC<UserCardProps> = ({
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
-                                    
+
                                     {action.isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                     {action.label}
                                 </button>

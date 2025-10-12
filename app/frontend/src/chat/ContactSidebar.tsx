@@ -5,7 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
 import { ContactList } from './components/ContactList';
 import { useActiveChatStore } from '@/state/Store';
-import { useWebSocket } from '@/context/WebSocket';
+import { useWebSocket } from '@/context/WebSocketContext';
+import { unsubscribe } from '@/home/Notification';
+import toast from 'react-hot-toast';
 
 // const ChatRequest = () => {
 //     const chatRequests: ChatRequest[] = []; // This should come from props or state
@@ -89,12 +91,11 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
     isOpen,
     onClose,
 }) => {
+
     const setActiveChat = useActiveChatStore(state => state.setActiveChat);
-    const {socket, isConnected} = useWebSocket();
-
-
-
-    const { data: chats } = useQuery<Contacts[]>({
+    const { socket } = useWebSocket();
+    const isConnected = socket && socket.readyState === WebSocket.OPEN;
+    const { data: chats, isLoading } = useQuery<Contacts[]>({
         queryKey: ['contacts'],
         queryFn: async () => {
             const response = await api.get('/api/chat/contacts');
@@ -103,39 +104,27 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
     });
 
     const [searchTerm, setSearchTerm] = useState('');
-
-
     const handleChatSelect = (chat: any) => {
         setActiveChat(chat);
         onClose();
     };
-
 
     const filteredChats = chats?.filter(chat =>
         chat.display_name.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
     const contacts_ids = chats?.map((chat) => chat.id) || [];
-
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-
-        if (isConnected && socket) {
-            interval = setInterval(() => {
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'ping', ids: contacts_ids }));
-                    console.log('Ping sent');
-                }
-            }, 7000); // send ping every 7  seconds
-        }
         return () => {
-            if (interval) {
-                clearInterval(interval);
-                console.log('WebSocket disconnected, stopping heartbeat');
-            }
+            if (!socket || !isConnected || isLoading || contacts_ids.length === 0) return;
+            toast.success(`unSubscribed to contacts' presence ${contacts_ids.join(', ')}`);
+            unsubscribe(socket, contacts_ids);
         };
-    }, [isConnected, socket]);
-    
+    }, [isLoading, isConnected, socket]);
+
+    if (isLoading) {
+        return <div className="p-6">Loading...</div>;
+    }
 
     return (
         <>
@@ -184,7 +173,7 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
                                 <p>No conversations found</p>
                             </div>
                         ) : (
-                            <ContactList chats={filteredChats} onChatSelect={handleChatSelect}   />
+                            <ContactList chats={filteredChats} onChatSelect={handleChatSelect} />
                         )}
                     </div>
                 </div>

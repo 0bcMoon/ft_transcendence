@@ -18,5 +18,5 @@ export interface RemoteUser {
     relation_status: RelationshipStatus
     username?: string;
     profile_picture?: string;
-    last_seen?: Date | string;
+    online_status?: boolean;
 }

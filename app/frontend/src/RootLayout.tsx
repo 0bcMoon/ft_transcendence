@@ -1,9 +1,9 @@
 import { Toaster } from "react-hot-toast";
-import NavigationBar from "./home/NavigationBar";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import { Loader } from "lucide-react";
+import NavBar from "./navbar/NavBar";
 
 export default function RootLayout() {
 
@@ -17,7 +17,7 @@ export default function RootLayout() {
     }, [isAuthenticated, navigate, isLoading]);
 
     // TODO: add a loding page like discord maybe
-    if (isLoading ) {
+    if (isLoading) {
         return <Loader className="animate-spin" />
     }
 
@@ -34,12 +34,7 @@ export default function RootLayout() {
                     }}
                 />
             </div>
-
-            <main className="pt-2 no-scrollbar grid-flow-col pr-2 pl-2 grid gap-4 w-screen h-screen grid-cols-14 ">
-                <NavigationBar />
-                <Outlet />
-            </main>
-
+            <NavBar children={<Outlet />} />
         </>
     );
 }

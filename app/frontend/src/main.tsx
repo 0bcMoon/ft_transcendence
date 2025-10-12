@@ -25,7 +25,7 @@ import TournamentJoin from './game/pages/JoinTournament';
 import TournamentBrackets from './game/pages/TournamentBracket';
 import FriendsPage from './users/FriendsPage';
 import GameMode from './game/pages/GameMode';
-import { WebSocketProvider } from './context/WebSocket';
+import { WebSocketProvider } from './context/WebSocketContext';
 
 const router = createBrowserRouter([
     {
@@ -55,6 +55,7 @@ const router = createBrowserRouter([
     { path: "game/multiplayer", element: <Multiplayer /> },
     { path: "game/ai", element: <AIGame /> },
     { path: "game/tournament", element: <TournamentLobby /> },
+    // { path: "navbar", element: <NavBar /> },
     { path: "*", element: <NotFound /> },
 ]);
 

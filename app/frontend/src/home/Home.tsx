@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Clock, Users, Crown, Target, Gamepad2, Brain, TrendingUp } from "lucide-react";
-import { useWebSocket } from "@/context/WebSocket";
+import { useWebSocket } from "@/context/WebSocketContext";
 
 interface Stats {
     totalWins: number;

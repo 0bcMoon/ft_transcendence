@@ -8,7 +8,6 @@ interface RecvMessage {
     content: string,
 }
 
-// const connections : Map<number, WebSocketConnection> = new Map();
 const chatConnections: Map<number, WebSocket> = new Map();
 
 export default async function(fastify: FastifyInstance) {

@@ -15,6 +15,7 @@ export interface Contacts {
         relation_status: string
         content: string | null
         messsage_time: string | null
+        online_status: boolean
 }
 
 // export interface ChatRequest {

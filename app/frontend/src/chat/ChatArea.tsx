@@ -153,7 +153,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }, [active_chat, ws.current]);
 
     if (!active_chat)
-        return (<StartChatPlaceholder onSidebarToggle={onSidebarToggle}/>);
+        return (<StartChatPlaceholder onSidebarToggle={onSidebarToggle} />);
 
     return (
         <div className="flex-1 flex flex-col bg-white">

@@ -1,9 +1,26 @@
-type NotificationType = 'heartbeat' | 'message' | 'friend_request' | 'friend_accept' | 'game_invite';
+type NotificationType = 'notify' | 'subscribe' | 'unsubscribe' | 'message' | 'friend_request' | 'friend_accept' | 'game_invite';
 
 export interface IEvent {
     type: NotificationType;
-    content: string | number;
+    status?: 'online' | 'offline';
+    id?: number;
+    subscribers?: number[];
 }
 
+export function subscribe(socket: WebSocket, subscribers: number[]) {
+    const message: IEvent = {
+        type: 'subscribe',
+        subscribers: subscribers
+    };
+    socket.send(JSON.stringify(message));
+}
+
+export function unsubscribe(socket: WebSocket, subscribers: number[]) {
+    const message: IEvent = {
+        type: 'unsubscribe',
+        subscribers: subscribers
+    };
+    socket.send(JSON.stringify(message));
+}
 
 

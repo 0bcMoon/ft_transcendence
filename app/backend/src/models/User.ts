@@ -9,6 +9,8 @@ import bcrypt from 'bcrypt';
 import { CreateUser, EmailUpdate, GoogleOAuth2, Intra42OAuth2 } from "../types/types";
 import crypto from 'node:crypto';
 import { sendEmail } from "../email-service";
+import { isOnline } from "../notifications";
+import { subscribe } from "../notifications";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -83,8 +85,14 @@ const User = {
             friends = await userRepository.findFriends(req.user.id, search);
         else
             friends = await userRepository.getFriends(req.user.id);
-        const new_friends = friends.map(friend => ({ ...friend, profile_picture: friend.image_src + friend.profile_picture }));
-        return reply.status(200).send(new_friends);
+            // user foreach
+        friends?.forEach(friend => {
+            friend.profile_picture = friend.image_src + friend.profile_picture;
+            friend.image_src = undefined;
+            friend.online_status = isOnline(friend.id);
+        });
+        subscribe(req.user.id, friends?.map(friend => friend.id) || []);
+        return reply.status(200).send(friends || []);
     },
 
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {

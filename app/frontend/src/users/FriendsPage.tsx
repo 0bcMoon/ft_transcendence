@@ -4,6 +4,7 @@ import FriendsList from './components/FriendsList';
 import SearchUsers from './components/SearchUsers';
 import FriendRequests from './components/FriendRequests';
 import BlockedUsers from './components/BlockedUsers';
+import { useWebSocket } from '@/context/WebSocketContext';
 
 type TabType = 'friends' | 'search' | 'requests' | 'blocked';
 
@@ -32,6 +33,7 @@ const FriendsPage = () => {
                 return <FriendsList />;
         }
     };
+
 
     return (
 

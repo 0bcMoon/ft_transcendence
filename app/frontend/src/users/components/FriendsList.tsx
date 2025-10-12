@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, MessageCircle, UserX, Users } from 'lucide-react';
 import UserCard from './UserCard';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,6 +8,9 @@ import { useActiveChatStore } from '@/state/Store';
 import Modal from '@/component/Model';
 import { RemoteUser } from '@/types/types';
 import { useUnFriend } from '@/api/mutations';
+import { unsubscribe } from '@/home/Notification';
+import { useWebSocket } from '@/context/WebSocketContext';
+import toast from 'react-hot-toast';
 
 const FriendsList = () => {
 
@@ -17,6 +20,30 @@ const FriendsList = () => {
     const setActiveChat = useActiveChatStore(state => state.setActiveChat);
     const [currentUserId, setcurrentUserId] = useState<number | undefined>(undefined);
     const { mutate: unfriend, isPending: isUnfriending } = useUnFriend();
+
+    // TODO: implementing websocket reconnection to get real-time online status
+    const { socket } = useWebSocket();
+    const isConnected = socket && socket.readyState === WebSocket.OPEN;
+
+    // Filter friends based on search term
+    const filteredFriends = useCallback(() => {
+        return friends.filter((friend) =>
+            friend.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (friend.username && friend.username.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [friends, searchTerm])();
+
+    const friends_id = friends.map((friend) => friend.id);
+
+    useEffect(() => {
+        return () => {
+            if (!socket || !isConnected || isLoading || friends_id.length === 0) return;
+            toast.success(`unSubscribed to friends' presence ${friends_id.join(', ')}`);
+            unsubscribe(socket, friends_id);
+        };
+    }, [isLoading, isConnected, socket]);
+
+
 
     if (isLoading) {
         return (
@@ -33,12 +60,6 @@ const FriendsList = () => {
             </div>
         );
     };
-    // Filter friends based on search term
-    const filteredFriends = friends.filter((friend) =>
-        friend.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (friend.username && friend.username.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
     const startChat = (user: RemoteUser) => {
         setActiveChat(user);
         navigate("/chat");
@@ -83,6 +104,7 @@ const FriendsList = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredFriends.map((friend) => (
                         <UserCard
+                            showOnlineStatus={true}
                             key={friend.id}
                             user={friend}
                             actions={[

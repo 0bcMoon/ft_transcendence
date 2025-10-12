@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import chatRepository, { Contacts } from "../repository/chatRepository";
+import { isOnline, subscribe } from "../notifications";
 
 const Chat = {
     getContact: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -22,10 +23,15 @@ const Chat = {
     },
     getContactsList: async (req: FastifyRequest, reply: FastifyReply) => {
         const contacts = await chatRepository.getContactListWithLastMessage(req.user.id);
+        const sub: number[] = []
         contacts.forEach(element => {
+            if (!element.relation_status.includes('blocked'))
+                sub.push(element.id);
             element.profile_picture = element.image_src + element.profile_picture;
             element.image_src = undefined
+            element.online_status = isOnline(element.id);
         });
+        subscribe(req.user.id, sub);
         return reply.status(200).send(contacts);
     },
 

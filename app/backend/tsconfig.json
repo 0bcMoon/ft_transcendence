@@ -1,20 +1,16 @@
 {
     "include": [
         "src/**/*",
-        "types/**/*"
+        "index.ts"
     ],
     "compilerOptions": {
         "types": [
             "node",
-            "@types/node",
             "jest"
         ],
         "typeRoots": [
-            "./types",
             "./node_modules/@types"
         ],
-        "sourceMap": true,
-        // or for inline source maps:
         "inlineSourceMap": true,
         "outDir": "./dist",
         "rootDir": "./src",

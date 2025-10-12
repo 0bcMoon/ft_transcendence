@@ -2,7 +2,6 @@ import React from 'react';
 import { Contacts } from '../types';
 import { useActiveChatStore } from '@/state/Store';
 import { formatTimeToReadable } from '@/component/helper';
-import { useWebSocket } from '@/context/WebSocket';
 
 interface ContactListProps {
     chats: Contacts[] ;
@@ -10,9 +9,6 @@ interface ContactListProps {
     
 }
 
-function heartbeat() {
-
-}
 
 
 export const ContactList: React.FC<ContactListProps> = ({ chats, onChatSelect  }) => {
@@ -41,9 +37,8 @@ export const ContactList: React.FC<ContactListProps> = ({ chats, onChatSelect  }
                         />
                         {!(chat.relation_status === 'blocking' || chat.relation_status === 'blocked_by') && (
                             <div
-                                // TODO: for online find a better way
                                 className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white 
-                                        ${true ? 'bg-green-500' : 'bg-gray-400'}`}
+                                        ${chat.online_status ? 'bg-green-500' : 'bg-gray-400'}`}
                             />
                         )}
                     </div>
