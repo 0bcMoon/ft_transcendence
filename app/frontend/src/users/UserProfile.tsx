@@ -364,7 +364,7 @@ const UserProfile = () => {
     return (
         <div
             className="flex flex-col items-center col-span-13  
-                        h-[97svh] rounded-xl 
+                        h-full rounded-xl 
             border-gray-100 border-t-2 shadow-lg shadow-gray-200"
         >
             {/* Back Arrow */}

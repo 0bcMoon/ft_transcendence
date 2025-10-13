@@ -18,8 +18,9 @@ function Chat() {
         };
     }, []);
 
+    // TODO: fix sidebar color unmatch 
     return (
-        <div className="h-[97svh] bg-gray-100 flex overflow-hidden col-span-14 border-gray-100 border-2 shadow-lg shadow-gray-200 rounded-2xl">
+        <div className="h-full bg-gray-100 flex overflow-hidden">
             {/* Contact Sidebar */}
             <ContactSidebar
                 isOpen={sidebarOpen}

@@ -156,7 +156,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         return (<StartChatPlaceholder onSidebarToggle={onSidebarToggle} />);
 
     return (
-        <div className="flex-1 flex flex-col bg-white">
+        <div className="flex-1 flex flex-col bg-white overflow-hidden">
             <Modal
                 isOpen={isOpen}
                 onClose={() => setIsOpen(false)}

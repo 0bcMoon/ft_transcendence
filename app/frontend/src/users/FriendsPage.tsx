@@ -4,7 +4,6 @@ import FriendsList from './components/FriendsList';
 import SearchUsers from './components/SearchUsers';
 import FriendRequests from './components/FriendRequests';
 import BlockedUsers from './components/BlockedUsers';
-import { useWebSocket } from '@/context/WebSocketContext';
 
 type TabType = 'friends' | 'search' | 'requests' | 'blocked';
 
@@ -12,14 +11,13 @@ const FriendsPage = () => {
     const [activeTab, setActiveTab] = useState<TabType>('friends');
 
     const tabs = [
-        { id: 'friends' as TabType, label: 'Friends', icon: Users },
-        { id: 'search' as TabType, label: 'Search Users', icon: Search },
-        { id: 'requests' as TabType, label: 'Requests', icon: UserPlus },
-        { id: 'blocked' as TabType, label: 'Blocked', icon: UserX },
+        { id: 'friends'  as TabType, label: 'Friends',      icon: Users },
+        { id: 'search'   as TabType, label: 'Search Users', icon: Search },
+        { id: 'requests' as TabType, label: 'Requests',     icon: UserPlus },
+        { id: 'blocked'  as TabType, label: 'Blocked',      icon: UserX },
     ];
 
     const RenderContent = () => {
-
         switch (activeTab) {
             case 'friends':
                 return <FriendsList />;
@@ -37,7 +35,7 @@ const FriendsPage = () => {
 
     return (
 
-        <div className="col-span-14 h-[97svh] bg-gray-50">
+        <div className="h-full bg-gray-50">
             <div className="max-w-6xl mx-auto px-6 py-10">
                 {/* Header */}
                 <div className="mb-10">

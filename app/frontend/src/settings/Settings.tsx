@@ -137,9 +137,8 @@ function Settings() {
     }
 
     return (
-        <div className="col-span-13 h-[97svh] overflow-y-auto no-scrollbar
-                        rounded-xl 
-                        border-gray-100 border-2 shadow-lg shadow-gray-200 bg-gray-50 py-8 px-4">
+        <div className="h-full overflow-y-auto no-scrollbar
+                        border-gray-100  bg-gray-50 py-8 px-4">
 
             <div className=" space-y-6 max-w-4xl mx-auto">
                 {/* Header */}
@@ -153,7 +152,7 @@ function Settings() {
 
                 {/* Profile Picture Upload */}
 
-                <form autoComplete="off" onSubmit={uploadUserProfilePicture} className="space-y-6 mb-8">
+                <form autoComplete={"off"} onSubmit={uploadUserProfilePicture} className="space-y-6">
 
                     <ProfilePhoto
                         profileImage={profileImage ? URL.createObjectURL(profileImage) : null}

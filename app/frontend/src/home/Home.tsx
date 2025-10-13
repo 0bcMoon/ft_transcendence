@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Trophy, Clock, Users, Crown, Target, Gamepad2, Brain, TrendingUp } from "lucide-react";
-import { useWebSocket } from "@/context/WebSocketContext";
 
 interface Stats {
     totalWins: number;
@@ -37,20 +36,7 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // This would be your actual API call
-        // const fetchStats = async () => {
-        //     try {
-        //         const response = await api.get('/user/stats');
-        //         setStats(response.data);
-        //     } catch (error) {
-        //         console.error('Failed to fetch stats:', error);
-        //     } finally {
-        //         setLoading(false);
-        //     }
-        // };
-        // fetchStats();
 
-        // Mock data for demo
         setTimeout(() => {
             setStats({
                 totalWins: 45,
