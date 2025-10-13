@@ -1,6 +1,6 @@
 import {
     Home, Settings, MessageSquare, Gamepad2, Bell,
-     User, Menu, X, LogOut, ContactRound,
+    User, Menu, LogOut, ContactRound,
     MessageCircle, User2, History, BarChart2,
 } from 'lucide-react';
 
@@ -14,14 +14,21 @@ interface NavBarItemProps {
     active: boolean;
 }
 
-function NavBarItem({ link, icon: Icon, active }: NavBarItemProps) {
+interface NavBarProps {
+    onItemClick?: () => void;
+}
+
+function NavBarItem({ link, icon: Icon, active, onItemClick }: NavBarItemProps & NavBarProps) {
 
     const navigate = useNavigate();
     const activeStyle = !active ? "text-gray-600 hover:bg-gray-100" : "bg-blue-600 text-white hover:bg-blue-700";
 
     return (
         <button
-            onClick={() => navigate(link)}
+            onClick={() => {
+                navigate(link);
+                onItemClick?.();
+            }}
             className={`w-12 h-12 flex items-center justify-center rounded-xl ${activeStyle} transition-colors`}
         >
             <Icon size={24} />
@@ -35,7 +42,7 @@ function Notification() {
     // TODO: create a component for notification item
 
     return (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div className="fixed sm:absolute top-16 sm:top-auto right-4 sm:right-0 left-4 sm:left-auto mt-0 sm:mt-2 w-auto sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             <div className="px-4 py-3 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-800">Notifications</h3>
             </div>
@@ -137,26 +144,34 @@ function NavBar({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="bg-white flex no-scrollbar h-screen">
-            <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 flex items-center 
+            {!isSidebarOpen && (
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="fixed top-4 left-4 z-[70] lg:hidden w-10 h-10 flex items-center 
                             justify-center rounded-lg bg-white border border-gray-200 text-gray-600
                             hover:bg-gray-50 transition-colors"
-            >
-                {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+                >
+                    <Menu size={20} />
+                </button>
+            )}
 
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+                    className="fixed inset-0 backdrop-blur-sm z-50 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
 
-            <aside className={`fixed lg:static inset-y-0 left-0 z-40
+            <aside 
+                className={`fixed lg:static inset-y-0 left-0 z-[60]
                         w-20 bg-white border-r border-gray-200 flex flex-col items-center py-8 space-y-8
                         transform transition-transform duration-300 ease-in-out
                         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                onClick={() => {
+                    if (window.innerWidth < 1024) {
+                        setIsSidebarOpen(false);
+                    }
+                }}
             >
                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                     <div className="w-8 h-8 bg-white rounded-lg"></div>
@@ -169,18 +184,19 @@ function NavBar({ children }: { children: React.ReactNode }) {
                             label={item.label}
                             active={location.pathname === item.link}
                             icon={item.icon}
+                            onItemClick={() => setIsSidebarOpen(false)}
                         />
                     ))}
                 </nav>
             </aside>
 
-            <div className="flex-1 flex flex-col h-full">
+            <div className="flex-1 flex flex-col h-full ">
                 <header className="fixed top-0 right-0 left-0 lg:left-20 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 lg:px-6 pl-16 lg:pl-6 z-30">
                     <div className="flex-1 max-w-xl">
                     </div>
 
                     <div className="flex items-center space-x-4 ml-6">
-                        <div className="relative" ref={notificationRef}>
+                        <div className="relative sm:relative" ref={notificationRef}>
                             <button
                                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                                 className="relative w-10 h-10 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"

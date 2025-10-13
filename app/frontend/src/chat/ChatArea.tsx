@@ -189,12 +189,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                         ${false ? 'bg-green-500' : 'bg-gray-400'}`}
                             />
                         </div>
-                        {/* //FIXME: active status */}
                         <div className="ml-3">
                             <h2 className="font-semibold text-gray-900">{active_chat.display_name}</h2>
-                            <p className="text-sm text-gray-500">
-                                {false ? 'Active now' : `Last seen ${undefined}`}
-                            </p>
                         </div>
                     </div>
                 </div>

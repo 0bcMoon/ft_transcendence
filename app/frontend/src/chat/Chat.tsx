@@ -4,6 +4,7 @@ import { ChatArea } from './ChatArea';
 import toast from 'react-hot-toast';
 
 function Chat() {
+
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const ws = useRef<WebSocket | null>(null);
 
@@ -19,6 +20,7 @@ function Chat() {
     }, []);
 
     // TODO: fix sidebar color unmatch 
+
     return (
         <div className="h-full bg-gray-100 flex overflow-hidden">
             {/* Contact Sidebar */}

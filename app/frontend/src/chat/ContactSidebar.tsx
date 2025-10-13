@@ -131,17 +131,19 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
             {/* Mobile backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed top-16 left-0 right-0 bottom-0 backdrop-blur-sm z-40 lg:hidden"
                     onClick={onClose}
                 />
             )}
 
             {/* Sidebar */}
             <div
-                className={`fixed lg:relative inset-y-0 left-0 z-50 w-100 bg-white border-r 
+                className={`fixed lg:relative top-16 lg:top-auto bottom-0 lg:bottom-auto left-0 z-50 
+                            h-[calc(100vh-4rem)] lg:h-full w-full lg:w-100 bg-white border-r 
                             border-gray-200 transform transition-transform duration-300
                             ease-in-out lg:transform-none 
                             ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex flex-col h-full">
                     {/* Header */}

@@ -36,31 +36,32 @@ const FriendsPage = () => {
     return (
 
         <div className="h-full bg-gray-50">
-            <div className="max-w-6xl mx-auto px-6 py-10">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
                 {/* Header */}
-                <div className="mb-10">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-3">Friends</h1>
-                    <p className="text-lg text-gray-600">Manage your connections and discover new people</p>
+                <div className="mb-6 sm:mb-10">
+                    <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">Friends</h1>
+                    <p className="text-sm sm:text-lg text-gray-600">Manage your connections and discover new people</p>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
-                    <div className="flex overflow-x-auto">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8">
+                    <div className="flex overflow-x-auto justify-center">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
-
                             return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-3 px-8 py-5 font-medium whitespace-nowrap transition-all duration-200 border-b-2 text-base ${isActive
-                                        ? 'text-blue-600 border-blue-600 bg-blue-50'
+                                    className={`flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8
+                                                py-3 sm:py-5 font-medium whitespace-nowrap transition-all duration-200
+                                                    border-b-2 text-sm sm:text-base 
+                                        ${isActive ? 'text-blue-600 border-blue-600 bg-blue-50'
                                         : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'
                                         }`}
                                 >
-                                    <Icon className="w-6 h-6" />
-                                    {tab.label}
+                                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    <span className="hidden lg:inline">{tab.label}</span>
                                 </button>
                             );
                         })}
@@ -68,7 +69,7 @@ const FriendsPage = () => {
                 </div>
 
                 {/* Content */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8">
                     <RenderContent />
                 </div>
             </div>

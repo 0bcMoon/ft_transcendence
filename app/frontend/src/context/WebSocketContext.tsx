@@ -45,13 +45,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     /* called from a component that registers a callback for a channel */
 
     useEffect(() => {
-        toast.success('WebSocketProvider mounted');
+        // toast.success('WebSocketProvider mounted');
         if (isLoading || !isAuthenticated) return; // wait until auth is resolved
         else if (socket && socket.readyState === WebSocket.OPEN) return; // already initialized
         /* WS initialization and cleanup */
         const ws = new WebSocket('ws://localhost:3000/ws/notify');
         ws.onopen = () => {
-            toast.success('WebSocket connected')
+            // toast.success('WebSocket connected')
         }
         ws.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data) as IEvent;
@@ -67,11 +67,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         }
             ;
         ws.onclose = () => {
-            toast.error('WebSocket disconnected')
+            // toast.error('WebSocket disconnected')
         }
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
-            toast.error('WebSocket error')
+            // toast.error('WebSocket error')
         }
         setSocket(ws);
         return () => {
