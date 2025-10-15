@@ -53,9 +53,9 @@ export default function Game() {
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar bg-gray-50"> {/* Added light bg for modern cleanliness */}
             <div className="max-w-6xl mx-auto w-full px-4 py-4 pb-20 md:pb-6">
                 {/* Header */}
-                <div className="relative bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-5 text-white mb-8 shadow-md text-center overflow-hidden">
+                <div className="relative bg-linear-to-r from-blue-600 to-blue-500 rounded-xl p-5 text-white mb-8 shadow-md text-center overflow-hidden">
                     {/* Subtle Pong-inspired pattern for game feel */}
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,_#fff_1px,_transparent_1px)] bg-[length:10px_10px]" />
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,#fff_1px,transparent_1px)] bg-size-[10px_10px]" />
                     <h1 className="text-2xl font-bold mb-1 tracking-tight relative z-10">Welcome to Pong Arena</h1>
                     <p className="text-blue-100 leading-relaxed relative z-10">
                         Challenge players in real-time matches or tournaments to climb the ranks.
@@ -74,7 +74,7 @@ export default function Game() {
                                     {mode.icon}
                                 </div>
                                 <h3 className="font-bold text-gray-900 mb-2">{mode.title}</h3>
-                                <p className="text-gray-600 text-sm mb-4 flex-grow leading-relaxed">{mode.description}</p>
+                                <p className="text-gray-600 text-sm mb-4 grow leading-relaxed">{mode.description}</p>
                                 <Link
                                     to={mode.link}
                                     className={`${mode.buttonColor} text-white py-2 px-6 rounded-lg inline-block transition-all duration-200 hover:shadow-lg w-full`} // Added hover shadow for button

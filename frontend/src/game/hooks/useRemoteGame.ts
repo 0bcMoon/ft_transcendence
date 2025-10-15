@@ -3,8 +3,6 @@ import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } fr
 import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
 
-const WS_URL = "ws://localhost:3000/game";
-
 type KeysPressed = { up: boolean; down: boolean };
 
 export function useRemoteGame() {
@@ -36,26 +34,28 @@ export function useRemoteGame() {
     useEffect(() => {
         if (!user?.username) return;
 
-        const ws = new WebSocket(WS_URL);
-        wsRef.current = ws;
+        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/game`);
+        wsRef.current = websocket;
 
-        ws.onopen = () => {
-            ws.send(
+        websocket.onopen = () => {
+            websocket.send(
                 JSON.stringify({
                     type: "joinGame",
-                    mode: "1v1",
+                    mode: "remote",
                     username: user.username,
+                    id: user.id,
                     avatar: user.profile_picture,
                 })
             );
         };
 
-        ws.onmessage = ({ data }) => {
+        websocket.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
                 case "matchFound": {
                     setSide(msg.side);
+                    console.log(msg.playerNames)
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
                     setCountdown(3);
@@ -92,7 +92,7 @@ export function useRemoteGame() {
         };
 
         return () => {
-            ws.close();
+            websocket.close();
             wsRef.current = null;
         };
     }, [user]);
@@ -152,7 +152,7 @@ export function useRemoteGame() {
     };
 
     const handlePlayAgain = () => {
-        wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "1v1" }));
+        wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "remote" }));
         keysPressed.current = { up: false, down: false };
         resetGameState();
     };

@@ -19,6 +19,7 @@ export default function LocalGame() {
         if (!name2) newErrors.player2 = 'Player 2 name is required';
 
         if (name1 && name1.length > 16) newErrors.player1 = 'Max 16 characters allowed';
+
         if (name2 && name2.length > 16) newErrors.player2 = 'Max 16 characters allowed';
 
         if (name1 && name2 && name1 === name2) {

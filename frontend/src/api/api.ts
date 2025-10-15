@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export const API_URL = import.meta.env.VITE_API_URL
-// export const API_URL = import.meta.env.VITE_API_URL || "http://10.13.5.3:3000";
 
 const api = axios.create({
     baseURL: API_URL,
@@ -21,11 +20,6 @@ export const login_api = axios.create({
     },
 });
 
-/**
- * Deletes a cookie by its name.
- * @param {string} name The name of the cookie to delete.
- */
-
 export function deleteCookie(name: string): void {
     document.cookie = `${name}=; Max-Age=0; path=/;`;
 }
@@ -40,9 +34,5 @@ api.interceptors.response.use(
         return Promise.reject(error);
     },
 );
-
-// api.interceptors.request.use(
-//     (config) => config,
-//     (error) => Promise.reject(error))
 
 export default api;

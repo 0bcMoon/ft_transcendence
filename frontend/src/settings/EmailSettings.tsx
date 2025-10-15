@@ -63,7 +63,7 @@ function EmailSettings() {
         });
         const form = new FormData(e.currentTarget);
         const data = Object.fromEntries(form.entries()) as unknown as EmailUpdate;
-        console.log(data);
+        // console.log(data);
         if (data.email === user_email) {
             setUpdateState({
                 type: 'error',

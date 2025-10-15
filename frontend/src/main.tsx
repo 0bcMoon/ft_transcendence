@@ -19,9 +19,10 @@ import Multiplayer from './game/pages/Multiplayer';
 import AIGame from './game/pages/AIGame';
 import DashboardPage from './dashboard/DashboardPage'
 
-import TournamentLobby from './game/pages/TournamentLobby';
+import Tournament from './game/pages/Tournament';
+import TournamentPlay from './game/pages/TournamentPlay';
 import TournamentCreate from './game/pages/CreateTournament';
-import TournamentJoin from './game/pages/JoinTournament';
+import TournamentList from './game/pages/ListTournament';
 import TournamentBrackets from './game/pages/TournamentBracket';
 import FriendsPage from './users/FriendsPage';
 import GameMode from './game/pages/GameMode';
@@ -39,10 +40,11 @@ const router = createBrowserRouter([
             { path: "stats", element: <DashboardPage /> },
             { path: "settings", element: <Settings /> },
             { path: "game/local", element: <LocalGame /> },
-            { path: "game/tournament", element: <TournamentLobby /> },
+            { path: "game/tournament", element: <Tournament /> },
             { path: "game/tournament/create", element: <TournamentCreate /> },
-            { path: "game/tournament/join", element: <TournamentJoin /> },
-            { path: "game/tournament/bracket", element: <TournamentBrackets /> },
+            { path: "game/tournament/list", element: <TournamentList /> },
+            { path: "game/tournament/:id", element: <TournamentBrackets /> },
+
             { path: "*", element: <NotFound /> },
         ],
     },
@@ -50,10 +52,11 @@ const router = createBrowserRouter([
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "/game/local/play", element: <LocalGamePlay /> },
-    { path: "game/quick", element: <Quick /> },
-    { path: "game/multiplayer", element: <Multiplayer /> },
+    { path: "game/quick/play", element: <Quick /> },
+    { path: "game/quick/play", element: <Quick /> },
+    { path: "game/multiplayer/play", element: <Multiplayer /> },
     { path: "game/ai", element: <AIGame /> },
-    { path: "game/tournament", element: <TournamentLobby /> },
+    // { path: "game/tournament", element: <Tournament /> },
     { path: "*", element: <NotFound /> },
 ]);
 

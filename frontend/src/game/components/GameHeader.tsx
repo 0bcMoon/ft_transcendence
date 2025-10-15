@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function GameHeader() {
     return (
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white mb-5 shadow-md">
+        <div className="bg-linear-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white mb-5 shadow-md">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold mb-1">Live Match</h1>

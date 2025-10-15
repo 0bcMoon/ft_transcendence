@@ -43,7 +43,7 @@ export default function LocalGameOverScreen({ winner, finalScore, playerNames, h
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                     onClick={handlePlayAgain}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium py-3 px-6 rounded-lg hover:opacity-90 transition-all flex items-center justify-center"
+                    className="bg-linear-to-r from-blue-600 to-indigo-600 text-white font-medium py-3 px-6 rounded-lg hover:opacity-90 transition-all flex items-center justify-center"
                 >
                     <Gamepad2 size={18} className="mr-2" />
                     Play Again

@@ -1,6 +1,5 @@
 import React from 'react';
 import { User } from 'lucide-react';
-import { log } from 'console';
 
 interface UserAvatarProps {
     src?: string;
@@ -51,7 +50,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         <div className={`flex items-center gap-3 ${className}`}>
             <div className="relative">
                 <div
-                    className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-lg ring-2 ring-white transition-all duration-300 hover:shadow-xl hover:scale-105`}
+                    className={`${sizeClasses[size]} rounded-full overflow-hidden bg-linear-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-lg ring-2 ring-white transition-all duration-300 hover:shadow-xl hover:scale-105`}
                 >
                     {src ? (
                         <img

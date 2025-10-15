@@ -386,7 +386,7 @@ const UserProfile = () => {
             >
                 <div
                     className="flex flex-row w-full h-[50%] 
-                                bg-gradient-to-r from-gray-800 to-gray-600 
+                                bg-linear-to-r from-gray-800 to-gray-600 
                                 border-t rounded-t-xl "
                 >
                     <img

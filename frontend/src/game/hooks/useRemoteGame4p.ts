@@ -61,15 +61,17 @@ export function useRemoteGame4p() {
     useEffect(() => {
         if (!username) return;
 
-        const ws = new WebSocket(WS_URL);
+        // const ws = new WebSocket(WS_URL);
+        const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/game`);
         wsRef.current = ws;
 
         ws.onopen = () => {
             ws.send(
                 JSON.stringify({
                     type: "joinGame",
-                    mode: "4p",
+                    mode: "multiplayer",
                     username,
+                    // id: user.id,
                     avatar,
                 })
             );

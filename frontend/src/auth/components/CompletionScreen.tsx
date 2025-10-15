@@ -23,7 +23,7 @@ export default function CompletionScreen({ formData }: CompletionScreenProps) {
 
                 <div className="space-y-4 mb-8">
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <User className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="text-left">
@@ -33,7 +33,7 @@ export default function CompletionScreen({ formData }: CompletionScreenProps) {
                     </div>
 
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <Mail className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="text-left">
@@ -43,7 +43,7 @@ export default function CompletionScreen({ formData }: CompletionScreenProps) {
                     </div>
 
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                             <Lock className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="text-left">

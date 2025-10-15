@@ -3,7 +3,7 @@ export default function HomePage() {
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar bg-gray-50">
             <div className="p-6 space-y-8">
                 {/* Hero Section */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-8 text-white shadow-xl">
+                <div className="relative overflow-hidden bg-linear-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-8 text-white shadow-xl">
                     <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
                     <div className="relative z-10 text-center">
                         <h1 className="text-4xl font-bold mb-2">Ping Pong Game</h1>

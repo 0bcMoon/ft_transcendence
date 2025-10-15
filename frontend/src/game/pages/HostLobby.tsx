@@ -61,7 +61,7 @@ export default function HostLobby() {
     };
 
     return (
-        <div className="col-span-13 flex flex-col items-center justify-start w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-10 text-gray-800 overflow-y-auto">
+        <div className="col-span-13 flex flex-col items-center justify-start w-full h-full bg-linear-to-br from-blue-50 to-blue-100 px-4 py-10 text-gray-800 overflow-y-auto">
             <div className="max-w-5xl w-full bg-white rounded-xl shadow-lg p-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">

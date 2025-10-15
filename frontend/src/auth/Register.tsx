@@ -80,14 +80,14 @@ function App() {
 
     if (isCompleted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+            <div className="min-h-screen bg-linear-to-br from-blue-50 to-white flex items-center justify-center p-4">
                 <CompletionScreen formData={formData} />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+        <div className="min-h-screen bg-linear-to-br from-blue-50 to-white flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
                     <ProgressIndicator currentStep={currentStep} totalSteps={3} />
@@ -96,7 +96,7 @@ function App() {
                         <div
                             className="flex transition-transform duration-500 ease-out"
                         >
-                            <div className="w-full flex-shrink-0">
+                            <div className="w-full shrink-0">
                                 <RenderStep />
                             </div>
                         </div>

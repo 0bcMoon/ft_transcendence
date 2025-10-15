@@ -6,11 +6,7 @@ type PlayersHeaderProps = {
     scores?: Scores | null;
 };
 
-export default function PlayersHeader({
-    playerNames,
-    playerAvatars,
-    scores,
-}: PlayersHeaderProps) {
+export default function PlayersHeader({ playerNames, playerAvatars, scores, }: PlayersHeaderProps) {
     const leftName = playerNames.left ?? "Player 1";
     const rightName = playerNames.right ?? "Player 2";
     const leftScore = scores?.left ?? 0;

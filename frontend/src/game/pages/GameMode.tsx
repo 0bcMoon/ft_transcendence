@@ -24,8 +24,7 @@ const GameModeCard: React.FC<GameModeCardProps> = ({
         <Link
             to={to}
             className="flex items-center p-4 hover:bg-gray-50 rounded-xl transition-all group"
-            aria-label={`Play ${title}`}
-        >
+            aria-label={`Play ${title}`} >
             <div className={`${bgColor} ${iconColor} p-3 rounded-xl mr-4 group-hover:scale-105 transition-transform`}>
                 {icon}
             </div>
@@ -52,7 +51,7 @@ const GameMode: React.FC = () => {
             description: "Play with a friend"
         },
         {
-            to: "/game/quick",
+            to: "/game/quick/play",
             icon: <Users size={20} />,
             iconColor: "text-emerald-500",
             bgColor: "bg-emerald-50",
@@ -76,7 +75,7 @@ const GameMode: React.FC = () => {
             description: "Challenge our AI opponent"
         },
         {
-            to: "/game/multiplayer",
+            to: "/game/multiplayer/play",
             icon: <Users size={20} />,
             iconColor: "text-red-500",
             bgColor: "bg-red-50",
@@ -88,7 +87,7 @@ const GameMode: React.FC = () => {
     return (
         <div className="col-span-13 flex flex-col overflow-y-auto no-scrollbar">
             <div className="max-w-5xl mx-auto w-full px-6 py-6">
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-2xl p-8 text-white mb-8">
+                <div className="relative overflow-hidden bg-linear-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-2xl p-8 text-white mb-8">
                     <div className="relative z-10">
                         <h1 className="text-4xl font-medium text-center tracking-wide">
                             PING PONG

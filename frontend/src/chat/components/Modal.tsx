@@ -43,13 +43,13 @@ const ActionButton: React.FC<IActionButton> = ({
             type="button"
             role="menuitem"
         >
-            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg  group-hover:bg-white/90 transition-colors duration-200">
+            <div className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg  group-hover:bg-white/90 transition-colors duration-200">
                 {icon}
             </div>
             <div className="flex-1 min-w-0">
                 <div className="font-semibold text-base mb-1">{label}</div>
             </div>
-            <div className="flex-shrink-0 text-xl opacity-40 group-hover:opacity-70 transition-opacity duration-200">
+            <div className="shrink-0 text-xl opacity-40 group-hover:opacity-70 transition-opacity duration-200">
                 →
             </div>
         </button>
@@ -162,7 +162,7 @@ const Modal: React.FC<IModal> = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         type="button"
                         aria-label="Close modal"
                     >
