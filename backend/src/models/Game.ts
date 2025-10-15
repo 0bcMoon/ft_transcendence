@@ -1,217 +1,136 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { gameRepository, UserStats, Game } from "../repository/gameRepository";
+import { FastifyRequest, FastifyReply } from "fastify";
+import gameRepository from "../repository/gameRepository";
+import tournamentRepository from "../repository/tournamentRepository";
 
-// If you use fastify-jwt or a custom auth decorator, adapt this shape to your project.
-type AuthUser = { id: number };
-type AuthedRequest = FastifyRequest & { user: AuthUser };
+export const Game = {
+    // Create new game and add players
+    createGame: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            // Expecting: { mode, players: [ { user_id: number | null, position: number } ] }
+            const { mode, players } = req.body as any;
+            const gameId = await gameRepository.createGame(mode);
 
-// Request body types
-interface CreateGameBody {
-    mode: Game["mode"];
-    max_players: number;
-    status?: Game["status"]; // optional, defaults to 'waiting'
-}
+            for (const player of players) {
+                await gameRepository.addPlayerToGame(gameId, player.user_id ?? null, player.position);
+            }
 
-interface AddPlayerBody {
-    game_id: number;
-    user_id: number;
-    team?: string | null;
-    position?: string | null; // e.g. 'left' | 'right' for 1v1
-}
+            const game = await gameRepository.getGameById(gameId);
+            const gamePlayers = await gameRepository.getGamePlayers(gameId);
 
-interface UpdatePlayerStatsBody {
-    game_id: number;
-    user_id: number;
-    score: number;
-    goals_scored: number;
-    goals_conceded: number;
-    accuracy: number;
-}
-
-interface UpdateGameStatusBody {
-    status: Game["status"];
-}
-
-interface FinishGameBody {
-    duration: number; // seconds
-}
-
-// Helpers
-const parseIdParam = (req: FastifyRequest, key: string = "id"): number | null => {
-    const { [key]: raw } = (req.params as Record<string, string | number> | undefined) ?? {};
-    const id = Number(raw);
-    return Number.isFinite(id) && id > 0 ? id : null;
-};
-
-const badRequest = (reply: FastifyReply, message: string) =>
-    reply.code(400).send({ message });
-
-const notFound = (reply: FastifyReply, message: string) =>
-    reply.code(404).send({ message });
-
-export const GameController = {
-    // Create a new game
-    async createGame(req: FastifyRequest, reply: FastifyReply) {
-        const { mode, max_players, status } = req.body as CreateGameBody;
-
-        if (!mode || typeof mode !== "string") {
-            return badRequest(reply, "Invalid or missing 'mode'.");
+            return reply.status(201).send({ game, players: gamePlayers });
+        } catch (err: any) {
+            return reply.status(500).send({ error: "Failed to create game", details: err.message });
         }
-        if (!Number.isFinite(max_players) || max_players <= 0) {
-            return badRequest(reply, "Invalid 'max_players'. Must be a positive number.");
+    },
+
+    // Start a game
+    startGame: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { game_id } = req.body as any;
+            const ok = await gameRepository.startGame(game_id);
+            if (!ok) throw new Error("Game not found or not in waiting state");
+            const game = await gameRepository.getGameById(game_id);
+            return reply.status(200).send({ game });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to start game", details: err.message });
         }
-        const gameId = await gameRepository.createGame(mode, max_players, status ?? "waiting");
-        return reply.code(201).send({ game_id: gameId, message: "Game created successfully" });
     },
 
-    // Get a game by ID
-    async getGameById(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
+    // Update player score (accepts user_id OR position)
+    updatePlayerScore: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { game_id, user_id, position, score } = req.body as any;
 
-        const game = await gameRepository.getGameById(id);
-        if (!game) return notFound(reply, "Game not found");
-        return reply.code(200).send(game);
+            if (typeof game_id !== "number" || typeof score !== "number") {
+                return reply.status(400).send({ error: "game_id and score are required" });
+            }
+
+            let ok = false;
+            if (typeof user_id === "number") {
+                ok = await gameRepository.updatePlayerScore(game_id, user_id, score);
+            } else if (typeof position === "number") {
+                ok = await gameRepository.updatePlayerScoreByPosition(game_id, position, score);
+            } else {
+                return reply.status(400).send({ error: "Provide user_id or position" });
+            }
+
+            if (!ok) throw new Error("Player not found in game");
+            return reply.status(200).send({ success: true });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to update score", details: err.message });
+        }
     },
-
-    // Get a game with its players
-    async getGameDetailsWithPlayers(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const details = await gameRepository.getGameDetailsWithPlayers(id);
-        if (!details) return notFound(reply, "Game not found");
-        return reply.code(200).send(details);
-    },
-
-    // Get recent games for the current user
-    async getRecentGamesForUser(req: AuthedRequest, reply: FastifyReply) {
-        const limitRaw = (req.query as { limit?: string | number } | undefined)?.limit;
-        const limit = limitRaw ? Number(limitRaw) : 10;
-        const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(Number(limit), 50) : 10;
-
-        const games = await gameRepository.getRecentGamesForUser(req.user.id, safeLimit);
-        return reply.code(200).send(games);
-    },
-
-    // Update game status
-    async updateGameStatus(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const { status } = req.body as UpdateGameStatusBody;
-        if (!status) return badRequest(reply, "Missing 'status'.");
-
-        const updated = await gameRepository.updateGameStatus(id, status);
-        if (!updated) return notFound(reply, "Game not found or status unchanged");
-        return reply.code(200).send({ message: "Game status updated" });
-    },
-
-    // Start a match (sets status to 'in-progress')
-    async startMatch(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const updated = await gameRepository.startMatch(id);
-        if (!updated) return notFound(reply, "Game not found or status unchanged");
-        return reply.code(200).send({ message: "Match started" });
-    },
-
     // Finish a game
-    async finishGame(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const { duration } = req.body as FinishGameBody;
-        if (!Number.isFinite(duration) || duration < 0) {
-            return badRequest(reply, "Invalid 'duration'. Must be a non-negative number.");
+    // finishGame: async (req: FastifyRequest, reply: FastifyReply) => {
+    //     try {
+    //         const { game_id, winner_id } = req.body as any;
+    //         const ok = await gameRepository.finishGame(game_id, winner_id ?? null); // allow null
+    //         if (!ok) throw new Error("Game not found or not in correct state");
+    //         const game = await gameRepository.getGameById(game_id);
+    //         return reply.status(200).send({ game });
+    //     } catch (err: any) {
+    //         return reply.status(400).send({ error: "Failed to finish game", details: err.message });
+    //     }
+    // },
+    // Finish a game
+    finishGame: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const game_id = Number((req.params as any).id); // Get game_id from URL param
+            const { winner_id } = req.body as any;          // Get winner_id from body
+            const ok = await gameRepository.finishGame(game_id, winner_id ?? null);
+            if (!ok) throw new Error("Game not found or not in correct state");
+            const game = await gameRepository.getGameById(game_id);
+            return reply.status(200).send({ game });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to finish game", details: err.message });
         }
-
-        const updated = await gameRepository.finishGame(id, duration);
-        if (!updated) return notFound(reply, "Game not found or could not be finished");
-        return reply.code(200).send({ message: "Game finished successfully" });
     },
 
-    // End a match (alias for finishGame)
-    async endMatch(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const { duration } = req.body as FinishGameBody;
-        if (!Number.isFinite(duration) || duration < 0) {
-            return badRequest(reply, "Invalid 'duration'. Must be a non-negative number.");
+    // Cancel a game
+    cancelGame: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { game_id } = req.body as any;
+            const ok = await gameRepository.cancelGame(game_id);
+            if (!ok) throw new Error("Game not found or not in correct state");
+            const game = await gameRepository.getGameById(game_id);
+            return reply.status(200).send({ game });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to cancel game", details: err.message });
         }
-
-        const updated = await gameRepository.endMatch(id, duration);
-        if (!updated) return notFound(reply, "Game not found or could not be finished");
-        return reply.code(200).send({ message: "Match ended" });
     },
 
-    // Add a player to a game
-    async addPlayerToGame(req: FastifyRequest, reply: FastifyReply) {
-        const { game_id, user_id, team = null, position = null } = req.body as AddPlayerBody;
-
-        if (!Number.isFinite(game_id) || game_id <= 0) {
-            return badRequest(reply, "Invalid 'game_id'.");
+    // Get a game by id
+    getGame: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const game_id = Number((req.params as any).game_id);
+            const game = await gameRepository.getGameById(game_id);
+            if (!game) throw new Error("Game not found");
+            const players = await gameRepository.getGamePlayers(game_id);
+            return reply.status(200).send({ game, players });
+        } catch (err: any) {
+            return reply.status(404).send({ error: "Game not found", details: err.message });
         }
-        if (!Number.isFinite(user_id) || user_id <= 0) {
-            return badRequest(reply, "Invalid 'user_id'.");
+    },
+
+    // Get all games for a user
+    getUserGames: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const user_id = Number((req.params as any).user_id);
+            const games = await gameRepository.getUserGames(user_id);
+            return reply.status(200).send({ games });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to get user games", details: err.message });
         }
-
-        const playerId = await gameRepository.addPlayerToGame(game_id, user_id, team, position);
-        return reply.code(201).send({ player_id: playerId, message: "Player added to game" });
     },
 
-    // Update player stats in a game
-    async updatePlayerStats(req: FastifyRequest, reply: FastifyReply) {
-        const { game_id, user_id, score, goals_scored, goals_conceded, accuracy } =
-            req.body as UpdatePlayerStatsBody;
-
-        if (!Number.isFinite(game_id) || game_id <= 0) return badRequest(reply, "Invalid 'game_id'.");
-        if (!Number.isFinite(user_id) || user_id <= 0) return badRequest(reply, "Invalid 'user_id'.");
-        if (!Number.isFinite(score)) return badRequest(reply, "Invalid 'score'.");
-        if (!Number.isFinite(goals_scored)) return badRequest(reply, "Invalid 'goals_scored'.");
-        if (!Number.isFinite(goals_conceded)) return badRequest(reply, "Invalid 'goals_conceded'.");
-        if (!Number.isFinite(accuracy)) return badRequest(reply, "Invalid 'accuracy'.");
-
-        const updated = await gameRepository.updatePlayerStats(
-            game_id,
-            user_id,
-            score,
-            goals_scored,
-            goals_conceded,
-            accuracy
-        );
-        if (!updated) return notFound(reply, "Player not found in game");
-        return reply.code(200).send({ message: "Player stats updated" });
-    },
-
-    // Get all players in a game
-    async getPlayersInGame(req: FastifyRequest, reply: FastifyReply) {
-        const id = parseIdParam(req);
-        if (!id) return badRequest(reply, "Invalid 'id' parameter.");
-
-        const players = await gameRepository.getPlayersInGame(id);
-        return reply.code(200).send(players);
-    },
-
-    // Get user stats (for current user)
-    async getUserStats(req: AuthedRequest, reply: FastifyReply) {
-        const stats = await gameRepository.getUserStats(req.user.id);
-        if (!stats) return notFound(reply, "Stats not found");
-        return reply.code(200).send(stats);
-    },
-
-    // Update user stats (for current user)
-    async updateUserStats(req: AuthedRequest, reply: FastifyReply) {
-        const body = req.body as Partial<UserStats>;
-        // Remove user_id if provided (not updatable here)
-        if (body && "user_id" in body) delete (body as Partial<UserStats>).user_id;
-
-        const updated = await gameRepository.updateUserStats(req.user.id, body);
-        if (!updated) return notFound(reply, "Stats not found or unchanged");
-        return reply.code(200).send({ message: "User stats updated" });
+    // Get games by status & mode
+    getGamesByStatus: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { status, mode } = req.query as any;
+            const games = await gameRepository.getGamesByStatus(status, mode);
+            return reply.status(200).send({ games });
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to get games", details: err.message });
+        }
     },
 };
-
-export default GameController;

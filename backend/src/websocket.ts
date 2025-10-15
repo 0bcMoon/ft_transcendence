@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { WebSocket } from "@fastify/websocket";
-import  chatRepository  from "./repository/chatRepository";
+import chatRepository from "./repository/chatRepository";
 
 
 interface RecvMessage {
@@ -20,9 +20,9 @@ export default async function(fastify: FastifyInstance) {
         socket.on('message', async (message) => {
             const payload = JSON.parse(message.toString()) as RecvMessage;
             const result = await chatRepository.createMessage(
-                req.user.id, 
-                payload.receiver_id, 
-                payload.content 
+                req.user.id,
+                payload.receiver_id,
+                payload.content
             )
             if (!result)
                 return;

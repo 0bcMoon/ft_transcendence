@@ -9,7 +9,7 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         socket.on("message", (raw) => {
             let msg;
             msg = JSON.parse(raw.toString());
-            // fastify.log.info(msg);
+            fastify.log.info(msg);
 
             matchmaker.handleMessage(userId, msg, socket);
         });

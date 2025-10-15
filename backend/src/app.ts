@@ -7,6 +7,7 @@ import gameSocket from "./gameSocket";
 
 import routes from "./routes";
 import auth from "./auth.routes";
+import game from "./game.routes";
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
@@ -36,10 +37,7 @@ declare module "@fastify/jwt" {
 }
 
 declare module "fastify" {
-    type Authenticate = (
-        request: FastifyRequest,
-        reply: FastifyReply,
-    ) => Promise<void>;
+    type Authenticate = ( request: FastifyRequest, reply: FastifyReply,) => Promise<void>;
 
     /** Apply the extension */
     interface FastifyInstance {
@@ -60,7 +58,8 @@ const fastify = Fastify({
                     options: {
                         colorize: true,
                         translateTime: "SYS:standard",
-                        ignoe: "pid,hostname,remoteAddress,remotePort",
+                        // ignore: "pid,hostname,remoteAddress,remotePort",
+                        ignore: "pid,hostname,remoteAddress,remotePort,req,res,responseTime",
                     },
                 },
             },
@@ -126,6 +125,7 @@ fastify.register(routes);
 fastify.register(gameSocket);
 fastify.register(auth);
 fastify.register(wsRouter);
+fastify.register(game);
 
 fastify.register(staticPlugin, {
     root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
@@ -200,7 +200,7 @@ fastify.decorate(
         try {
             await req.jwtVerify({ onlyCookie: true });
         } catch (error: any) {
-            console.debug("JWT verification failed:", error);
+            // console.debug("JWT verification failed:", error);
             switch (error.code) {
                 case "FST_JWT_AUTHORIZATION_TOKEN_EXPIRED":
                 case "FST_JWT_NO_AUTHORIZATION_IN_COOKIE":

@@ -67,9 +67,6 @@ const Auth = {
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
 
-        console.log(`-------------------------------`);
-        console.log(`Sending email to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
 
         reply
             .setCookie('session_key', session_key, {

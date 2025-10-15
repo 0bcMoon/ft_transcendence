@@ -1,26 +1,12 @@
-import {
-    GAME_WIDTH,
-    GAME_HEIGHT,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT,
-    BALL_RADIUS,
-    BALL_SPEED_X,
-    BALL_SPEED_Y
-} from "../constants";
-import { GameState, GameMode, Player } from "../types/types";
+import { GAME_WIDTH, GAME_HEIGHT, PADDLE_WIDTH, PADDLE_HEIGHT, BALL_RADIUS, BALL_SPEED_X, BALL_SPEED_Y } from "../constants";
 
-type PlayersMap = Record<string, Player>;
+import type { GameState, GameMode, Side, Paddle } from "../types/types";
 
-/**
- * Initializes game state for any mode and set of players.
- * @param mode GameMode ("1v1" | "4p" | etc)
- * @param players Object mapping sides to Player (e.g. { left, right } or { left, right, top, bottom })
- */
-export function initState(mode: GameMode, players: PlayersMap): GameState {
-    const paddles: any = {};
-    const score: any = {};
+export function initState(mode: GameMode): GameState {
+    const paddles: Partial<Record<Side, Paddle>> = {};
+    const score: Partial<Record<Side, number>> = {};
 
-    if (mode === "1v1") {
+    if (mode === "remote" || mode === "tournament") {
         paddles.left = {
             x: 30,
             y: GAME_HEIGHT / 2 - PADDLE_HEIGHT / 2,
@@ -36,7 +22,8 @@ export function initState(mode: GameMode, players: PlayersMap): GameState {
         score.left = 0;
         score.right = 0;
     }
-    if (mode === "4p") {
+
+    if (mode === "multiplayer") {
         paddles.left = {
             x: 30,
             y: GAME_HEIGHT / 2 - PADDLE_HEIGHT / 2,
@@ -61,16 +48,12 @@ export function initState(mode: GameMode, players: PlayersMap): GameState {
             width: PADDLE_HEIGHT,
             height: PADDLE_WIDTH,
         };
-        score.left = 0;
-        score.right = 0;
-        score.top = 0;
-        score.bottom = 0;
+        score.left = score.right = score.top = score.bottom = 0;
     }
-
-    // You can extend for other modes here
 
     return {
         paddles,
+        score,
         ball: {
             x: GAME_WIDTH / 2,
             y: GAME_HEIGHT / 2,
@@ -78,6 +61,5 @@ export function initState(mode: GameMode, players: PlayersMap): GameState {
             speedX: BALL_SPEED_X,
             speedY: BALL_SPEED_Y,
         },
-        score,
     };
 }

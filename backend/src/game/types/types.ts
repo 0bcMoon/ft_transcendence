@@ -29,10 +29,10 @@ export interface GameState {
     score: Partial<Record<Side, number>>;
 }
 
-export type GameMode = "1v1" | "ai" | "tournament" | "local" | "4p";
+export type GameMode = "remote" | "ai" | "tournament" | "local" | "multiplayer";
 
 export interface Match {
-    game_id: number;
+    gameId: number;
     players: Partial<Record<Side, Player>>;
     ready: Partial<Record<Side, boolean>>;
     state: GameState;

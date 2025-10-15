@@ -12,7 +12,6 @@ export async function sendEmail(to: string, subject: string, html: string) {
         subject: subject,
         html: html,
     });
-    console.log('Email sent:', result);
     return result;
 }
 

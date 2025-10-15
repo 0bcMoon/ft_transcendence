@@ -330,7 +330,7 @@ const User = {
         // Define the path where the file will be saved
         const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
         const filePath = path.join(uploadDir, uniqueFilename);
-        console.log(uploadDir, filePath)
+        // console.log(uploadDir, filePath)
 
 
         await pipeline(data.file, createWriteStream(filePath));

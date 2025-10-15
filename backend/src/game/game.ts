@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { clients, queues } from "./state";
-import { processQueue, isPlayerInAnyQueue } from "./queue";
+import { processQueue } from "./queue";
 import { findMatchByPlayer, getPlayerSide, isOpen, send } from "./utils";
 import { endMatch, startGameLoop } from "./match";
 import { movePaddle } from "./mechanics/movement";
@@ -18,8 +18,6 @@ function addPlayer(id: number, username: string, avatar: string, mode: GameMode,
 
     if (findMatchByPlayer(id))
         return;
-    if (isPlayerInAnyQueue(id))
-        return;
     if (!isOpen(socket))
         return;
 
@@ -34,40 +32,56 @@ function addPlayer(id: number, username: string, avatar: string, mode: GameMode,
 
 
 function removePlayer(id: number): void {
-    for (const [mode, queue] of queues.entries())
+    // Remove player from all queues
+    for (const [mode, queue] of queues.entries()) {
         queues.set(mode, queue.filter((p) => p.id !== id));
+    }
 
+    // Find match containing this player
     const match = findMatchByPlayer(id);
+
     if (!match) {
+        // No active match: cleanup client if disconnected
         const player = clients.get(id);
-        if (player && !isOpen(player.socket))
+        if (player && !isOpen(player.socket)) {
             clients.delete(id);
+        }
         return;
     }
 
-    const side = getPlayerSide(match, id)!;
+    // Find which side this player is on
+    const side = getPlayerSide(match, id);
+    if (!side) return;
 
+    // Find opponent side and handle game over
+    let winnerId: number | null = null;
     for (const [oppSide, oppPlayer] of Object.entries(match.players) as [Side, Player][]) {
         if (oppSide !== side && oppPlayer && isOpen(oppPlayer.socket)) {
-            send(oppPlayer.socket, { type: "gameOver", winner: oppSide, score: match.state.score, });
+            send(oppPlayer.socket, { type: "gameOver", winner: oppSide, score: match.state.score });
+            winnerId = oppPlayer.id;
         }
-        if (oppPlayer && !isOpen(oppPlayer.socket))
+        if (oppPlayer && !isOpen(oppPlayer.socket)) {
             clients.delete(oppPlayer.id);
+        }
     }
 
+    // Cleanup disconnected player
     const player = match.players[side];
-    if (!player)
-        return;
-    if (!player.socket || !isOpen(player.socket))
+    if (player && (!player.socket || !isOpen(player.socket))) {
         clients.delete(player.id);
+    }
 
-    endMatch(match.game_id);
+    // End the match, passing winnerId (opponent if present, otherwise null)
+    endMatch(match, winnerId);
 }
 
 
+
 function handleMessage(id: number, data: ClientMessage, socket?: WebSocket): void {
+    console.log(data.type);
     if (data.type === "joinGame") {
-        if (!data.username || !socket) return;
+        if (!data.username || !socket)
+            return;
         addPlayer(id, data.username, data.avatar, data.mode, socket);
         return;
     }
@@ -79,9 +93,10 @@ function handleMessage(id: number, data: ClientMessage, socket?: WebSocket): voi
 
     if (data.type === "playAgain") {
         const player = clients.get(id);
-        if (!player || !isOpen(player.socket)) return;
+        if (!player || !isOpen(player.socket))
+            return;
 
-        const mode = data.mode || player.mode || "1v1";
+        const mode = data.mode || player.mode || "remote";
         addPlayer(player.id, player.username, player.avatar, mode, player.socket);
         return;
     }

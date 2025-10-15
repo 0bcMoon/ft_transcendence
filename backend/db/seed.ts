@@ -149,6 +149,6 @@ db.serialize(async () => {
     // }
 
     createUsers.finalize();
-    console.log(" Seed data inserted for users, friends, messages, and games");
+    // console.log(" Seed data inserted for users, friends, messages, and games");
 });
 

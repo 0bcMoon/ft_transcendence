@@ -1,4 +1,3 @@
-
 import { FastifyPluginAsync } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
 import Chat from './models/Chat';
