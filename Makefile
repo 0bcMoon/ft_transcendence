@@ -1,12 +1,14 @@
-all: init
+all: up
 
 up:
 	docker-compose up -d --build
 down:
 	docker-compose down
+re: down  fclean up
+
 clean:
 	docker-compose down --rmi all --volumes --remove-orphans
-fclean:
+fclean: down
 	docker system prune -a --volumes
 
 init:

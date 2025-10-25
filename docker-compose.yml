@@ -1,19 +1,37 @@
 services:
-  backend: 
-    build: ./backend/
-    container_name: 'backend'
+  # app:
+  #   build: ./app
+  #   container_name: app
+  #   volumes:
+  #     - frontend:/app/frontend
+  #     - backend:/app/backend
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - pingpong
+
+  #
+  # nginx:
+  #   container_name: nginx
+  #   depends_on:
+  #     - app
+  #   build: ./nginx
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - frontend:/var/www/html
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - pingpong
+
+  redis:
+    container_name: redis
+    build: ./redis
     ports:
-      - "3000:3000"
-    restart: always
-    volumes:
-      - backend:/usr/local/app
-  frontend:
-    build: ./frontend
-    container_name: 'frontend'
-    ports:
-      - "5173:5173"
-    volumes:
-      - frontend:/usr/local/app
+      - "9090:6379"
+    env_file:
+      - .env
 
 volumes:
   backend:
@@ -21,11 +39,15 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/backend
+      device: ${PWD}/app/backend
 
   frontend:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/frontend
+      device: ${PWD}/app/frontend
+
+networks:
+  pingpong:
+    name: pingpong
