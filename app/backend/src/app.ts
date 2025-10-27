@@ -186,6 +186,7 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
             .send({ message: "Unauthorized: Invalid refresh token" });
     }
 };
+
 fastify.setErrorHandler((error, _, reply) => {
     // Check if the error is a Zod validation error
     if (error.validation) {
