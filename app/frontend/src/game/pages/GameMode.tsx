@@ -85,9 +85,6 @@ const GameMode: React.FC = () => {
                         <h1 className="text-4xl font-medium text-center tracking-wide">
                             PING PONG
                         </h1>
-                        <p className="text-center text-blue-100 mt-2">
-                            Select a game mode to begin
-                        </p>
                     </div>
                     {/* Visual element for added depth */}
                     <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
