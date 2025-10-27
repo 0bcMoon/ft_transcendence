@@ -31,16 +31,13 @@ function addPlayer(id: number, username: string, avatar: string, mode: GameMode,
 }
 
 export function removePlayer(id: number): void {
-    // Remove player from all queues
     for (const [mode, queue] of queues.entries()) {
         queues.set(mode, queue.filter((p) => p.id !== id));
     }
 
-    // Find match containing this player
     const match = findMatchByPlayer(id);
 
     if (!match) {
-        // No active match: cleanup client if disconnected
         const player = clients.get(id);
         if (player && !isOpen(player.socket)) {
             clients.delete(id);
@@ -48,11 +45,9 @@ export function removePlayer(id: number): void {
         return;
     }
 
-    // Find which side this player is on
     const side = getPlayerSide(match, id);
     if (!side) return;
 
-    // Find opponent side and handle game over
     let winnerId: number | null = null;
     for (const [oppSide, oppPlayer] of Object.entries(match.players) as [Side, Player][]) {
         if (oppSide !== side && oppPlayer && isOpen(oppPlayer.socket)) {
@@ -64,13 +59,11 @@ export function removePlayer(id: number): void {
         }
     }
 
-    // Cleanup disconnected player
     const player = match.players[side];
     if (player && (!player.socket || !isOpen(player.socket))) {
         clients.delete(player.id);
     }
 
-    // End the match, passing winnerId (opponent if present, otherwise null)
     endMatch(match, winnerId);
 }
 
