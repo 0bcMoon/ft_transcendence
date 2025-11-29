@@ -1,3 +1,4 @@
+import DarkModeToggle from "../component/DarkModeToggle";
 import { useAuth } from '@/context/AuthContext';
 import {
     Home, Settings, MessageSquare, Gamepad2, Bell,
@@ -167,6 +168,9 @@ function NavBar({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center space-x-4 ml-6">
+
+                        <DarkModeToggle />
+
                         <div className="relative sm:relative" ref={notificationRef}>
                             <button
                                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
@@ -181,8 +185,7 @@ function NavBar({ children }: { children: React.ReactNode }) {
                         <div className="relative" ref={profileRef}>
                             <button
                                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
-                            >
+                                className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors" >
                                 <User size={20} />
                             </button>
 
