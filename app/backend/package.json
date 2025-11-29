@@ -11,10 +11,6 @@
         "test:migrate": "rm  /tmp/test.db; DB_PATH=/tmp/test.db ts-node  db/seed.ts",
         "test:debug": "DB_PATH=/tmp/test.db NODE_ENV=test node --inspect-brk=0.0.0.0:9229 -r dotenv/config ./node_modules/.bin/jest --runInBand --no-cache"
     },
-    "_moduleAliases": {
-        "@root": ".",
-        "@db": "./db"
-    },
     "keywords": [],
     "author": "",
     "license": "ISC",
@@ -34,6 +30,7 @@
         "fastify-type-provider-zod": "^5.0.1",
         "module-alias": "^2.2.3",
         "pino-pretty": "^7.0.0",
+        "react-icons": "^5.5.0",
         "resend": "^6.0.1",
         "sqlite3": "^5.1.7",
         "zod": "^3.25.74"
@@ -52,5 +49,9 @@
         "ts-jest": "^29.4.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3"
-    }
+    },
+    "directories": {
+        "test": "tests"
+    },
+    "type": "commonjs"
 }

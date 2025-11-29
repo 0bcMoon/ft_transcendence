@@ -82,16 +82,16 @@ function EmailSettings() {
         switch (updateState.type) {
             case 'success':
                 return (
-                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-                        <Check className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800">{updateState.message}</span>
+                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 dark:bg-green-900/20 dark:border-green-700">
+                        <Check className="w-5 h-5 text-green-600 dark:text-green-500" />
+                        <span className="text-green-800 dark:text-green-300">{updateState.message}</span>
                     </div>
                 );
             case 'error':
                 return (
-                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-                        <X className="w-5 h-5 text-red-600" />
-                        <span className="text-red-800">{updateState.message}</span>
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 dark:bg-red-900/20 dark:border-red-700">
+                        <X className="w-5 h-5 text-red-600 dark:text-red-500" />
+                        <span className="text-red-800 dark:text-red-300">{updateState.message}</span>
                     </div>
                 );
             default:
@@ -114,8 +114,8 @@ function EmailSettings() {
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2 dark:text-white">
                 <Mail className="w-5 h-5" />
                 Email Address
             </h3>
@@ -125,11 +125,10 @@ function EmailSettings() {
 
                     <UpdateState />
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address
+                        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300"> Email Address
                         </label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
+                            <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
                             <input
                                 required
                                 disabled={oauth_type !== 'local'}
@@ -137,7 +136,10 @@ function EmailSettings() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300"
+                                className="w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300
+                                           dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500
+                                           dark:focus:ring-offset-gray-800 dark:focus:border-blue-500
+                                           disabled:opacity-50 disabled:cursor-not-allowed dark:disabled:bg-gray-700/50"
                                 placeholder="Enter your email"
                             />
                         </div>
@@ -146,12 +148,12 @@ function EmailSettings() {
                     </div>
 
                     {confirmation_sent && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-blue-800 text-sm mb-3">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-700">
+                            <p className="text-blue-800 text-sm mb-3 dark:text-blue-300">
                                 We've sent a confirmation code to your new email address. Please enter it below to confirm the change.
                             </p>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                                     Confirmation Code
                                 </label>
                                 <input
@@ -159,7 +161,9 @@ function EmailSettings() {
                                     type="text"
                                     className=" w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 
                                                 focus:border-blue-500 transition-colors text-center 
-                                                font-mono text-lg tracking-widest  border-gray-300"
+                                                font-mono text-lg tracking-widest border-gray-300
+                                                dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500
+                                                dark:focus:ring-offset-gray-800 dark:focus:border-blue-500"
                                     placeholder="00000000"
                                     maxLength={8}
                                 />
@@ -175,15 +179,13 @@ function EmailSettings() {
                                 <button
                                     onClick={cancelFunction}
                                     type="button"
-                                    className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                >
+                                    className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isEmailLoading}
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800" >
                                     {isEmailLoading ? 'Confirming...' : 'Confirm Email Change'}
                                 </button>
                             </>
@@ -191,8 +193,7 @@ function EmailSettings() {
                             <button
                                 type="submit"
                                 disabled={isEmailLoading || !email || email === user_email || !isValidEmail(email)}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            >
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium dark:focus:ring-offset-gray-800" >
 
                                 {isEmailLoading ? 'Sending...' : 'Send Confirmation Code'}
                             </button>

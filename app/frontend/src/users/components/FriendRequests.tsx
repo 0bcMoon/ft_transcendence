@@ -16,19 +16,17 @@ const FriendRequests = () => {
     const [currentReqId, setCurrentReqId] = useState<number | undefined>(undefined);
     const { mutate: cancelRequest, isPending: isCanceling } = useCancelRequest();
 
-
     const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest();
     const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest();
-
 
     return (
         <div className="space-y-8">
             {/* Incoming Requests */}
             <div>
                 <div className="flex items-center gap-2 mb-4">
-                    <h2 className="text-2xl font-semibold text-gray-900">Friend Requests</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Friend Requests</h2>
                     {incomingRequests.length > 0 && (
-                        <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-base font-medium">
+                        <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full text-base font-medium">
                             {incomingRequests.length}
                         </span>
                     )}
@@ -42,10 +40,9 @@ const FriendRequests = () => {
 
                 {errorIncoming && (
                     <div className="text-center py-8">
-                        <p className="text-red-500">Error loading friend requests. Please try again.</p>
+                        <p className="text-red-500 dark:text-red-400">Error loading friend requests. Please try again.</p>
                     </div>
                 )}
-
 
                 <div className="max-h-80 overflow-y-auto pr-2 not-scrollbar">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -79,7 +76,7 @@ const FriendRequests = () => {
 
                 {incomingRequests.length === 0 && (
                     <div className="text-center py-12">
-                        <p className="text-lg text-gray-500">No pending friend requests</p>
+                        <p className="text-lg text-gray-500 dark:text-gray-400">No pending friend requests</p>
                     </div>
                 )}
             </div>
@@ -87,9 +84,9 @@ const FriendRequests = () => {
             {/* Pending/Sent Requests */}
             <div>
                 <div className="flex items-center gap-2 mb-4">
-                    <h2 className="text-2xl font-semibold text-gray-900">Sent Requests</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Sent Requests</h2>
                     {pendingRequests.length > 0 && (
-                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-base font-medium">
+                        <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full text-base font-medium">
                             {pendingRequests.length}
                         </span>
                     )}
@@ -103,7 +100,7 @@ const FriendRequests = () => {
 
                 {errorPending && (
                     <div className="text-center py-8">
-                        <p className="text-red-500">Error loading pending requests. Please try again.</p>
+                        <p className="text-red-500 dark:text-red-400">Error loading pending requests. Please try again. </p>
                     </div>
                 )}
 
@@ -111,14 +108,13 @@ const FriendRequests = () => {
                     isOpen={currentReqId !== undefined}
                     onClose={() => setCurrentReqId(undefined)}
                     onDeny={() => setCurrentReqId(undefined)}
-                    onAccept={() => {cancelRequest({ req_id: currentReqId! }); setCurrentReqId(undefined)}}
+                    onAccept={() => { cancelRequest({ req_id: currentReqId! }); setCurrentReqId(undefined) }}
                     title={'Cancel Friend Request'}
                     message={'Are you sure you want to cancel this friend request?'}
                     acceptText={'Cancel Request'}
                     type='warning'
                     denyText="Cancel"
                 />
-
 
                 {/* // TODO: add loading state for canceling request */}
                 <div className="max-h-80 overflow-y-auto pr-2">
@@ -144,8 +140,8 @@ const FriendRequests = () => {
 
                 {pendingRequests.length === 0 && (
                     <div className="text-center py-12">
-                        <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <p className="text-lg text-gray-500">No pending requests</p>
+                        <Clock className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                        <p className="text-lg text-gray-500 dark:text-gray-400">No pending requests</p>
                     </div>
                 )}
             </div>

@@ -1,4 +1,4 @@
-import { PlayerNames, PlayerAvatars, Scores } from "../types/types";
+import { PlayerNames, PlayerAvatars, Scores } from "../../types/types";
 
 type PlayersHeaderProps = {
     playerNames: PlayerNames;
@@ -6,51 +6,42 @@ type PlayersHeaderProps = {
     scores?: Scores | null;
 };
 
-export default function PlayersHeader({ playerNames, playerAvatars, scores, }: PlayersHeaderProps) {
+const PlayerAvatar = ({ name, avatar }: { name: string; avatar?: string | null }) => (
+    avatar ? (
+        <img
+            src={avatar}
+            alt={name}
+            className="w-15 h-15 rounded-full object-cover bg-gray-200 dark:bg-gray-700"
+        />
+    ) : (
+        <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center font-bold text-2xl text-gray-700 dark:text-gray-200">
+            {name.charAt(0).toUpperCase()}
+        </div>
+    )
+);
+
+export default function PlayersHeader({ playerNames, playerAvatars, scores }: PlayersHeaderProps) {
     const leftName = playerNames.left ?? "Player 1";
     const rightName = playerNames.right ?? "Player 2";
     const leftScore = scores?.left ?? 0;
     const rightScore = scores?.right ?? 0;
 
-    const renderAvatar = (name: string, avatar?: string | null) => {
-        if (avatar) {
-            return (
-                <img
-                    src={avatar}
-                    alt={name}
-                    className="w-12 h-12 rounded-full border-2 border-gray-800 object-cover bg-black"
-                />
-            );
-        }
-        return (
-            <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-xl border-2 border-gray-800">
-                {name.charAt(0).toUpperCase()}
-            </div>
-        );
-    };
-
     return (
-        <div className="bg-black px-6 py-5 border-b border-gray-900">
-            <div className="flex items-center justify-between max-w-2xl mx-auto">
-                {/* Left Player */}
-                <div className="flex items-center space-x-3">
-                    {renderAvatar(leftName, playerAvatars?.left)}
-                    <span className="text-lg font-semibold text-white">{leftName}</span>
-                </div>
-
-                {/* Score & VS */}
-                <div className="flex items-center space-x-4 bg-gray-900 px-6 py-3 rounded-xl">
-                    <span className="text-3xl font-extrabold text-white">{leftScore}</span>
-                    <span className="text-xl font-bold text-yellow-500 px-2">VS</span>
-                    <span className="text-3xl font-extrabold text-white">{rightScore}</span>
-                </div>
-
-                {/* Right Player */}
-                <div className="flex items-center space-x-3">
-                    <span className="text-lg font-semibold text-white">{rightName}</span>
-                    {renderAvatar(rightName, playerAvatars?.right)}
-                </div>
+        <div className="w-full px-6 py-4 bg-white dark:bg-gray-800 flex items-center justify-between rounded-xl shadow-sm">
+            <div className="flex items-center gap-4">
+                <PlayerAvatar name={leftName} avatar={playerAvatars?.left} />
+                <span className="font-semibold text-lg text-gray-900 dark:text-white">{leftName}</span>
+            </div>
+            <div className="flex items-center gap-5 bg-gray-100 dark:bg-gray-700 px-6 py-2 rounded-lg">
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">{leftScore}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400 text-xl">VS</span>
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">{rightScore}</span>
+            </div>
+            <div className="flex items-center gap-4">
+                <span className="font-semibold text-lg text-gray-900 dark:text-white">{rightName}</span>
+                <PlayerAvatar name={rightName} avatar={playerAvatars?.right} />
             </div>
         </div>
     );
 }
+

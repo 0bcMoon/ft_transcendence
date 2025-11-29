@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
+    content: [
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
+    ],
     theme: {
         extend: {
             fontFamily: {
@@ -26,19 +30,5 @@ module.exports = {
             }
         },
     },
-    content: [
-        "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
-    ],
-    darkMode: 'class', // Enable class-based dark mode
-
-    plugins: [
-        function({ addUtilities }) {
-            addUtilities({
-                '.debug': {
-                    border: '1px solid black',
-                },
-            });
-        },
-    ],
-};
+    plugins: [],
+}

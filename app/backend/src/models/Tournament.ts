@@ -2,11 +2,6 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import tournamentRepository from "../repository/tournamentRepository";
 
 export const Tournament = {
-    /**
-     * Create a new tournament
-     * POST /tournaments
-     * Body: { name: string, max_players?: number }
-     */
     createTournament: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { name, max_players } = req.body as { name: string; max_players?: number };
@@ -18,10 +13,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Get tournament by ID
-     * GET /tournaments/:id
-     */
     getTournament: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -35,10 +26,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * List all tournaments
-     * GET /tournaments
-     */
     listTournaments: async (_req: FastifyRequest, reply: FastifyReply) => {
         try {
             const tournaments = await tournamentRepository.listTournaments();
@@ -48,11 +35,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Register a player to a tournament
-     * POST /tournaments/:id/register
-     * Body: { user_id: number, alias: string }
-     */
     registerPlayer: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -70,10 +52,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * List players in a tournament
-     * GET /tournaments/:id/players
-     */
     listPlayers: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -84,10 +62,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Start a tournament (creates Round 1 games)
-     * POST /tournaments/:id/start
-     */
     start: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -99,30 +73,19 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Advance to next round (after current round finishes)
-     * POST /tournaments/:id/advance
-     */
     advanceRound: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
             await tournamentRepository.advanceRound(Number(id));
             const tournament = await tournamentRepository.getTournament(Number(id));
             return reply.status(200).send({
-                tournament,
-                message: tournament?.status === 'finished'
-                    ? 'Tournament completed!'
-                    : 'Advanced to next round'
+                tournament, message: tournament?.status === 'finished' ? 'Tournament completed!' : 'Advanced to next round'
             });
         } catch (err: any) {
             return reply.status(400).send({ error: "Failed to advance round", details: err.message });
         }
     },
 
-    /**
-     * Get all games in a tournament
-     * GET /tournaments/:id/games
-     */
     getTournamentGames: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -133,10 +96,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Get games for a specific round
-     * GET /tournaments/:id/rounds/:round/games
-     */
     getRoundGames: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id, round } = req.params as { id: string; round: string };
@@ -147,10 +106,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Get full tournament bracket (for UI display)
-     * GET /tournaments/:id/bracket
-     */
     getBracket: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };
@@ -161,10 +116,6 @@ export const Tournament = {
         }
     },
 
-    /**
-     * Cancel a tournament
-     * POST /tournaments/:id/cancel
-     */
     cancelTournament: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const { id } = req.params as { id: string };

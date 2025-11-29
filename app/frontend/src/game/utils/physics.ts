@@ -1,145 +1,151 @@
 import { GameState, Side, KeysPressed } from "../types/types";
-import {
-    CANVAS_HEIGHT,
-    CANVAS_WIDTH,
-    MAX_SCORE,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT,
-    PADDLE_SPEED,
-    PADDLE_OFFSET,
-    BALL_RADIUS,
-    BALL_SPEED_X,
-    BALL_SPEED_Y,
-    MAX_BOUNCE_ANGLE_DEG,
-    BALL_SPEED_INCREMENT,
-    BALL_SPEED_MAX,
-    MIN_ABS_X_SPEED,
-    SERVE_ANGLE_MIN_DEG,
-    SERVE_ANGLE_MAX_DEG,
-} from "./constants";
+import { Canvas, Ball, Paddle, Physics, Rules } from "../utils/gameConfig";
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const magnitude = (x: number, y: number) => Math.hypot(x, y);
 
 export const initState = (): GameState => ({
-    paddles: {
-        left: {
-            x: PADDLE_OFFSET,
-            y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-            width: PADDLE_WIDTH,
-            height: PADDLE_HEIGHT
-        },
-        right: {
-            x: CANVAS_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
-            y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
-            width: PADDLE_WIDTH,
-            height: PADDLE_HEIGHT
-        },
+    leftPaddle: {
+        x: Paddle.OFFSET,
+        y: Canvas.HEIGHT / 2 - Paddle.HEIGHT / 2,
+        width: Paddle.WIDTH,
+        height: Paddle.HEIGHT
+    },
+    rightPaddle: {
+        x: Canvas.WIDTH - Paddle.OFFSET - Paddle.WIDTH,
+        y: Canvas.HEIGHT / 2 - Paddle.HEIGHT / 2,
+        width: Paddle.WIDTH,
+        height: Paddle.HEIGHT
     },
     ball: {
-        x: CANVAS_WIDTH / 2,
-        y: CANVAS_HEIGHT / 2,
-        radius: BALL_RADIUS,
-        speedX: BALL_SPEED_X,
-        speedY: BALL_SPEED_Y
+        x: Canvas.WIDTH / 2,
+        y: Canvas.HEIGHT / 2,
+        radius: Ball.RADIUS,
+        speedX: Ball.INITIAL_SPEED_X,
+        speedY: Ball.INITIAL_SPEED_Y
     },
     score: { left: 0, right: 0 },
 });
 
 export const movePaddles = (state: GameState, keys: KeysPressed) => {
-    const { left, right } = state.paddles;
-    if (!left || !right)
-        return;
-
-    if (keys.w)
-        left.y -= PADDLE_SPEED;
-    if (keys.s)
-        left.y += PADDLE_SPEED;
-    if (keys.ArrowUp)
-        right.y -= PADDLE_SPEED;
-    if (keys.ArrowDown)
-        right.y += PADDLE_SPEED;
-
-    left.y = Math.max(0, Math.min(left.y, CANVAS_HEIGHT - left.height));
-    right.y = Math.max(0, Math.min(right.y, CANVAS_HEIGHT - right.height));
-};
-
-const handlePaddleCollision = (ball: GameState["ball"], paddles: GameState["paddles"]) => {
-    if (!paddles.left || !paddles.right)
-        return
-    let hit = false;
-
-    if (ball.speedX < 0 && ball.x - ball.radius <= paddles.left.x + paddles.left.width && ball.y >= paddles.left.y && ball.y <= paddles.left.y + paddles.left.height) {
-        hit = true;
-
-        const rel = clamp((ball.y - (paddles.left.y + paddles.left.height / 2)) / (paddles.left.height / 2), -1, 1);
-        const currentSpeed = magnitude(ball.speedX, ball.speedY);
-        const newSpeed = clamp(currentSpeed + BALL_SPEED_INCREMENT, currentSpeed, BALL_SPEED_MAX);
-        const angle = rel * toRad(MAX_BOUNCE_ANGLE_DEG);
-
-        ball.speedX = Math.max(MIN_ABS_X_SPEED, newSpeed * Math.cos(angle));
-        ball.speedY = newSpeed * Math.sin(angle);
-
-        ball.x = paddles.left.x + paddles.left.width + ball.radius;
+    if (state.leftPaddle) {
+        if (keys.w)
+            state.leftPaddle.y -= Paddle.SPEED;
+        if (keys.s)
+            state.leftPaddle.y += Paddle.SPEED;
+        state.leftPaddle.y = clamp(state.leftPaddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
     }
 
-    if (ball.speedX > 0 && ball.x + ball.radius >= paddles.right.x && ball.y >= paddles.right.y && ball.y <= paddles.right.y + paddles.right.height) {
-        hit = true;
-
-        const rel = clamp((ball.y - (paddles.right.y + paddles.right.height / 2)) / (paddles.right.height / 2), -1, 1);
-        const currentSpeed = magnitude(ball.speedX, ball.speedY);
-        const newSpeed = clamp(currentSpeed + BALL_SPEED_INCREMENT, currentSpeed, BALL_SPEED_MAX);
-        const angle = rel * toRad(MAX_BOUNCE_ANGLE_DEG);
-
-        ball.speedX = -Math.max(MIN_ABS_X_SPEED, newSpeed * Math.cos(angle));
-        ball.speedY = newSpeed * Math.sin(angle);
-
-        ball.x = paddles.right.x - ball.radius;
+    if (state.rightPaddle) {
+        if (keys.ArrowUp)
+            state.rightPaddle.y -= Paddle.SPEED;
+        if (keys.ArrowDown)
+            state.rightPaddle.y += Paddle.SPEED;
+        state.rightPaddle.y = clamp(state.rightPaddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
     }
-
-    return hit;
 };
 
+const handlePaddleCollisions = (state: GameState): boolean => {
+    const { ball, leftPaddle, rightPaddle } = state;
+    let collisionOccurred = false;
+
+    if (ball.speedX < 0 && leftPaddle) { // Ball moving left AND left paddle exists
+        const paddleTop = leftPaddle.y;
+        const paddleBottom = leftPaddle.y + Paddle.HEIGHT;
+        const paddleRightEdge = leftPaddle.x + Paddle.WIDTH;
+        const ballLeftEdge = ball.x - Ball.RADIUS;
+        const ballTop = ball.y - Ball.RADIUS;
+        const ballBottom = ball.y + Ball.RADIUS;
+
+        if (ballLeftEdge <= paddleRightEdge && ball.x > leftPaddle.x && ballTop < paddleBottom && ballBottom > paddleTop) {
+            const relativeIntersectY = (ball.y - (paddleTop + Paddle.HEIGHT / 2)) / (Paddle.HEIGHT / 2);
+            const normalizedIntersect = clamp(relativeIntersectY, -1, 1);
+            const bounceAngle = normalizedIntersect * toRad(Physics.MAX_PADDLE_BOUNCE_ANGLE);
+
+            const currentSpeed = magnitude(ball.speedX, ball.speedY);
+            const newSpeed = clamp(currentSpeed + Ball.SPEED_INCREMENT, currentSpeed, Ball.SPEED_MAX);
+
+            ball.speedX = Math.max(Ball.MIN_ABS_SPEED_X, newSpeed * Math.cos(bounceAngle));
+            ball.speedY = newSpeed * Math.sin(bounceAngle);
+            ball.x = paddleRightEdge + Ball.RADIUS;
+            collisionOccurred = true;
+        }
+    }
+
+    else if (ball.speedX > 0 && rightPaddle) { // Ball moving right AND right paddle exists
+        const paddleTop = rightPaddle.y;
+        const paddleBottom = rightPaddle.y + Paddle.HEIGHT;
+        const paddleLeftEdge = rightPaddle.x;
+        const ballRightEdge = ball.x + Ball.RADIUS;
+        const ballTop = ball.y - Ball.RADIUS;
+        const ballBottom = ball.y + Ball.RADIUS;
+
+        if (ballRightEdge >= paddleLeftEdge && ball.x < rightPaddle.x + Paddle.WIDTH && ballTop < paddleBottom && ballBottom > paddleTop) {
+            // --- Calculate Bounce Physics ---
+            const relativeIntersectY = (ball.y - (paddleTop + Paddle.HEIGHT / 2)) / (Paddle.HEIGHT / 2);
+            const normalizedIntersect = clamp(relativeIntersectY, -1, 1);
+            const bounceAngle = normalizedIntersect * toRad(Physics.MAX_PADDLE_BOUNCE_ANGLE);
+
+            const currentSpeed = magnitude(ball.speedX, ball.speedY);
+            const newSpeed = clamp(currentSpeed + Ball.SPEED_INCREMENT, currentSpeed, Ball.SPEED_MAX);
+
+            ball.speedX = -Math.max(Ball.MIN_ABS_SPEED_X, newSpeed * Math.cos(bounceAngle)); // Move left
+            ball.speedY = newSpeed * Math.sin(bounceAngle);
+            ball.x = paddleLeftEdge - Ball.RADIUS; // Correct position
+            collisionOccurred = true;
+        }
+    }
+    return collisionOccurred;
+};
 
 export const moveBall = (state: GameState, onScore: (scorer: Side) => void) => {
-    const { ball, paddles } = state;
 
-    ball.x += ball.speedX;
-    ball.y += ball.speedY;
+    state.ball.x += state.ball.speedX;
+    state.ball.y += state.ball.speedY;
 
-    if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.speedY *= -1; } else if (ball.y + ball.radius > CANVAS_HEIGHT) {
-        ball.y = CANVAS_HEIGHT - ball.radius;
-        ball.speedY *= -1;
+    // Wall Collision (Top/Bottom)
+    if (state.ball.y - Ball.RADIUS <= 0) {
+        state.ball.y = Ball.RADIUS;
+        state.ball.speedY *= -1;
+    } else if (state.ball.y + Ball.RADIUS >= Canvas.HEIGHT) {
+        state.ball.y = Canvas.HEIGHT - Ball.RADIUS;
+        state.ball.speedY *= -1;
     }
 
-    handlePaddleCollision(ball, paddles);
+    handlePaddleCollisions(state);
 
-    if (ball.x + ball.radius < 0) {
+    if (state.ball.x + Ball.RADIUS < 0) {
         state.score.right = (state.score.right ?? 0) + 1;
         onScore("right");
         resetBall(state, "right");
-    } else if (ball.x - ball.radius > CANVAS_WIDTH) {
+    } else if (state.ball.x - Ball.RADIUS > Canvas.WIDTH) {
         state.score.left = (state.score.left ?? 0) + 1;
         onScore("left");
         resetBall(state, "left");
     }
-
 };
 
-export const resetBall = (state: GameState, direction: Side) => {
-    state.ball.x = CANVAS_WIDTH / 2;
-    state.ball.y = CANVAS_HEIGHT / 2;
+export const resetBall = (state: GameState, scoredSide: Side) => {
 
-    const angle = Math.random() * (toRad(SERVE_ANGLE_MAX_DEG) - toRad(SERVE_ANGLE_MIN_DEG)) + toRad(SERVE_ANGLE_MIN_DEG);
-    const dirX = direction === "right" ? -1 : 1;
-    const dirY = Math.random() < 0.5 ? -1 : 1;
+    state.ball.x = Canvas.WIDTH / 2;
+    state.ball.y = Canvas.HEIGHT / 2;
 
-    const baseSpeed = magnitude(BALL_SPEED_X, BALL_SPEED_Y);
-    state.ball.speedX = dirX * Math.max(MIN_ABS_X_SPEED, baseSpeed * Math.cos(angle));
-    state.ball.speedY = dirY * baseSpeed * Math.sin(angle);
+    const angleRad = toRad(
+        Math.random() * (Physics.SERVE_ANGLE_RANGE.max - Physics.SERVE_ANGLE_RANGE.min) + Physics.SERVE_ANGLE_RANGE.min);
+
+    const serveDirectionX = (scoredSide === "left") ? 1 : -1;
+    const serveDirectionY = Math.random() < 0.5 ? -1 : 1;
+
+    const baseSpeed = magnitude(Ball.INITIAL_SPEED_X, Ball.INITIAL_SPEED_Y);
+    state.ball.speedX = serveDirectionX * Math.max(Ball.MIN_ABS_SPEED_X, baseSpeed * Math.cos(angleRad));
+    state.ball.speedY = serveDirectionY * baseSpeed * Math.sin(angleRad);
 };
 
-export const checkGameOver = (state: GameState, scorer: Side): boolean => {
-    return (state.score[scorer] ?? 0) >= MAX_SCORE;
+export const checkGameOver = (state: GameState): boolean => {
+    if ((state.score.left ?? 0) >= Rules.MAX_SCORE)
+        return true;
+    if ((state.score.right ?? 0) >= Rules.MAX_SCORE)
+        return true;
+    return false;
 };

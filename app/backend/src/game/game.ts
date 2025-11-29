@@ -1,119 +1,85 @@
-import { WebSocket } from "ws";
-import { clients, queues } from "./state";
-import { processQueue } from "./queue";
-import { findMatchByPlayer, getPlayerSide, isOpen, send } from "./utils";
-import { endMatch, startGameLoop } from "./match";
-import { movePaddle } from "./mechanics/movement";
-import { Player, Side, ClientMessage, GameMode } from "./types/types";
+import { WebSocket } from 'ws';
+import { ClientMessage, GameMode, Player, Side, GameState, Match } from './types/types'; // Adjust path
+// import { initState, moveBall, checkGameOver, resetBall } from './physics'; // Adjust path
+// import { Rules, Paddle, Canvas } from './gameConfig'; // Adjust path
 
-export interface MatchmakerAPI {
-    addPlayer: (id: number, username: string, avatar: string, mode: GameMode, socket: WebSocket | null, gameId?: number) => void;
-    removePlayer: (id: number) => void;
-    handleMessage: (id: number, data: ClientMessage, socket?: WebSocket) => void;
-}
+// --- In-Memory State (Assumed to be in this file) ---
+const players = new Map<number, Player>(); // Map<userId, Player>
+const matches = new Map<number, Match>();   // Map<gameId, Match>
+const queue = new Map<GameMode, Player[]>(); // Map<GameMode, Player[]>
 
-function addPlayer(id: number, username: string, avatar: string, mode: GameMode, socket: WebSocket | null, gameId?: number): void {
-    const player: Player = { id, username, avatar, socket, mode, gameId };
-    clients.set(id, player);
+// --- Helper Functions (Assumed to be in this file) ---
+// (These are the functions we defined previously, like createMatch,
+// getPlayerMatch, handleReady, handleMove, etc.)
 
-    if (findMatchByPlayer(id))
-        return;
-    if (!isOpen(socket))
-        return;
+// function getPlayerMatch(userId: number): Match | undefined { /* ... */ }
+// function getPlayerSide(userId: number, match: Match): Side | null { /* ... */ }
+// function createMatch(players: [Player, Player], mode: GameMode): void { /* ... */ }
+function handleJoinGame(userId: number, data: ClientMessage & { type: "joinGame" }, socket: WebSocket): void { /* ... */ }
+function handleReady(userId: number): void { /* ... */ }
+function handleMove(userId: number, data: ClientMessage & { type: "move" }): void { /* ... */ }
+function handlePlayAgain(userId: number, mode: GameMode): void { /* ... */ }
+function handleLeaveGame(userId: number): void { /* ... */ }
 
-    if (!queues.has(mode))
-        queues.set(mode, []);
+// --- Main Exported Functions ---
 
-    const queue = queues.get(mode)!;
-    queue.push(player);
+/**
+ * Main message router called by Fastify.
+ * It trusts the authenticated 'userId' from the route, not from the message.
+ *
+ * @param userId The authenticated user ID from fastify.authenticate
+ * @param data The parsed ClientMessage object
+ * @param socket The client's WebSocket connection
+ */
+export function handleMessage(userId: number, data: ClientMessage, socket: WebSocket): void {
 
-    processQueue(mode);
-}
-
-export function removePlayer(id: number): void {
-    for (const [mode, queue] of queues.entries()) {
-        queues.set(mode, queue.filter((p) => p.id !== id));
-    }
-
-    const match = findMatchByPlayer(id);
-
-    if (!match) {
-        const player = clients.get(id);
-        if (player && !isOpen(player.socket)) {
-            clients.delete(id);
-        }
-        return;
-    }
-
-    const side = getPlayerSide(match, id);
-    if (!side) return;
-
-    let winnerId: number | null = null;
-    for (const [oppSide, oppPlayer] of Object.entries(match.players) as [Side, Player][]) {
-        if (oppSide !== side && oppPlayer && isOpen(oppPlayer.socket)) {
-            send(oppPlayer.socket, { type: "gameOver", winner: oppSide, score: match.state.score });
-            winnerId = oppPlayer.id;
-        }
-        if (oppPlayer && !isOpen(oppPlayer.socket)) {
-            clients.delete(oppPlayer.id);
-        }
-    }
-
-    const player = match.players[side];
-    if (player && (!player.socket || !isOpen(player.socket))) {
-        clients.delete(player.id);
-    }
-
-    endMatch(match, winnerId);
-}
-
-export function handleMessage(id: number, data: ClientMessage, socket?: WebSocket): void {
-    console.log(data.type);
-
+    // 1. Handle "joinGame" first.
+    // This is the only message a player can send *before* being in the 'players' map.
     if (data.type === "joinGame") {
-        if (!data.username || !socket)
-            return;
-        addPlayer(id, data.username, data.avatar, data.mode, socket, data.gameId);
+        // We trust 'userId' from the route, not 'data.id'
+        handleJoinGame(userId, data, socket);
         return;
     }
 
-    if (data.type === "leaveGame") {
-        removePlayer(id);
+    // 2. For all other messages, the player MUST exist.
+    const player = players.get(userId);
+    if (!player) {
+        console.warn(`Message from unknown player: ${userId}. Type: ${data.type}`);
+        socket.close(1008, "Player not registered");
         return;
     }
 
-    if (data.type === "playAgain") {
-        const player = clients.get(id);
-        if (!player || !isOpen(player.socket))
-            return;
-        addPlayer(player.id, player.username, player.avatar, data.mode, player.socket);
-        return;
+    // 3. Keep the player's socket reference fresh (in case of re-connection)
+    player.socket = socket;
+
+    // 4. Route the message to the correct handler
+    switch (data.type) {
+        case "ready":
+            handleReady(userId);
+            break;
+        case "move":
+            handleMove(userId, data);
+            break;
+        case "playAgain":
+            handlePlayAgain(userId, data.mode);
+            break;
+        case "leaveGame":
+            handleLeaveGame(userId);
+            break;
+        default:
+            // This handles cases where 'data.type' is a value not in the switch
+            console.warn(`Unknown message type received: ${(data as any).type}`);
     }
+}
 
-    if (data.type === "ready") {
-        const match = findMatchByPlayer(id);
-        if (match) {
-            const side = getPlayerSide(match, id);
-            if (side) {
-                match.ready[side] = true;
-                if (match.ready.left && match.ready.right) {
-                    startGameLoop(match);
-                }
-            }
-        }
-        return;
-    }
-
-    if (data.type === "move") {
-        const match = findMatchByPlayer(id);
-        if (!match)
-            return;
-
-        const side = getPlayerSide(match, id);
-        if (!side)
-            return;
-
-        movePaddle(match.state.paddles[side], side, data.up, data.down, data.left, data.right);
-        return;
-    }
+/**
+ * Called by Fastify when a socket disconnects (on "close" or "error").
+ * This cleans up the player and any match they were in.
+ *
+ * @param userId The authenticated user ID that disconnected
+ */
+export function removePlayer(userId: number): void {
+    // Re-using handleLeaveGame logic is the cleanest way to
+    // ensure the player is fully removed from matches, queues, and maps.
+    handleLeaveGame(userId);
 }

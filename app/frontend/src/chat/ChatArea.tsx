@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useRef } from 'react';
+import React, { RefObject, useEffect, useRef, useState } from 'react'; // Added useState
 import { Send, Video, MoreVertical, Menu, MessageSquare, Shield } from 'lucide-react';
 import { Contacts, Message } from './types';
 import { useActiveChatStore } from '@/state/Store';
@@ -7,9 +7,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import api from '@/api/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import Modal from './components/Modal';
+import Modal from './components/Modal'; // ⚠️ REMINDER: You must add dark: classes to Modal.tsx as well!
 import { formatTimeToReadable } from '@/component/helper';
 
+// --- Prop Interfaces ---
 interface ChatAreaProps {
     onSidebarToggle: () => void;
     ws: RefObject<WebSocket | null>;
@@ -20,31 +21,38 @@ interface Payload {
     content: string,
 }
 
-const StartChatPlaceholder = ({ onSidebarToggle }: { onSidebarToggle: () => void }) => {
+// --- Placeholder Component ---
+function StartChatPlaceholder({ onSidebarToggle }: { onSidebarToggle: () => void }) {
     return (
+        // ✅ Main background
+        <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
 
-        <div className="flex-1 flex flex-col bg-gray-50">
-            <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200">
+            {/* ✅ Mobile Header */}
+            <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-gray-200
+                            dark:bg-gray-950 dark:border-gray-800">
                 <button
                     onClick={onSidebarToggle}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200
+                               dark:hover:bg-gray-800"
                 >
-                    <Menu className="w-5 h-5 text-gray-600" />
+                    <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 </button>
-                <h1 className="font-semibold text-gray-900">Messages</h1>
-                <div className="w-9" />
+                <h1 className="font-semibold text-gray-900 dark:text-gray-100">Messages</h1>
+                <div className="w-9" /> {/* Spacer */}
             </div>
 
-            <div className="flex-1 flex items-center justify-center">
+            {/* ✅ Centered placeholder content */}
+            <div className="flex-1 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <MessageSquare className="w-12 h-12 text-gray-400" />
+                    <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4
+                                  dark:bg-gray-800">
+                        <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500" />
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2 dark:text-gray-100">
                         Welcome to Messages
                     </h2>
-                    <p className="text-gray-600 max-w-sm">
-                        Select a conversation from the sidebar to start chatting with your contacts.
+                    <p className="text-gray-600 max-w-sm dark:text-gray-400">
+                        Select a conversation from the sidebar to start chatting.
                     </p>
                 </div>
             </div>
@@ -52,12 +60,10 @@ const StartChatPlaceholder = ({ onSidebarToggle }: { onSidebarToggle: () => void
     )
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({
-    onSidebarToggle,
-    ws
-}) => {
+// --- Main Chat Component ---
+export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
     const { active_chat } = useActiveChatStore();
-    const [isOpen, setIsOpen] = React.useState(false);
+    const [isOpen, setIsOpen] = useState(false); // Changed to useState
     const websocket = ws.current;
 
     const queryClient = useQueryClient();
@@ -65,20 +71,22 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     const is_blocking = active_chat?.relation_status === 'blocking' || active_chat?.relation_status === 'blocked_by';
     const navigate = useNavigate();
 
+    // --- Data Fetching ---
     const { data: messages } = useQuery<Message[]>({
         queryKey: ['messages', active_chat?.id],
         queryFn: async () => {
             const respose = await api.get(`/api/chat/${active_chat?.id}/messages`);
             return respose.data;
         },
-        enabled: !!active_chat?.id,
+        enabled: !!active_chat?.id, // Only run if active_chat exists
     });
 
+    // Scroll to bottom when new messages arrive
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // TODO: handle reconnect
+    // --- WebSocket Logic ---
     const postMessage = async (payload: Payload) => {
         if (websocket === null || websocket?.readyState !== WebSocket.OPEN) {
             throw new Error("WebSocket is not connected");
@@ -93,12 +101,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         },
     });
 
+    // Form submission handler
     const SendMessage = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)
         const message = formData.get("message")?.toString().trim();
-        if (message === undefined || message.length == 0)
-            return;
+
+        if (!message) return; // Guard clause for empty message
 
         const newMessage: Payload = {
             content: message,
@@ -108,31 +117,25 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         event.currentTarget.reset()
     }
 
+    // WebSocket message listener
     useEffect(() => {
         if (!ws.current || !active_chat) return;
+
         ws.current.onmessage = (event) => {
             const data: Message = JSON.parse(event.data);
-            queryClient.setQueryData<Message[]>(['messages', active_chat?.id], (messages) => {
-                if (!messages) return [data];
-                return [...messages, data];
-            });
-            queryClient.setQueryData<Contacts[]>(['contacts'], (contacts) => {
-                if (!contacts) return [];
-                return contacts.map(contact => {
-                    if (contact.id === data.sender_id) {
-                        return {
-                            ...contact,
-                            content: data.content,
-                            messsage_time: data.created_at,
-                        };
-                    }
-                    return contact;
-                });
+
+            // Update the messages query cache
+            queryClient.setQueryData<Message[]>(['messages', active_chat?.id], (oldMessages) => {
+                if (!oldMessages) return [data];
+                return [...oldMessages, data];
             });
 
-            queryClient.setQueryData<Contacts[]>(['contacts'], (contacts) => {
-                if (!contacts) return [];
-                const new_contacts = contacts.map(contact => {
+            // Update the contacts list query cache
+            queryClient.setQueryData<Contacts[]>(['contacts'], (oldContacts) => {
+                if (!oldContacts) return [];
+
+                // Find and update the contact with the new message
+                const newContacts = oldContacts.map(contact => {
                     if (contact.id === data.sender_id || contact.id === active_chat?.id) {
                         return {
                             ...contact,
@@ -142,40 +145,55 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     }
                     return contact;
                 });
-                new_contacts.sort((a, b) => {
+
+                // Sort contacts to bring the newest message to the top
+                newContacts.sort((a, b) => {
                     const timeA = a.messsage_time ? new Date(a.messsage_time).getTime() : 0;
                     const timeB = b.messsage_time ? new Date(b.messsage_time).getTime() : 0;
-                    return timeB - timeA;
+                    return timeB - timeA; // Descending order
                 });
-                return new_contacts;
+
+                return newContacts;
             });
         }
-    }, [active_chat, ws.current]);
+        // Dependency array ensures this effect re-runs if the websocket or active chat changes
+    }, [active_chat, ws, queryClient]); // Added ws and queryClient
 
-    if (!active_chat)
+    // --- Render Logic ---
+    if (!active_chat) {
         return (<StartChatPlaceholder onSidebarToggle={onSidebarToggle} />);
+    }
 
     return (
-        <div className="flex-1 flex flex-col bg-white overflow-hidden">
+        // ✅ Main container
+        <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 overflow-hidden">
             <Modal
                 isOpen={isOpen}
                 onClose={() => setIsOpen(false)}
                 userDisplayName={active_chat.display_name}
                 title="User Actions"
             />
-            {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+
+            {/* --- Chat Header --- */}
+            {/* ✅ Added dark: classes */}
+            <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200
+                            dark:bg-gray-950 dark:border-gray-800">
+
                 <div className="flex items-center">
+                    {/* Mobile Menu Button */}
                     <button
                         onClick={onSidebarToggle}
-                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-2"
+                        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-2
+                                   dark:hover:bg-gray-800"
                     >
-                        <Menu className="w-5 h-5 text-gray-600" />
+                        <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </button>
 
+                    {/* User Info */}
                     <div
                         onClick={() => navigate(`/users/${active_chat.id}`)}
-                        className="flex items-center cursor-pointer hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors duration-200"
+                        className="flex items-center cursor-pointer hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors duration-200
+                                   dark:hover:bg-gray-800"
                     >
                         <div className="relative">
                             <img
@@ -185,75 +203,84 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                             />
                             <div
                                 className={`absolute bottom-0 right-0 w-3 h-3 
-                                        rounded-full border-2 border-white 
-                                        ${false ? 'bg-green-500' : 'bg-gray-400'}`}
+                                            rounded-full border-2 border-white 
+                                            dark:border-gray-950 {/* ✅ Match header bg */}
+                                            ${false ? 'bg-green-500' : 'bg-gray-400'}`} // Status dot logic
                             />
                         </div>
                         <div className="ml-3">
-                            <h2 className="font-semibold text-gray-900">{active_chat.display_name}</h2>
+                            <h2 className="font-semibold text-gray-900 dark:text-gray-100">{active_chat.display_name}</h2>
                         </div>
                     </div>
                 </div>
 
+                {/* Header Actions */}
                 <div className="flex items-center space-x-2">
                     <button
                         onClick={() => toast('TODO: Start a video call')}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200
+                                   dark:hover:bg-gray-800"
                     >
-                        <Video className="w-5 h-5 text-gray-600" />
+                        <Video className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </button>
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200
+                                   dark:hover:bg-gray-800"
                     >
-                        <MoreVertical className="w-5 h-5 text-gray-600" />
+                        <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </button>
                 </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 no-scrollbar">
+            {/* --- Messages Area --- */}
+            {/* ✅ Added dark: bg */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 no-scrollbar
+                            dark:bg-gray-900">
                 {is_blocking ? (
+                    // Blocked State
                     <div className="flex items-center justify-center py-8">
                         <div className="text-center">
                             <Shield className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                            {
-                                active_chat.relation_status === 'blocking' ? (
-                                    <>
-                                        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                            You have blocked this user
-                                        </h2>
-                                        <p className="text-gray-600 max-w-sm">
-                                            You won't be able to send or receive messages from this user.
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                                            You are blocked by this user
-                                        </h2>
-                                        <p className="text-gray-600 max-w-sm">
-                                            You won't be able to send messages to this user.
-                                        </p>
-                                    </>
-                                )
-                            }
+                            {active_chat.relation_status === 'blocking' ? (
+                                <>
+                                    <h2 className="text-xl font-semibold text-gray-900 mb-2 dark:text-gray-100">
+                                        You have blocked this user
+                                    </h2>
+                                    <p className="text-gray-600 max-w-sm dark:text-gray-400">
+                                        You won't be able to send or receive messages.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className="text-xl font-semibold text-gray-900 mb-2 dark:text-gray-100">
+                                        You are blocked by this user
+                                    </h2>
+                                    <p className="text-gray-600 max-w-sm dark:text-gray-400">
+                                        You won't be able to send messages.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                 ) : (
+                    // --- Chat Bubbles ---
                     messages?.map((message) => (
                         <div
                             key={message.id}
                             className={`flex ${message.is_own ? 'justify-end' : 'justify-start'}`}
                         >
                             <div
+                                // ✅ Added dark: classes for *received* messages
                                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${message.is_own
-                                    ? 'bg-blue-500 text-white rounded-br-md'
-                                    : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100'}`}
+                                    ? 'bg-blue-600 text-white rounded-br-md' // Sent (already dark-friendly)
+                                    : 'bg-white text-gray-900 rounded-bl-md shadow-sm border border-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700' // Received
+                                    }`}
                             >
-                                <p className="text-sm leading-relaxed">{message.content}</p>
+                                <p className="text-sm leading-relaxed" style={{ wordBreak: 'break-word' }}>{message.content}</p>
                                 <p
-                                    className={`text-xs mt-1 ${message.is_own ? 'text-blue-100' : 'text-gray-500'}`}
+                                    // ✅ Added dark: class for *received* timestamp
+                                    className={`text-xs mt-1 ${message.is_own ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}
                                 >
                                     {formatTimeToReadable(message.created_at)}
                                 </p>
@@ -261,25 +288,33 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         </div>
                     ))
                 )}
+                {/* Anchor for scrolling to bottom */}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
-            {/* FIXME: fix the two blocking and blocked_by */}
+            {/* --- Message Input --- */}
             {!is_blocking && (
                 <form onSubmit={SendMessage}>
-                    <div className="p-4 bg-white border-t border-gray-200">
+                    {/* ✅ Added dark: classes for input area */}
+                    <div className="p-4 bg-white border-t border-gray-200
+                                  dark:bg-gray-950 dark:border-gray-800">
                         <div className="flex items-end space-x-3">
                             <div className="flex-1">
                                 <input
                                     name="message"
                                     placeholder="Type a message..."
-                                    className="placeholder:text-gray-300 break-all w-full p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none max-h-32"
+                                    // ✅ Added dark: classes for input
+                                    className="placeholder:text-gray-400 w-full p-3 border border-gray-200 rounded-2xl 
+                                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none max-h-32
+                                               dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500 dark:border-gray-700"
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-full transition-colors duration-200 disabled:cursor-not-allowed"
+                                // ✅ Added dark: class for disabled state
+                                className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full 
+                                           transition-colors duration-200 disabled:cursor-not-allowed
+                                           dark:disabled:bg-gray-700"
                             >
                                 <Send className="w-5 h-5" />
                             </button>
@@ -289,4 +324,4 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             )}
         </div>
     );
-};
+}

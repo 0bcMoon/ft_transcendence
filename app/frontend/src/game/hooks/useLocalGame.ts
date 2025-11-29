@@ -1,205 +1,201 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { GameState, Side, Scores, KeysPressed, PlayerAvatars } from "../types/types";
-import { initState, movePaddles, moveBall, resetBall, checkGameOver } from "../utils/physics";
-import { useCreateGame, useStartGame, useUpdateScore, useFinishGame } from "../../api/gameMutations";
+import { GameState, Side, Scores, KeysPressed, PlayerNames } from "../types/types";
+import { initState, movePaddles, moveBall, checkGameOver } from "../utils/physics";
+import { useCreateGame, useStartGame, useUpdateScore, useFinishGame } from "../../game/api/mutations";
 import { useAuthStore } from "@/state/authStore";
 
 export function useLocalGame() {
-    const location = useLocation();
-    // Always set player2 as the real player, and player1 as the computer
-    const { player1, player2 } = (location.state ?? { player1: "Computer", player2: "You" }) as {
-        player1: string;
-        player2: string;
-    };
-
     const user = useAuthStore((state) => state.user);
 
-    const playerNames = { left: player1, right: player2 };
-    const playerAvatars: PlayerAvatars | null = null;
+    const [playerNames, setPlayerNames] = useState<PlayerNames>({
+        left: "",
+        right: "",
+    });
 
-    // Simulation refs
-    const gameStateRef = useRef<GameState | null>(null);
+    // --- State & Refs ---
+    // Refs are for high-frequency game logic that shouldn't cause re-renders
+    const gameStateRef = useRef<GameState | null>(null); // Holds the physics state (ball, paddles)
     const keysPressed = useRef<KeysPressed>({ w: false, s: false, ArrowUp: false, ArrowDown: false });
-    const loopId = useRef<number | null>(null);
-    const isGameOverRef = useRef(false);
-    const hasStartedRef = useRef(false);
-    const gameIdRef = useRef<number | null>(null);
+    const loopId = useRef<number | null>(null);       // The ID of the requestAnimationFrame loop
+    const isGameOverRef = useRef(false);                // Stops the game loop when true
+    const hasStartedRef = useRef(false);                // Prevents starting the game twice
+    const gameIdRef = useRef<number | null>(null);      // Stores the database game ID
 
-    // UI state
+    // State is for low-frequency UI changes that *should* cause re-renders
+    const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
+    const [countdown, setCountdown] = useState<number | null>(3);
     const [isGameOver, setIsGameOver] = useState(false);
     const [winner, setWinner] = useState<Side | null>(null);
-    const [countdown, setCountdown] = useState<number | null>(3);
     const [finalScore, setFinalScore] = useState<Scores | null>(null);
-    const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
-    const [gameId, setGameId] = useState<number | null>(null);
-    const [side] = useState<Side>("right");
 
-    // DB mutations
+    // --- Database Mutations ---
     const createGameMutation = useCreateGame();
     const startGameMutation = useStartGame();
     const updateScoreMutation = useUpdateScore();
     const finishGameMutation = useFinishGame();
 
-    // Only update score if changed
-    const prevScoreRef = useRef<Scores>({ left: 0, right: 0 });
-    useEffect(() => {
-        let rafId = 0;
-        const sync = () => {
-            const s = gameStateRef.current?.score;
-            if (s) {
-                const prev = prevScoreRef.current;
-                if (s.left !== prev.left || s.right !== prev.right) {
-                    prevScoreRef.current = { left: s.left, right: s.right };
-                    setScore({ left: s.left, right: s.right });
-                }
-            }
-            rafId = requestAnimationFrame(sync);
-        };
-        rafId = requestAnimationFrame(sync);
-        return () => cancelAnimationFrame(rafId);
-    }, []);
+    // --- Core Game Callbacks ---
 
-    // Simulation mount/reset
-    useEffect(() => {
-        gameStateRef.current = initState();
-        setCountdown(3);
+    /**
+     * Resets the game to its initial state.
+     * Called on mount and when "Play Again" is clicked.
+     */
+    const setupGame = useCallback(() => {
+        // Stop any existing game loop
+        if (loopId.current) {
+            cancelAnimationFrame(loopId.current);
+            loopId.current = null;
+        }
+
+        // Reset all refs and state
+        gameStateRef.current = initState(); // Get new physics state
+        isGameOverRef.current = false;
+        hasStartedRef.current = false;
+        gameIdRef.current = null;
+
         setIsGameOver(false);
         setWinner(null);
         setFinalScore(null);
-        isGameOverRef.current = false;
-        hasStartedRef.current = false;
-        setGameId(null);
-        gameIdRef.current = null;
+        setCountdown(3);
+        setScore({ left: 0, right: 0 });
+    }, []);
 
-        return () => {
-            if (loopId.current !== null) {
+    /**
+     * Persists the final game results to the database.
+     */
+    const persistFinishedGame = useCallback(async (final: Scores, sideWinner: Side | null) => {
+        const id = gameIdRef.current;
+        if (id === null) return; // No game ID, cannot save
+
+        try {
+            // Assumes Player 1 (left) is local, Player 2 (right) is the logged-in user
+            await updateScoreMutation.mutateAsync({ gameId: id, score: final.left, position: 1 });
+            await updateScoreMutation.mutateAsync({ gameId: id, score: final.right, position: 2 });
+
+            const winnerId = (sideWinner === "right") ? user?.id ?? null : null;
+            await finishGameMutation.mutateAsync({ gameId: id, winnerId });
+
+        } catch (err) {
+            console.error("Failed to persist finished local game:", err);
+        }
+    }, [updateScoreMutation, finishGameMutation, user]);
+
+    /**
+     * Callback passed to `moveBall`. Runs *after* a point is scored.
+     */
+    const handleScore = useCallback((scorer: Side) => {
+        const state = gameStateRef.current;
+        if (!state || isGameOverRef.current)
+            return;
+
+        // Update the React UI state with the new score
+        setScore({ ...state.score });
+
+        // Check if this point ended the game
+        if (checkGameOver(state)) {
+            if (loopId.current) {
                 cancelAnimationFrame(loopId.current);
                 loopId.current = null;
             }
-        };
-    }, []);
+            isGameOverRef.current = true;
+            setIsGameOver(true);
+            setWinner(scorer);
+            setFinalScore({ ...state.score });
+            void persistFinishedGame(state.score, scorer);
+        }
+    }, [persistFinishedGame]);
 
-    // Persist finished game -- always uses gameIdRef.current
-    const persistFinishedGame = useCallback(
-        async (final: Scores, sideWinner: Side | null) => {
-            const id = gameIdRef.current;
-            if (id == null) {
-                console.error("No gameId to persist game results!");
-                return;
-            }
-            try {
-                // Computer is position 1, YOU are position 2
-                await updateScoreMutation.mutateAsync({ gameId: id, score: final.left ?? 0, position: 1 });
-                await updateScoreMutation.mutateAsync({ gameId: id, score: final.right ?? 0, position: 2 });
-
-                // Winner: right = user, left = computer
-                let winnerId: number | null = null;
-                if (sideWinner === "right") {
-                    winnerId = user?.id ?? null;
-                } else if (sideWinner === "left") {
-                    winnerId = null; // Computer
-                }
-                await finishGameMutation.mutateAsync({ gameId: id, winnerId });
-            } catch (err) {
-                console.error("Failed to persist finished local game:", err);
-            }
-        },
-        [updateScoreMutation, finishGameMutation, user]
-    );
-
-    // Scoring/game over
-    const handleScore = useCallback(
-        (scorer: Side) => {
-            const state = gameStateRef.current;
-            if (!state || isGameOverRef.current) return;
-
-            if (checkGameOver(state, scorer)) {
-                if (loopId.current !== null) {
-                    cancelAnimationFrame(loopId.current);
-                    loopId.current = null;
-                }
-                isGameOverRef.current = true;
-                setIsGameOver(true);
-                setWinner(scorer);
-                setFinalScore({ ...state.score });
-                void persistFinishedGame(state.score, scorer);
-            } else {
-                resetBall(state, scorer);
-            }
-        },
-        [persistFinishedGame]
-    );
-
-    // Game loop
     const gameLoop = useCallback(() => {
+        if (isGameOverRef.current)
+            return; // Stop loop if game is over
+
         const state = gameStateRef.current;
-        if (!state || isGameOverRef.current) return;
-        movePaddles(state, keysPressed.current);
-        moveBall(state, handleScore);
+        if (state) {
+            movePaddles(state, keysPressed.current);
+            moveBall(state, handleScore); // This will trigger score checks
+        }
         loopId.current = requestAnimationFrame(gameLoop);
     }, [handleScore]);
 
+    /**
+     * Safely starts the game loop.
+     */
     const startLoop = useCallback(() => {
-        if (!gameStateRef.current || loopId.current !== null) return;
-        loopId.current = requestAnimationFrame(gameLoop);
+        if (!loopId.current) {
+            loopId.current = requestAnimationFrame(gameLoop);
+        }
     }, [gameLoop]);
 
-    // Create and start game, only ONCE, at countdown 0
+    /**
+     * Creates the game in the DB, starts it, and begins the game loop.
+     * Called once when the countdown finishes.
+     */
     const ensureCreatedAndStart = useCallback(async () => {
-        if (hasStartedRef.current) return;
+        if (hasStartedRef.current) return; // Only run once
         hasStartedRef.current = true;
+
         try {
-            let id = gameIdRef.current;
-            if (id == null) {
-                const res = await createGameMutation.mutateAsync({
-                    mode: "local",
-                    players: [
-                        { user_id: null, position: 1 },             // Computer is always position 1
-                        { user_id: user?.id ?? null, position: 2 }, // YOU are always position 2
-                    ],
-                });
-                id = res?.game?.id ?? null;
-                if (id == null) {
-                    console.error("Failed to create game! No id returned.");
-                    return;
-                }
-                gameIdRef.current = id;
-                setGameId(id); // for UI
-            }
+            // 1. Create game entry in DB
+            const res = await createGameMutation.mutateAsync({
+                mode: "local",
+                players: [
+                    { user_id: null, position: 1 },
+                    { user_id: user?.id ?? null, position: 2 },
+                ],
+            });
+
+            const id = res?.game?.id;
+            if (!id)
+                throw new Error("Failed to create game, no ID returned.");
+            gameIdRef.current = id;
+
             await startGameMutation.mutateAsync(id);
+
             startLoop();
         } catch (e) {
             console.error("Failed to create/start local game:", e);
-            hasStartedRef.current = false;
+            hasStartedRef.current = false; // Allow retry if it failed
         }
     }, [createGameMutation, startGameMutation, startLoop, user]);
 
-    // Stable ref for starter
-    const ensureCreatedAndStartRef = useRef(ensureCreatedAndStart);
-    useEffect(() => {
-        ensureCreatedAndStartRef.current = ensureCreatedAndStart;
-    }, [ensureCreatedAndStart]);
 
-    // Countdown: only call starter at countdown === 0
+    // 1. Initial setup on mount
     useEffect(() => {
-        if (isGameOver || countdown === null) return;
+        setupGame();
+        // Cleanup on unmount
+        return () => {
+            if (loopId.current) {
+                cancelAnimationFrame(loopId.current);
+            }
+        };
+    }, [setupGame]);
+
+    // 2. Countdown timer
+    useEffect(() => {
+        if (!playerNames.left || !playerNames.right) return;
+        if (isGameOver || countdown === null)
+            return; // Stop if game over or countdown finished
+
         if (countdown === 0) {
-            ensureCreatedAndStartRef.current?.();
+            // Time to start!
+            void ensureCreatedAndStart();
             setCountdown(null);
             return;
         }
-        const timer = setTimeout(() => {
-            setCountdown(prev => (prev === null ? null : prev - 1));
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [countdown, isGameOver]);
 
-    // Keyboard
+        const timer = setTimeout(() => { setCountdown(prev => (prev ? prev - 1 : 0)); }, 1000);
+
+        return () => clearTimeout(timer); // Cleanup timer
+    }, [countdown, isGameOver, ensureCreatedAndStart]);
+
+    // 3. Keyboard Listeners
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, pressed: boolean) => {
             const key = e.key as keyof KeysPressed;
-            if (key in keysPressed.current) keysPressed.current[key] = pressed;
+            if (key in keysPressed.current) {
+                e.preventDefault(); // Prevent page scrolling with arrow keys
+                keysPressed.current[key] = pressed;
+            }
         };
         const down = (e: KeyboardEvent) => handleKey(e, true);
         const up = (e: KeyboardEvent) => handleKey(e, false);
@@ -212,26 +208,6 @@ export function useLocalGame() {
         };
     }, []);
 
-    // Reset
-    const handlePlayAgain = useCallback(() => {
-        if (loopId.current !== null) {
-            cancelAnimationFrame(loopId.current);
-            loopId.current = null;
-        }
-        gameStateRef.current = initState();
-        isGameOverRef.current = false;
-        hasStartedRef.current = false;
-
-        setIsGameOver(false);
-        setWinner(null);
-        setFinalScore(null);
-        setCountdown(3);
-        setGameId(null);
-        gameIdRef.current = null;
-        prevScoreRef.current = { left: 0, right: 0 };
-        setScore({ left: 0, right: 0 });
-    }, []);
-
     return {
         gameStateRef,
         countdown,
@@ -239,10 +215,8 @@ export function useLocalGame() {
         winner,
         finalScore,
         score,
-        side,
         playerNames,
-        playerAvatars,
-        gameId,
-        handlePlayAgain,
+        setPlayerNames,
+        handlePlayAgain: setupGame, // Alias setupGame as handlePlayAgain
     };
 }

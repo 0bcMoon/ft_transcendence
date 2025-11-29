@@ -1,5 +1,5 @@
-import { handleMessage, removePlayer } from "./game/game";
 import { FastifyPluginAsync } from "fastify";
+import { handleMessage, removePlayer } from "./game/game.service";
 
 const gameRoute: FastifyPluginAsync = async (fastify) => {
     fastify.get("/game", { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
@@ -7,10 +7,12 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         fastify.log.info(`Game WebSocket connected: ${userId}`);
 
         socket.on("message", (raw) => {
-            let msg;
-            msg = JSON.parse(raw.toString());
-            fastify.log.info(msg);
-            handleMessage(userId, msg, socket);
+            try {
+                const msg = JSON.parse(raw.toString());
+                handleMessage(userId, msg, socket);
+            } catch (err) {
+                fastify.log.warn(err, `Failed to parse WebSocket message from ${userId}`);
+            }
         });
 
         socket.on("close", () => {
@@ -19,11 +21,10 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         });
 
         socket.on("error", (err) => {
-            fastify.log.error(`WebSocket error for ${userId}`);
+            fastify.log.error(err, `WebSocket error for ${userId}`);
             removePlayer(userId);
         });
     });
-
 };
 
 export default gameRoute;

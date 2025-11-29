@@ -1,9 +1,71 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import gameRepository from "../repository/gameRepository";
-import tournamentRepository from "../repository/tournamentRepository";
 
 export const Game = {
-    // Create new game and add players
+    getUserScoreProgression: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const userId = Number((req.params as any).id);
+            const limit = Number((req.query as any).limit) || 10;
+            if (!userId || Number.isNaN(userId))
+                return reply.status(400).send({ error: 'Invalid user ID' });
+
+            const data = await gameRepository.getUserScoreProgression(userId, limit);
+            return reply.status(200).send(data);
+        } catch (err: any) {
+            return reply.status(500).send({ error: 'Failed to get score progression', details: err.message });
+        }
+    },
+    getRecentGlobalMatches: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { limit } = req.query as { limit?: string };
+            const matchLimit = limit ? Number(limit) : 10;
+
+            const matches = await gameRepository.getRecentGlobalMatches(matchLimit);
+
+            const formattedMatches = matches.map(match => ({
+                matchId: match.game_id,
+                mode: match.mode,
+                date: new Date(match.ended_at || match.created_at).toLocaleDateString(),
+                player1_name: match.player1_name,
+                player1_avatar: match.player1_avatar,
+                player1_score: match.player1_score,
+                player2_name: match.player2_name,
+                player2_avatar: match.player2_avatar,
+                player2_score: match.player2_score,
+                winner_id: match.winner_id
+            }));
+
+            return reply.status(200).send(formattedMatches);
+        } catch (err: any) {
+            return reply.status(500).send({
+                error: "Failed to fetch recent matches",
+                details: err.message
+            });
+        }
+    },
+
+    getUserStats: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const userId = Number((req.params as any).id);
+
+            if (!userId || Number.isNaN(userId)) {
+                return reply.status(400).send({ error: 'Invalid user ID' });
+            }
+            const stats = await gameRepository.getUserStats(userId);
+
+            if (!stats) {
+                return reply.status(404).send({ error: 'User not found or no stats available' });
+            }
+
+            return reply.status(200).send(stats);
+        } catch (err: any) {
+            return reply.status(500).send({
+                error: 'Failed to get user stats',
+                details: err.message
+            });
+        }
+    },
+
     createGame: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             // Expecting: { mode, players: [ { user_id: number | null, position: number } ] }
@@ -60,19 +122,6 @@ export const Game = {
             return reply.status(400).send({ error: "Failed to update score", details: err.message });
         }
     },
-    // Finish a game
-    // finishGame: async (req: FastifyRequest, reply: FastifyReply) => {
-    //     try {
-    //         const { game_id, winner_id } = req.body as any;
-    //         const ok = await gameRepository.finishGame(game_id, winner_id ?? null); // allow null
-    //         if (!ok) throw new Error("Game not found or not in correct state");
-    //         const game = await gameRepository.getGameById(game_id);
-    //         return reply.status(200).send({ game });
-    //     } catch (err: any) {
-    //         return reply.status(400).send({ error: "Failed to finish game", details: err.message });
-    //     }
-    // },
-    // Finish a game
     finishGame: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const game_id = Number((req.params as any).id); // Get game_id from URL param
@@ -111,8 +160,35 @@ export const Game = {
             return reply.status(404).send({ error: "Game not found", details: err.message });
         }
     },
+    // getGameDetails: async (req: FastifyRequest, reply: FastifyReply) => {
+    //     try {
+    //         const game_id = Number((req.params as any).game_id);
+    //         const game = await gameRepository.getGameById(game_id);
+    //         if (!game) throw new Error("Game not found");
+    //         const players = await gameRepository.getGamePlayers(game_id);
+    //         return reply.status(200).send({ game, players });
+    //     } catch (err: any) {
+    //         return reply.status(404).send({ error: "Game not found", details: err.message });
+    //     }
+    // },
 
-    // Get all games for a user
+    getGameDetails: async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            const gameId = Number(req.params.id);
+            if (isNaN(gameId)) {
+                return reply.status(400).send({ error: "Invalid game ID format" });
+            }
+            const data = await gameRepository.getGameWithPlayers(gameId);
+            if (!data) {
+                return reply.status(404).send({ error: "Game not found" });
+            }
+            return reply.status(200).send(data);
+
+        } catch (err: any) {
+            return reply.status(500).send({ error: "Failed to get game details", details: err.message });
+        }
+    },
+
     getUserGames: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const user_id = Number((req.params as any).user_id);
@@ -131,6 +207,17 @@ export const Game = {
             return reply.status(200).send({ games });
         } catch (err: any) {
             return reply.status(400).send({ error: "Failed to get games", details: err.message });
+        }
+    },
+
+    getMatchHistory: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const { user_id } = req.params as { user_id: string };
+            const history = await gameRepository.getMatchHistoryForUser(Number(user_id));
+            return reply.status(200).send(history);
+
+        } catch (err: any) {
+            return reply.status(400).send({ error: "Failed to get match history", details: err.message });
         }
     },
 };

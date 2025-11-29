@@ -94,8 +94,7 @@ function App() {
 
                     <div className="mt-8 overflow-hidden">
                         <div
-                            className="flex transition-transform duration-500 ease-out"
-                        >
+                            className="flex transition-transform duration-500 ease-out" >
                             <div className="w-full shrink-0">
                                 <RenderStep />
                             </div>

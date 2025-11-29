@@ -1,19 +1,24 @@
-import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom"; // ✅ Import useParams
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 
+// This is the correct key state for a single player
 type KeysPressed = { up: boolean; down: boolean };
 
 export function useTournamentGame() {
-    const { gameId } = useParams<{ gameId: string }>();
     const user = useAuthStore((state) => state.user);
     const navigate = useNavigate();
+    const { gameId } = useParams<{ gameId: string }>();
+    console.log("Using gameId from URL:", gameId);
+
+    const { id: userId, username, profile_picture: avatar } = user ?? {};
 
     const wsRef = useRef<WebSocket | null>(null);
     const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef<KeysPressed>({ up: false, down: false });
 
+    // --- UI State ---
     const [side, setSide] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -22,22 +27,17 @@ export function useTournamentGame() {
     const [playerAvatars, setPlayerAvatars] = useState<PlayerAvatars | null>(null);
     const [finalScore, setFinalScore] = useState<Scores | null>(null);
     const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
-    const [error, setError] = useState<string | null>(null);
+    const [waiting, setWaiting] = useState(true); // "Waiting for opponent..."
 
+    // Refs for checking state inside stale closures (setInterval, onmessage)
     const isGameOverRef = useRef(isGameOver);
     const countdownRef = useRef(countdown);
+    useEffect(() => { isGameOverRef.current = isGameOver; }, [isGameOver]);
+    useEffect(() => { countdownRef.current = countdown; }, [countdown]);
 
     useEffect(() => {
-        isGameOverRef.current = isGameOver;
-    }, [isGameOver]);
-
-    useEffect(() => {
-        countdownRef.current = countdown;
-    }, [countdown]);
-
-    useEffect(() => {
-        if (!user?.username || !gameId) {
-            setError("Missing user or game ID");
+        if (!userId || !username || !gameId) {
+            console.log("Missing user or gameId, WebSocket connection aborted.");
             return;
         }
 
@@ -45,15 +45,14 @@ export function useTournamentGame() {
         wsRef.current = websocket;
 
         websocket.onopen = () => {
-            // Join specific tournament game
+            console.log("WebSocket connected. Joining tournament game...");
             websocket.send(
                 JSON.stringify({
                     type: "joinGame",
                     mode: "tournament",
-                    gameId: Number(gameId),
-                    username: user.username,
-                    id: user.id,
-                    avatar: user.profile_picture,
+                    username: username,
+                    avatar: avatar,
+                    gameId: Number(gameId)
                 })
             );
         };
@@ -62,7 +61,8 @@ export function useTournamentGame() {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
-                case "matchFound": {
+                case "matchFound": // Server confirms, sends opponent data
+                    setWaiting(false);
                     setSide(msg.side);
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
@@ -71,11 +71,9 @@ export function useTournamentGame() {
                     setWinner(null);
                     setFinalScore(null);
                     setScore({ left: 0, right: 0 });
-                    setError(null);
                     break;
-                }
 
-                case "state": {
+                case "state":
                     if (!isGameOverRef.current) {
                         gameStateRef.current = msg.state;
                         if (msg.state?.score) {
@@ -83,41 +81,37 @@ export function useTournamentGame() {
                         }
                     }
                     break;
-                }
 
-                case "gameOver": {
+                case "gameOver":
                     setIsGameOver(true);
                     setWinner(msg.winner);
                     setFinalScore(msg.score);
                     setCountdown(null);
                     break;
-                }
 
-                case "leaveGame": {
-                    resetGameState();
+                case "leaveGame":
+                    // Opponent disconnected
+                    console.log("Opponent left. Navigating home.");
+                    // The server will handle the win/loss logic.
+                    // We just need to leave the page.
+                    handleGoHome();
                     break;
-                }
             }
-        };
-
-        websocket.onerror = () => {
-            setError("WebSocket connection error");
         };
 
         websocket.onclose = () => {
-            console.log("WebSocket closed");
+            console.log("WebSocket disconnected.");
+            wsRef.current = null;
         };
 
         return () => {
-            if (websocket.readyState === WebSocket.OPEN) {
-                websocket.send(JSON.stringify({ type: "leaveGame" }));
-            }
             websocket.close();
             wsRef.current = null;
         };
-    }, [user, gameId]);
+        // ✅ 'gameId' is now a dependency
+    }, [userId, username, avatar, gameId]);
 
-    // Countdown timer
+    // --- Countdown Timer ---
     useEffect(() => {
         if (countdown === null) return;
         if (countdown === 0) {
@@ -125,87 +119,65 @@ export function useTournamentGame() {
             setCountdown(null);
             return;
         }
-        const timer = setTimeout(() => setCountdown((c) => (c ?? 0) - 1), 1000);
+        const timer = setTimeout(() => setCountdown((c) => (c ? c - 1 : 0)), 1000);
         return () => clearTimeout(timer);
     }, [countdown]);
 
-    // Send movement updates
+    // --- Input Loop ---
     useEffect(() => {
         const interval = setInterval(() => {
             if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
             if (!side || countdownRef.current !== null || isGameOverRef.current) return;
 
-            const { up, down } = keysPressed.current;
-            if (up || down) {
-                wsRef.current.send(JSON.stringify({ type: "move", up, down }));
-            }
-        }, 16);
+            // Always send current key state
+            wsRef.current.send(JSON.stringify({
+                type: "move",
+                up: keysPressed.current.up,
+                down: keysPressed.current.down
+            }));
+        }, 16); // ~60fps
 
         return () => clearInterval(interval);
-    }, [side]);
+    }, [side]); // Re-runs when 'side' is set
 
-    // Keyboard controls
+    // --- Keyboard Listeners ---
     useEffect(() => {
-        const handleKey = (pressed: boolean, key: string) => {
-            if (key === "ArrowUp" || key === "w" || key === "W") {
+        const handleKey = (e: KeyboardEvent, pressed: boolean) => {
+            if (e.key === "ArrowUp" || e.key === "w") {
+                e.preventDefault();
                 keysPressed.current.up = pressed;
             }
-            if (key === "ArrowDown" || key === "s" || key === "S") {
+            if (e.key === "ArrowDown" || e.key === "s") {
+                e.preventDefault();
                 keysPressed.current.down = pressed;
             }
         };
 
-        const down = (e: KeyboardEvent) => {
-            handleKey(true, e.key);
-            // Prevent page scrolling
-            if (["ArrowUp", "ArrowDown"].includes(e.key)) {
-                e.preventDefault();
-            }
-        };
-
-        const up = (e: KeyboardEvent) => {
-            handleKey(false, e.key);
-        };
+        const down = (e: KeyboardEvent) => handleKey(e, true);
+        const up = (e: KeyboardEvent) => handleKey(e, false);
 
         window.addEventListener("keydown", down);
         window.addEventListener("keyup", up);
-
         return () => {
             window.removeEventListener("keydown", down);
             window.removeEventListener("keyup", up);
         };
-    }, []);
+    }, []); // Runs once
 
-    const resetGameState = () => {
-        setSide(null);
-        setPlayerNames(null);
-        setPlayerAvatars(null);
-        setIsGameOver(false);
-        setWinner(null);
-        setFinalScore(null);
-        setCountdown(null);
-        setScore({ left: 0, right: 0 });
-        gameStateRef.current = null;
-    };
+    // --- UI Handlers ---
 
-    const handleBackToBracket = () => {
+    // ✅ This is the only navigation function needed.
+    // It sends 'leaveGame' and goes to the tournament bracket.
+    const handleGoHome = useCallback(() => {
         wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
         wsRef.current?.close();
+        // ✅ Navigate back to the bracket, not the site home
+        navigate(`/game/tournament/${gameId}`);
+    }, [navigate, gameId]); // Depends on navigate and gameId
 
-        // Navigate back to tournament bracket
-        // Extract tournament ID from gameId or use a better method
-        navigate(`/game/tournament/${gameId}`); // You might need to adjust this
-    };
-
-    const handleGoHome = () => {
-        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-        wsRef.current?.close();
-        navigate("/");
-    };
-
+    // --- Return Values ---
     return {
         gameStateRef,
-        gameId,
         side,
         countdown,
         isGameOver,
@@ -214,8 +186,8 @@ export function useTournamentGame() {
         playerAvatars,
         finalScore,
         score,
-        error,
-        handleBackToBracket,
-        handleGoHome,
+        waiting,
+        // ❌ 'handlePlayAgain' is removed
+        handleGoHome, // This is the main "exit" function
     };
 }

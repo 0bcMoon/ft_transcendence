@@ -22,8 +22,6 @@ export interface GamePlayer {
     joined_at: string;
 }
 
-export type TournamentStatus = 'registration' | 'active' | 'finished' | 'cancelled';
-
 export interface Tournament {
     id: number;
     name: string;

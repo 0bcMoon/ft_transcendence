@@ -10,7 +10,8 @@ export interface Player {
 
 }
 
-export type Side = "left" | "right" | "top" | "bottom";
+export type Side = "left" | "right";
+export type GameMode = "remote" | "ai" | "tournament" | "local";
 
 export interface Paddle {
     x: number;
@@ -27,16 +28,35 @@ export interface GameState {
         speedY: number;
         radius: number
     };
-    paddles: Partial<Record<Side, Paddle>>;
-    score: Partial<Record<Side, number>>;
+    leftPaddle: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+    rightPaddle: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+    score: {
+        left: number;
+        right: number;
+    };
 }
 
-export type GameMode = "remote" | "ai" | "tournament" | "local" | "multiplayer";
 
 export interface Match {
     gameId: number;
-    players: Partial<Record<Side, Player>>;
-    ready: Partial<Record<Side, boolean>>;
+    Players: {
+        left: Player | null;
+        right: Player | null;
+    };
+    ready: {
+        left: boolean;
+        right: boolean;
+    };
     state: GameState;
     startTime: number;
     loop?: ReturnType<typeof setInterval>;
@@ -44,7 +64,7 @@ export interface Match {
 }
 
 export type ClientMessage =
-    | { type: "joinGame"; username: string; avatar: string; mode: GameMode; id: number; gameId?: number }
+    | { type: "joinGame"; username: string; avatar: string; mode: GameMode; gameId?: number }
     | { type: "ready" }
     | { type: "move"; up?: boolean; down?: boolean, left?: boolean, right: boolean }
     | { type: "playAgain"; mode: GameMode }

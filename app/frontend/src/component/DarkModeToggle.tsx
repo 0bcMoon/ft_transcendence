@@ -1,22 +1,28 @@
-import { Moon, Sun } from 'lucide-react';
+import { useState } from 'react';
+import { BsSunFill, BsMoonFill } from 'react-icons/bs';
 
-interface DarkModeToggleProps {
-    darkMode: boolean;
-    onToggle: () => void;
-}
+export default function DarkModeToggle() {
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(
+        () => document.documentElement.classList.contains('dark')
+    );
 
-export const DarkModeToggle = ({ darkMode, onToggle }: DarkModeToggleProps) => {
+    const toggleTheme = () => {
+        const nextTheme = !isDarkMode ? "dark" : "light";
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem("theme", nextTheme);
+        setIsDarkMode(!isDarkMode);
+    };
+
     return (
         <button
-            onClick={onToggle}
-            className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            aria-label="Toggle dark mode" >
-            {darkMode ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
+            onClick={toggleTheme}
+            className="p-2 text-gray-800 bg-gray-200 rounded-full dark:bg-gray-700 dark:text-gray-200"
+            aria-label={isDarkMode ? "Activate light mode" : "Activate dark mode"}>
+            {isDarkMode ? (
+                <BsSunFill className="w-5 h-5" />
             ) : (
-                <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <BsMoonFill className="w-5 h-5" />
             )}
         </button>
     );
-};
-
+}

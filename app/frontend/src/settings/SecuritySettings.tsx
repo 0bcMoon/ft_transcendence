@@ -10,10 +10,7 @@ interface IUpdateState {
     message: string;
 }
 
-
-
 function SecuritySettings() {
-
 
     const isEnabled = useAuthStore((state) => state.user?.two_factor_enabled)
 
@@ -39,14 +36,13 @@ function SecuritySettings() {
             onAccept: () => onAccept(),
             onDeny: () => setOpen2faModal(false),
             title: "Disable Two-Factor Authentication",
-            message: "Disabled 2FA remove an extra layer of security to your account",
+            message: "Disabling 2FA removes an extra layer of security from your account.", // Slightly rephrased
             acceptText: "Disable 2FA",
             denyText: "Cancel",
             type: 'warning'
         }
     ]
 
-    // get from context user
     const query = useQueryClient();
     const { mutate: update2fa, isPending: isUpdating2fa } = useMutation({
         mutationFn: async (query: { action: boolean, confirmation_code?: string }) => {
@@ -69,23 +65,23 @@ function SecuritySettings() {
         }
     })
 
+    // --- Helper: Update State Banner ---
     const UpdateState = () => {
-
         if (!updateState) return null;
 
         switch (updateState.type) {
             case 'success':
                 return (
-                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-                        <Check className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800">{updateState.message}</span>
+                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 dark:bg-green-900/20 dark:border-green-700">
+                        <Check className="w-5 h-5 text-green-600 dark:text-green-500" />
+                        <span className="text-green-800 dark:text-green-300">{updateState.message}</span>
                     </div>
                 );
             case 'error':
                 return (
-                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-                        <X className="w-5 h-5 text-red-600" />
-                        <span className="text-red-800">{updateState.message}</span>
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 dark:bg-red-900/20 dark:border-red-700">
+                        <X className="w-5 h-5 text-red-600 dark:text-red-500" />
+                        <span className="text-red-800 dark:text-red-300">{updateState.message}</span>
                     </div>
                 );
             default:
@@ -117,20 +113,22 @@ function SecuritySettings() {
 
         return (
             <form onSubmit={handelsubmit} className='space-y-4'>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800 text-sm mb-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-700">
+                    <p className="text-blue-800 text-sm mb-3 dark:text-blue-300">
                         We've sent a confirmation code to your email address. Please enter it below to confirm the change.
                     </p>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
                             Confirmation Code
                         </label>
                         <input
                             name="confirmation_code"
                             type="text"
                             className=" w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 
-                                                focus:border-blue-500 transition-colors text-center 
-                                                font-mono text-lg tracking-widest  border-gray-300"
+                                        focus:border-blue-500 transition-colors text-center 
+                                        font-mono text-lg tracking-widest border-gray-300
+                                        dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500
+                                        dark:focus:ring-offset-gray-800 dark:focus:border-blue-500"
                             placeholder="00000000"
                             maxLength={8}
                         />
@@ -138,44 +136,46 @@ function SecuritySettings() {
                 </div>
 
                 <div className='flex gap-3'>
-
                     <button
                         onClick={cancelFunction}
                         type="button"
                         disabled={isUpdating2fa}
-                        className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                        className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={isUpdating2fa}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800" >
                         {isUpdating2fa ? 'Confirming...' : 'Confirm 2FA Change'}
                     </button>
-
                 </div>
             </form>
         )
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 dark:bg-gray-800 dark:border-gray-700">
             <UpdateState />
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-white">
                 <Shield className="w-5 h-5" />
                 Security
             </h3>
 
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isEnabled ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        <Shield className={`w-5 h-5 ${isEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center 
+                                    ${isEnabled
+                            ? 'bg-green-100 dark:bg-green-900/40'
+                            : 'bg-gray-100 dark:bg-gray-700'}`}>
+                        <Shield className={`w-5 h-5 
+                                          ${isEnabled
+                                ? 'text-green-600 dark:text-green-500'
+                                : 'text-gray-400 dark:text-gray-500'}`} />
                     </div>
                     <div>
-                        <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-gray-900 dark:text-white">Two-Factor Authentication</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                             {isEnabled ? 'Your account is protected with 2FA' : 'Add an extra layer of security'}
                         </p>
                     </div>
@@ -184,15 +184,18 @@ function SecuritySettings() {
                     type="button"
                     disabled={isUpdating2fa || confirmation_sent}
                     onClick={() => setOpen2faModal(true)}
-                    className={`disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-white rounded-lg ${isEnabled ? 'hover:bg-red-700 bg-red-600' : 'hover:bg-blue-700 bg-blue-600'} transition-colors font-medium`}
+                    className={`disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-white rounded-lg 
+                                ${isEnabled
+                            ? 'hover:bg-red-700 bg-red-600 dark:hover:bg-red-500'
+                            : 'hover:bg-blue-700 bg-blue-600 dark:hover:bg-blue-500'
+                        } transition-colors font-medium dark:focus:ring-offset-gray-800`}
                 >
                     {isUpdating2fa ? <Loader className='animate-spin' /> : (isEnabled ? 'Disable 2FA' : 'Enable 2FA')}
                 </button>
             </div>
-            {confirmation_sent && <ConfirmationCode />}
 
-            {/* Enable 2fa */}
-            < Modal
+            {confirmation_sent && <ConfirmationCode />}
+            <Modal
                 {...curr_modal[Number(!!isEnabled)]}
             />
 

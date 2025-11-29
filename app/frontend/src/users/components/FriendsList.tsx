@@ -43,8 +43,6 @@ const FriendsList = () => {
         };
     }, [isLoading, isConnected, socket]);
 
-
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -56,10 +54,11 @@ const FriendsList = () => {
     if (error) {
         return (
             <div className="text-center py-12">
-                <p className="text-red-500">Error loading friends. Please try again.</p>
+                <p className="text-red-500 dark:text-red-400">Error loading friends. Please try again. </p>
             </div>
         );
     };
+
     const startChat = (user: RemoteUser) => {
         setActiveChat(user);
         navigate("/chat");
@@ -69,19 +68,19 @@ const FriendsList = () => {
         <div className="space-y-6">
             {/* Search Bar */}
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-6 h-6" />
                 <input
                     type="text"
                     placeholder="Search friends..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-6 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                    className="w-full pl-12 pr-6 py-4 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
                 />
             </div>
 
             {/* Friends Count */}
             <div className="flex items-center justify-between">
-                <p className="text-base text-gray-600 font-medium">
+                <p className="text-base text-gray-600 dark:text-gray-400 font-medium">
                     {filteredFriends.length} {filteredFriends.length === 1 ? 'friend' : 'friends'}
                 </p>
             </div>
@@ -129,8 +128,8 @@ const FriendsList = () => {
 
             {friends.length === 0 && (
                 <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No friends found</p>
+                    <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">No friends found</p>
                 </div>
             )}
         </div>
