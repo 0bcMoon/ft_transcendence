@@ -5,23 +5,23 @@ set -o pipefail
 # Create session if missing, otherwise reuse it
 tmux new-session -d -A -s dev -n backend
 
-# Backend editing (window 0)
-tmux send-keys -t dev:0 "cd backend" C-m
-tmux send-keys -t dev:0 "nvim" C-m
-
-# Backend server (window 1)
-tmux new-window -t dev:1 -n backend-server
+# Backend editing (window 1)
 tmux send-keys -t dev:1 "cd backend" C-m
-tmux send-keys -t dev:1 "npm run dev" C-m
+tmux send-keys -t dev:1 "nvim" C-m
 
-# Frontend editing (window 2)
-tmux new-window -t dev:2 -n frontend
-tmux send-keys -t dev:2 "cd frontend" C-m
-tmux send-keys -t dev:2 "nvim" C-m
+# Backend server (window 2)
+tmux new-window -t dev:2 -n backend-server
+tmux send-keys -t dev:2 "cd backend" C-m
+tmux send-keys -t dev:2 "npm run dev" C-m
 
-# Frontend server (window 3)
-tmux new-window -t dev:3 -n frontend-server
+# Frontend editing (window 3)
+tmux new-window -t dev:3 -n frontend
 tmux send-keys -t dev:3 "cd frontend" C-m
-tmux send-keys -t dev:3 "npm run dev" C-m
+tmux send-keys -t dev:3 "nvim" C-m
+
+# Frontend server (window 4)
+tmux new-window -t dev:4 -n frontend-server
+tmux send-keys -t dev:4 "cd frontend" C-m
+tmux send-keys -t dev:4 "npm run dev" C-m
 
 tmux attach -t dev
