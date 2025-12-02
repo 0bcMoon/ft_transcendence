@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
 import { Loader } from "lucide-react";
 import NavBar from "./navbar/NavBar";
-import DarkModeToggle from "./component/DarkModeToggle";
 
 export default function RootLayout() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -37,9 +36,6 @@ export default function RootLayout() {
             />
 
             <div className="relative min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-                <div className="absolute bottom-4 right-4 z-50">
-                    <DarkModeToggle />
-                </div>
                 <NavBar>
                     <Outlet />
                 </NavBar>

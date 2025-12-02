@@ -73,15 +73,16 @@ CREATE TABLE IF NOT EXISTS "blocks" (
     PRIMARY KEY("id" AUTOINCREMENT)
 );
 
--- Games: All matches played
+------------------------Games---------------------
+
 CREATE TABLE IF NOT EXISTS games (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mode TEXT NOT NULL CHECK(mode IN ('ai','local','remote','tournament','multiplayer')),
-    status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting','playing','finished','cancelled')),
-    winner_id INTEGER, -- References users(id)
-    started_at TIMESTAMP,
-    ended_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "mode" TEXT NOT NULL CHECK(mode IN ('ai','local','remote','tournament')),
+    "status" TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting','playing','finished','cancelled')),
+    "winner_id" INTEGER,
+    "started_at" TIMESTAMP,
+    "ended_at" TIMESTAMP,
+    "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -89,7 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_games_mode   ON games(mode);
 CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
 CREATE INDEX IF NOT EXISTS idx_games_winner ON games(winner_id);
 
--- Game Players: Who played in each game, their position and score
+
 CREATE TABLE IF NOT EXISTS game_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER NOT NULL,   -- References games(id)

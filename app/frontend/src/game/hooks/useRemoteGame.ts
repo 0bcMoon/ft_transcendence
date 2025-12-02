@@ -11,12 +11,10 @@ export function useRemoteGame() {
 
     const { id: userId, username, profile_picture: avatar } = user ?? {};
 
-    // --- State & Refs ---
     const wsRef = useRef<WebSocket | null>(null);
-    const gameStateRef = useRef<GameState | null>(null); // For canvas drawing
+    const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef<KeysPressed>({ up: false, down: false });
 
-    // --- UI State (causes re-renders) ---
     const [side, setSide] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isGameOver, setIsGameOver] = useState(false);

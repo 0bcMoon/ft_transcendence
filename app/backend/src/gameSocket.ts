@@ -5,6 +5,7 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
     fastify.get("/game", { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
         const userId = req.user.id;
         fastify.log.info(`Game WebSocket connected: ${userId}`);
+        console.log('socket', socket);
 
         socket.on("message", (raw) => {
             try {

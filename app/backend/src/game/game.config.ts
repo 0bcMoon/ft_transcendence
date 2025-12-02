@@ -4,23 +4,23 @@ export const Canvas = {
 };
 
 export const Rules = {
-    MAX_SCORE: 5, // Score needed to win
+    MAX_SCORE: 5,
 };
 
 export const Paddle = {
     WIDTH: 10,
     HEIGHT: 80,
-    SPEED: 8, // Pixels per frame
-    OFFSET: 30, // Distance from canvas edge
+    SPEED: 8,
+    OFFSET: 30,
 };
 
 export const Ball = {
     RADIUS: 10,
     INITIAL_SPEED_X: 4,
     INITIAL_SPEED_Y: 4,
-    SPEED_INCREMENT: 0.4, // Speed increase per paddle hit
-    SPEED_MAX: 11, // Maximum speed cap
-    MIN_ABS_SPEED_X: 2.5, // Minimum horizontal speed after bounce
+    SPEED_INCREMENT: 0.4,
+    SPEED_MAX: 11,
+    MIN_ABS_SPEED_X: 2.5,
 };
 
 export const Physics = {
@@ -29,16 +29,16 @@ export const Physics = {
 };
 
 export const Colors = {
-    BACKGROUND: "#111827",         // Deep dark blue
-    FOREGROUND: "#F9FAFB",         // Bright white/off-white (for ball, score)
-    LINES: "#374151",              // Muted gray-blue
-    PADDLE_LEFT: "#60A5FA",         // Light Blue
-    PADDLE_RIGHT: "#818CF8",        // Indigo
+    BACKGROUND: "#111827",
+    FOREGROUND: "#F9FAFB",
+    LINES: "#374151",
+    PADDLE_LEFT: "#60A5FA",
+    PADDLE_RIGHT: "#818CF8",
     OVERLAY_COUNTDOWN: "rgba(17, 24, 39, 0.75)",
     OVERLAY_GAMEOVER: "rgba(17, 24, 39, 0.9)",
-    COUNTDOWN_TEXT: "#E5E7EB",     // Light gray
-    GAMEOVER_TEXT: "#F87171",      // Red
-    BALL: "#F9FAFB",               // Explicitly define ball color
+    COUNTDOWN_TEXT: "#E5E7EB",
+    GAMEOVER_TEXT: "#F87171",
+    BALL: "#F9FAFB",
 };
 
 export const Fonts = {

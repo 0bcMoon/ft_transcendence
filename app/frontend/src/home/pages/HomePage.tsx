@@ -20,7 +20,8 @@ export default function HomePage() {
     const rank = stats?.rank != null ? `#${stats.rank}` : 'Unranked';
 
     return (
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <main className="h-full overflow-y-auto no-scrollbar bg-gray-50 py-8 px-4 dark:bg-gray-900">
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                 <HeaderProfile />
                 <QuickActions />

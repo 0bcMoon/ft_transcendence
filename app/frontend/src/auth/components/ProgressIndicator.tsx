@@ -16,10 +16,10 @@ export default function ProgressIndicator({ currentStep, totalSteps }: ProgressI
                     <div className="flex flex-col items-center">
                         <div
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${step < currentStep
-                                    ? 'bg-blue-600 text-white transform scale-110'
-                                    : step === currentStep
-                                        ? 'bg-blue-600 text-white ring-4 ring-blue-200'
-                                        : 'bg-gray-200 text-gray-400'
+                                ? 'bg-blue-600 text-white transform scale-110'
+                                : step === currentStep
+                                    ? 'bg-blue-600 text-white ring-4 ring-blue-200 dark:ring-blue-900'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                                 }`}
                         >
                             {step < currentStep ? (
@@ -29,14 +29,16 @@ export default function ProgressIndicator({ currentStep, totalSteps }: ProgressI
                             )}
                         </div>
                         <span
-                            className={`mt-2 text-xs font-medium transition-colors duration-300 ${step <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                            className={`mt-2 text-xs font-medium transition-colors duration-300 ${step <= currentStep
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-gray-400 dark:text-gray-500'
                                 }`}
                         >
                             {step === 1 ? 'Profile' : step === 2 ? 'Security' : 'Verify'}
                         </span>
                     </div>
                     {index < steps.length - 1 && (
-                        <div className="flex-1 mx-4 h-0.5 bg-gray-200 relative overflow-hidden">
+                        <div className="flex-1 mx-4 h-0.5 bg-gray-200 dark:bg-gray-700 relative overflow-hidden">
                             <div
                                 className={`absolute left-0 top-0 h-full bg-blue-600 transition-all duration-500 ease-out ${step < currentStep ? 'w-full' : 'w-0'
                                     }`}

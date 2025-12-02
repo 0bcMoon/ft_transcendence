@@ -1,11 +1,8 @@
 import { WebSocket } from 'ws';
-import {
-    ClientMessage, GameMode, Match, Player, Side, GameState,
-    PlayerNames, PlayerAvatars, Scores
-} from './game.types';
+import { ClientMessage, GameMode, Match, Player, Side, GameState, PlayerNames, PlayerAvatars } from './game.types';
 import { initState, moveBall, checkGameOver, resetBall } from './game.physics';
 import { Rules, Paddle, Canvas } from './game.config';
-import gameRepository from '../repository/gameRepository'; // Import your repository
+import gameRepository from '../repository/gameRepository';
 import tournamentRepository from '../repository/tournamentRepository';
 
 // --- Server-Side Types ---
@@ -353,7 +350,7 @@ function handlePlayAgain(userId: number, mode: GameMode) {
 
 export function handleMessage(userId: number, data: ClientMessage, socket: WebSocket): void {
     if (data.type === "joinGame") {
-        void handleJoinGame(userId, data, socket); // Handle async
+        handleJoinGame(userId, data, socket);
         return;
     }
 
@@ -363,13 +360,18 @@ export function handleMessage(userId: number, data: ClientMessage, socket: WebSo
         socket.close(1008, "Player not registered");
         return;
     }
+
     player.socket = socket;
 
     switch (data.type) {
-        case "ready": handleReady(userId); break;
-        case "move": handleMove(userId, data); break;
-        case "playAgain": handlePlayAgain(userId, data.mode); break;
-        case "leaveGame": handleLeaveGame(userId); break;
+        case "ready": handleReady(userId);
+            break;
+        case "move": handleMove(userId, data);
+            break;
+        case "playAgain": handlePlayAgain(userId, data.mode);
+            break;
+        case "leaveGame": handleLeaveGame(userId);
+            break;
         default:
             console.warn(`Unknown message type received: ${(data as any).type}`);
     }

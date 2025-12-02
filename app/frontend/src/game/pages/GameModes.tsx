@@ -30,7 +30,7 @@ export default function GameMode() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 py-8 px-4 dark:bg-gray-900">
             <div className="max-w-6xl mx-auto px-6 py-12">
 
                 <div className="text-center mb-16">
