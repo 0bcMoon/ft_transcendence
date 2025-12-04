@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from "react-router-dom";
+import { Activity } from 'lucide-react';
 import { StepOne, StepTwo, StepThree } from './components/Steps';
 import ProgressIndicator from './components/ProgressIndicator';
 import CompletionScreen from './components/CompletionScreen';
@@ -13,7 +14,7 @@ export interface IFormData {
     confirmation_code: string;
 }
 
-function App() {
+function Register() {
     const [currentStep, setCurrentStep] = useState(1);
     const [isCompleted, setIsCompleted] = useState(false);
 
@@ -44,20 +45,6 @@ function App() {
 
     const handleComplete = () => {
         setIsCompleted(true);
-    };
-
-    // Reset for "Return to Signup"
-    const handleReturnToSignup = () => {
-        setIsCompleted(false);
-        setCurrentStep(1);
-        setFormData({
-            username: '',
-            display_name: '',
-            password: '',
-            confirm_password: '',
-            email: '',
-            confirmation_code: ''
-        });
     };
 
     const RenderStep = () => {
@@ -93,57 +80,61 @@ function App() {
     };
 
     return (
-        <div
-            className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
-            style={{
-                backgroundImage: `url('https://blattbilliards.com/cdn/shop/articles/two-ping-pong-paddles-and-ball-on-blue-ping-pong-table_9cf060e3-0b77-455f-bfe7-8c5890bcc452_1024x.jpg?v=1748880436')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-            }}
-        >
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gray-900/90 backdrop-blur-sm z-0" />
+        <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden selection:bg-blue-500/30">
 
-            {/* Card content */}
-            <div className="relative z-10 w-full max-w-md">
-                <div className={`rounded-2xl shadow-xl p-8 border 
-                    ${isCompleted
-                        ? 'bg-white dark:bg-gray-900/80 border-blue-100 dark:border-gray-700'
-                        : 'bg-white dark:bg-gray-900/80 border-blue-100 dark:border-gray-800'
-                    }`}>
-                    {isCompleted ? (
-                        <>
-                            <CompletionScreen formData={formData} />
-                            <Link
-                                to="/login"
-                                className="mt-8 w-full inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm"
-                            >
-                                ← Return to Login
-                            </Link>
-                        </>
-                    ) : (
-                        <>
-                            <ProgressIndicator currentStep={currentStep} totalSteps={3} />
-                            <div className="mt-8 overflow-hidden">
-                                <div className="flex transition-transform duration-500 ease-out" >
-                                    <div className="w-full shrink-0">
-                                        <RenderStep />
+            {/* Background Effects - Same as Landing Page */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 rounded-[100%] blur-[100px] opacity-50"></div>
+            </div>
+
+            {/* Logo/Back to Home */}
+            <div className="fixed top-6 left-6 z-50">
+                <Link to="/" className="flex items-center gap-2 font-bold text-xl tracking-tighter hover:opacity-80 transition-opacity">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <Activity size={18} className="text-white" />
+                    </div>
+                    <span>PONG<span className="text-blue-500">.IO</span></span>
+                </Link>
+            </div>
+
+            {/* Register Form Container */}
+            <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+                <div className="w-full max-w-md">
+                    <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-slate-800">
+                        {isCompleted ? (
+                            <>
+                                <CompletionScreen formData={formData} />
+                                <Link
+                                    to="/login"
+                                    className="mt-8 w-full inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]"
+                                >
+                                    ← Return to Login
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <ProgressIndicator currentStep={currentStep} totalSteps={3} />
+                                <div className="mt-8 overflow-hidden">
+                                    <div className="flex transition-transform duration-500 ease-out">
+                                        <div className="w-full shrink-0">
+                                            <RenderStep />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <Link
-                                to="/login"
-                                className="mt-8 w-full inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm"
-                                style={{ textDecoration: 'none' }}
-                            >
-                                ← Return to Login
-                            </Link>
-                        </>
-                    )}
+                                <Link
+                                    to="/login"
+                                    className="mt-8 w-full inline-block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 border border-slate-700"
+                                >
+                                    ← Return to Login
+                                </Link>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-export default App;
+export default Register;

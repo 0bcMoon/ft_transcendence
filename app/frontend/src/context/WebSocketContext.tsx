@@ -20,6 +20,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
     const queryClient = useQueryClient();
 
+    ///------------------------------------------------------h do not touch
     function changeUserStatus(data: IEvent) {
         queryClient.setQueryData(['contacts'], (oldData: any) => {
             if (!oldData) return oldData;
@@ -41,7 +42,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             });
         });
     }
-
+    ///------------------------------------------------------h
     /* called from a component that registers a callback for a channel */
 
     useEffect(() => {

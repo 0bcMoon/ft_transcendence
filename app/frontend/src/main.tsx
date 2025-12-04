@@ -60,7 +60,6 @@ const router = createBrowserRouter([
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
-    //    <StrictMode>
     <QueryClientProvider client={queryClient}>
         <AuthProvider>
             <WebSocketProvider>
@@ -68,5 +67,4 @@ createRoot(document.getElementById("root")!).render(
             </WebSocketProvider>
         </AuthProvider>
     </QueryClientProvider>
-    //   </StrictMode>,
 );

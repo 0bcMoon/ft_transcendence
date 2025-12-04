@@ -36,7 +36,7 @@ function SecuritySettings() {
             onAccept: () => onAccept(),
             onDeny: () => setOpen2faModal(false),
             title: "Disable Two-Factor Authentication",
-            message: "Disabling 2FA removes an extra layer of security from your account.", // Slightly rephrased
+            message: "Disabling 2FA removes an extra layer of security from your account.",
             acceptText: "Disable 2FA",
             denyText: "Cancel",
             type: 'warning'
@@ -56,7 +56,6 @@ function SecuritySettings() {
 
             if (confirmation_sent) {
                 query.invalidateQueries({ queryKey: ["user"] });
-
             }
             setConfirmationSent((prev) => !prev)
         },
@@ -73,14 +72,14 @@ function SecuritySettings() {
             case 'success':
                 return (
                     <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 dark:bg-green-900/20 dark:border-green-700">
-                        <Check className="w-5 h-5 text-green-600 dark:text-green-500" />
+                        <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
                         <span className="text-green-800 dark:text-green-300">{updateState.message}</span>
                     </div>
                 );
             case 'error':
                 return (
                     <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 dark:bg-red-900/20 dark:border-red-700">
-                        <X className="w-5 h-5 text-red-600 dark:text-red-500" />
+                        <X className="w-5 h-5 text-red-600 dark:text-red-400" />
                         <span className="text-red-800 dark:text-red-300">{updateState.message}</span>
                     </div>
                 );
@@ -102,10 +101,12 @@ function SecuritySettings() {
             const form = new FormData(e.currentTarget);
             const confirmation_code = form.get('confirmation_code')?.toString();
             if (!confirmation_code) {
-                setUpdateState({ type: 'error', message: 'confirmation code is require' })
+                setUpdateState({ type: 'error', message: 'Confirmation code is required' })
+                return;
             }
             update2fa({ action: !isEnabled, confirmation_code: confirmation_code });
         }
+
         const cancelFunction = () => {
             setUpdateState(null);
             setConfirmationSent(false);
@@ -124,11 +125,11 @@ function SecuritySettings() {
                         <input
                             name="confirmation_code"
                             type="text"
-                            className=" w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 
+                            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 
                                         focus:border-blue-500 transition-colors text-center 
-                                        font-mono text-lg tracking-widest border-gray-300
-                                        dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500
-                                        dark:focus:ring-offset-gray-800 dark:focus:border-blue-500"
+                                        font-mono text-lg tracking-widest border-gray-300 bg-white
+                                        dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400
+                                        dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             placeholder="00000000"
                             maxLength={8}
                         />
@@ -140,14 +141,20 @@ function SecuritySettings() {
                         onClick={cancelFunction}
                         type="button"
                         disabled={isUpdating2fa}
-                        className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600" >
+                        className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg 
+                                   hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed 
+                                   dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                    >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={isUpdating2fa}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800" >
-                        {isUpdating2fa ? 'Confirming...' : 'Confirm 2FA Change'}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                   transition-colors disabled:opacity-50 disabled:cursor-not-allowed 
+                                   dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus:ring-offset-gray-800"
+                    >
+                        {isUpdating2fa ? 'Confirming.. .' : 'Confirm 2FA Change'}
                     </button>
                 </div>
             </form>
@@ -158,7 +165,7 @@ function SecuritySettings() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 dark:bg-gray-800 dark:border-gray-700">
             <UpdateState />
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 dark:text-white">
-                <Shield className="w-5 h-5" />
+                <Shield className="w-5 h-5 dark:text-gray-300" />
                 Security
             </h3>
 
@@ -170,7 +177,7 @@ function SecuritySettings() {
                             : 'bg-gray-100 dark:bg-gray-700'}`}>
                         <Shield className={`w-5 h-5 
                                           ${isEnabled
-                                ? 'text-green-600 dark:text-green-500'
+                                ? 'text-green-600 dark:text-green-400'
                                 : 'text-gray-400 dark:text-gray-500'}`} />
                     </div>
                     <div>
@@ -185,12 +192,13 @@ function SecuritySettings() {
                     disabled={isUpdating2fa || confirmation_sent}
                     onClick={() => setOpen2faModal(true)}
                     className={`disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-white rounded-lg 
+                                transition-colors font-medium flex items-center gap-2
                                 ${isEnabled
-                            ? 'hover:bg-red-700 bg-red-600 dark:hover:bg-red-500'
-                            : 'hover:bg-blue-700 bg-blue-600 dark:hover:bg-blue-500'
-                        } transition-colors font-medium dark:focus:ring-offset-gray-800`}
+                            ? 'bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500'
+                            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500'
+                        } dark:focus:ring-offset-gray-800`}
                 >
-                    {isUpdating2fa ? <Loader className='animate-spin' /> : (isEnabled ? 'Disable 2FA' : 'Enable 2FA')}
+                    {isUpdating2fa ? <Loader className='animate-spin w-4 h-4' /> : (isEnabled ? 'Disable 2FA' : 'Enable 2FA')}
                 </button>
             </div>
 

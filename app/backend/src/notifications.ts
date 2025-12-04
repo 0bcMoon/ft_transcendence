@@ -24,7 +24,6 @@ export function unsubscribe(userId: number, subscriberId: number[]) {
         subscribers.get(subId)?.delete(userId);
         if (subscribers.get(subId)?.size === 0) subscribers.delete(subId);
     });
-
 }
 
 type NotificationType = 'notify' | 'subscribe' | 'unsubscribe' | 'message' | 'friend_request' | 'friend_accept' | 'game_invite';

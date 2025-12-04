@@ -7,7 +7,6 @@ import { Trophy, ShieldX, Percent, Star } from 'lucide-react';
 import { useAuthStore } from '@/state/authStore';
 import { useGetUserStats } from '../../game/api/queries';
 
-
 export default function HomePage() {
     const user = useAuthStore((state) => state.user);
     const userId = user?.id;
@@ -20,8 +19,7 @@ export default function HomePage() {
     const rank = stats?.rank != null ? `#${stats.rank}` : 'Unranked';
 
     return (
-        <main className="h-full overflow-y-auto no-scrollbar bg-gray-50 py-8 px-4 dark:bg-gray-900">
-
+        <main className="h-full overflow-y-auto no-scrollbar bg-white dark:bg-slate-950 py-8 px-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                 <HeaderProfile />
                 <QuickActions />
@@ -30,7 +28,7 @@ export default function HomePage() {
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Stats</h2>
 
                     {error && (
-                        <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg backdrop-blur-sm">
                             <p className="text-sm text-red-600 dark:text-red-400">Failed to load stats</p>
                         </div>
                     )}

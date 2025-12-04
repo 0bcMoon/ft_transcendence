@@ -24,14 +24,9 @@ export type UserStats = {
 
 const gameRepository = {
 
-    async getUserScoreProgression(
-        userId: number,
-        limit = 10
-    ): Promise<Array<{ matchId: number, date: string, score: number }>> {
+    async getUserScoreProgression(userId: number, limit = 10): Promise<Array<{ matchId: number, date: string, score: number }>> {
         const sql = `
-        SELECT
-            g.id AS matchId,
-            g.ended_at AS date,
+        SELECT g.id AS matchId, g.ended_at AS date,
             (
                 SELECT SUM(
                     CASE
