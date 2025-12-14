@@ -27,6 +27,7 @@
         "@fastify/websocket": "^11.0.2",
         "bcrypt": "^6.0.0",
         "fastify": "^5.3.3",
+        "fastify-metrics": "^12.1.0",
         "fastify-type-provider-zod": "^5.0.1",
         "module-alias": "^2.2.3",
         "pino-pretty": "^7.0.0",

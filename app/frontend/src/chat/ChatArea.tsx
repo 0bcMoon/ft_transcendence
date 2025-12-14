@@ -41,6 +41,7 @@ function StartChatPlaceholder({ onSidebarToggle }: { onSidebarToggle: () => void
                 <div className="w-9" /> {/* Spacer */}
             </div>
 
+
             {/* ✅ Centered placeholder content */}
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="text-center">
@@ -76,7 +77,7 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
         queryKey: ['messages', active_chat?.id],
         queryFn: async () => {
             const respose = await api.get(`/api/chat/${active_chat?.id}/messages`);
-            return respose.data;
+            return respose.data as Message[];
         },
         enabled: !!active_chat?.id, // Only run if active_chat exists
     });

@@ -4,6 +4,7 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import chatSocket from "./websocket";
 import gameSocket from "./gameSocket";
+import metricsPlugin from 'fastify-metrics';
 
 import routes from "./routes";
 import auth from "./auth.routes";
@@ -68,6 +69,8 @@ const fastify = Fastify({
 
 fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
+
+fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 fastify.register(cookie, {
     secret: process.env.JWT_SECRET!,
