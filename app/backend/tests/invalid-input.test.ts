@@ -13,10 +13,10 @@ describe('Invalid Input Tests', () => {
         });
     });
 
-    describe('POST /user/requests', () => {
+    describe('POST /api/user/requests', () => {
         it('should return 400 if user_id is missing', async () => {
             const response = await supertest(app.server)
-                .post('/user/requests')
+                .post('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({});
             expect(response.status).toBe(400);
@@ -25,7 +25,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if user_id is not a number', async () => {
             const response = await supertest(app.server)
-                .post('/user/requests')
+                .post('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ user_id: 'a' });
             expect(response.status).toBe(400);
@@ -33,10 +33,10 @@ describe('Invalid Input Tests', () => {
         });
     });
 
-    describe('PATCH /user/requests', () => {
+    describe('PATCH /api/user/requests', () => {
         it('should return 400 if req_id is missing', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ user_id: 2, type: 'friend', action: true });
             expect(response.status).toBe(400);
@@ -45,7 +45,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if user_id is missing', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ req_id: 1, type: 'friend', action: true });
             expect(response.status).toBe(400);
@@ -54,7 +54,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if type is missing', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ req_id: 1, user_id: 2, action: true });
             expect(response.status).toBe(400);
@@ -63,7 +63,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if action is missing', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ req_id: 1, user_id: 2, type: 'friend' });
             expect(response.status).toBe(400);
@@ -72,7 +72,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if type is invalid', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ req_id: 1, user_id: 2, type: 'invalid_type', action: true });
             expect(response.status).toBe(400);
@@ -81,7 +81,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if action is not a boolean', async () => {
             const response = await supertest(app.server)
-                .patch('/user/requests')
+                .patch('/api/user/requests')
                 .set('Cookie', `access_token=${token}`)
                 .send({ req_id: 1, user_id: 2, type: 'friend', action: 'invalid_action' });
             expect(response.status).toBe(400);
@@ -89,10 +89,10 @@ describe('Invalid Input Tests', () => {
         });
     });
 
-    describe('POST /user/block', () => {
+    describe('POST /api/user/block', () => {
         it('should return 400 if user_id is missing', async () => {
             const response = await supertest(app.server)
-                .post('/user/block')
+                .post('/api/user/block')
                 .set('Cookie', `access_token=${token}`)
                 .send({});
             expect(response.status).toBe(400);
@@ -101,7 +101,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if user_id is not a number', async () => {
             const response = await supertest(app.server)
-                .post('/user/block')
+                .post('/api/user/block')
                 .set('Cookie', `access_token=${token}`)
                 .send({ user_id: 'a' });
             expect(response.status).toBe(400);
@@ -111,7 +111,7 @@ describe('Invalid Input Tests', () => {
 
         it('should return 400 if action is missing', async () => {
             const response = await supertest(app.server)
-                .post('/user/block')
+                .post('/api/user/block')
                 .set('Cookie', `access_token=${token}`)
                 .send({ user_id: 123});
             expect(response.status).toBe(400);
@@ -119,7 +119,7 @@ describe('Invalid Input Tests', () => {
         });
         it('should return 400 if action is not a boolean', async () => {
             const response = await supertest(app.server)
-                .post('/user/block')
+                .post('/api/user/block')
                 .set('Cookie', `access_token=${token}`)
                 .send({ user_id: 123, action: 'not_a_boolean' });
             expect(response.status).toBe(400);

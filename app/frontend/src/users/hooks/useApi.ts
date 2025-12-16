@@ -20,7 +20,7 @@ export const useFriends = () => {
         queryKey: queryKeys.friends,
         queryFn: async () => {
             const response = await api.get('/api/user/friends');
-            return response.data;
+            return response.data as RemoteUser[];
         },
     });
 };
@@ -36,7 +36,7 @@ export const useSearchUsers = (search : string) => {
                     search: search
                 }
             });
-            return response.data;
+            return response.data as RemoteUser[];
         },
         enabled: search.length > 0, // Only run the query if search term is not empty
     });
@@ -48,7 +48,7 @@ export const useFriendRequests = () => {
         queryKey: queryKeys.friendRequests,
         queryFn: async () => {
             const response = await api.get('/api/user/friend-requests', { params: { type: 'received' } });
-            return response.data;
+            return response.data as Request[];
         },
     });
 };
@@ -59,7 +59,7 @@ export const usePendingRequests = () => {
         queryKey: queryKeys.pendingRequests,
         queryFn: async () => {
             const response = await api.get('/api/user/friend-requests', { params: { type: 'pending' } });
-            return response.data;
+            return response.data as Request[];
         },
     });
 };
@@ -70,7 +70,7 @@ export const useBlockedUsers = () => {
         queryKey: queryKeys.blockedUsers,
         queryFn: async () => {
             const response = await api.get('/api/user/block');
-            return response.data;
+            return response.data as RemoteUser[];
         },
     });
 };

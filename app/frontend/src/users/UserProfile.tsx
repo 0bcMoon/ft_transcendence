@@ -260,7 +260,7 @@ function FriendAction({ req_id, relation_status, id }: RemoteUser) {
 
 const fetchUsersById = async (user_id: number) => {
     const response = await api.get(`/api/user/${user_id}`);
-    return response.data;
+    return response.data as RemoteUser;
 }
 
 function UserProfile() {
@@ -270,7 +270,7 @@ function UserProfile() {
 
     const { data, isLoading, isError } = useQuery<RemoteUser>({
         queryKey: ['users', user_id],
-        queryFn: () => fetchUsersById(user_id!),
+        queryFn: async ()  => fetchUsersById(user_id!),
         enabled: !!user_id,
     });
 

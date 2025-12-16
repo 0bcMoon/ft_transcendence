@@ -1,20 +1,83 @@
 services:
-  # app:
-  #   build: ./app
-  #   container_name: app
+  backend:
+    build: ./app/backend
+    container_name: backend
+    env_file:
+      - .env
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "backend"
+    ports:
+      - 3000:3000
+    networks:
+      - pingpong
+
+  logstash:
+    image: logstash:8.11.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/etc/logstash.conf
+    command: logstash -f /etc/logstash.conf
+    ports:
+      - "12201:12201/udp"
+      - "5044:5044"
+      - "9600:9600"
+    networks:
+      - pingpong
+  elasticsearch:
+      image: elasticsearch:8.11.1
+      environment:
+        - discovery.type=single-node 
+        - ES_JAVA_OPTS=-Xms512m -Xmx1024m # Smallest recommended for testing
+        - ELASTIC_PASSWORD=password
+        # 2. Set a password for the 'kibana_system' user (used by Kibana to connect)
+        - KIBANA_PASSWORD=password
+        - LOGSTASH_PASSWORD=password
+        # 3. Disable the X-Pack security's auto-generation features 
+        #    since we are setting passwords ourselves
+        - xpack.security.enabled=true
+      ports:
+        - "9200:9200" # Expose the API port
+      volumes:
+        # Persist data so it doesn't vanish on container stop
+        - elasticsearch-data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: kibana:8.11.1
+    container_name: kibana
+    ports:
+      - "5601:5601" # Kibana web UI port
+    environment:
+      # Point Kibana to the Elasticsearch service
+
+      KIBANA_HOST: "0.0.0.0" # Listen on all interfaces
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: password
+
+    depends_on:
+      - elasticsearch
+
+
+
+  # frontend:
+  #   build: ./app/frontend/
+  #   container_name: frontend
   #   volumes:
   #     - frontend:/app/frontend
-  #     - backend:/app/backend
   #   env_file:
   #     - .env
   #   networks:
   #     - pingpong
 
-  #
+
   # nginx:
   #   container_name: nginx
   #   depends_on:
-  #     - app
+  #     - backend
+  #     - frontend
   #   build: ./nginx
   #   ports:
   #     - "8080:8080"
@@ -24,16 +87,18 @@ services:
   #     - .env
   #   networks:
   #     - pingpong
-
-  redis:
-    container_name: redis
-    build: ./redis
-    ports:
-      - "9090:6379"
-    env_file:
-      - .env
+  #
+  # redis:
+  #   container_name: redis
+  #   build: ./redis
+  #   ports:
+  #     - "9090:6379"
+  #   env_file:
+  #     - .env
 
 volumes:
+  elasticsearch-data: # Define the named volume for persistence
+
   backend:
     driver: local
     driver_opts:

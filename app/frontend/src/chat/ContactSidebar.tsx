@@ -26,7 +26,7 @@ export const ContactSidebar: React.FC<ContactSidebarProps> = ({
         queryKey: ['contacts'],
         queryFn: async () => {
             const response = await api.get('/api/chat/contacts');
-            return response.data;
+            return response.data as Contacts[];
         },
     });
 
