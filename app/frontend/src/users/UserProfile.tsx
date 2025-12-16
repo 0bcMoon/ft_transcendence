@@ -1,288 +1,51 @@
-import { X, Trophy, Users, Zap, ArrowLeft, Loader2 } from 'lucide-react';
-import { AddFriendIcon, BlockIcon, ChatIcons, PingPongFillIcon, UserXLineIcon } from '@/image/Icons';
+import { ArrowLeft, X, Trophy, TrendingUp } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import api from '@/api/api';
-import { useState } from 'react';
-import {
-    useAcceptRequest,
-    useBlockUser,
-    useCancelRequest,
-    useDenyRequest,
-    useSendRequest,
-    useUnFriend
-} from '@/api/mutations';
 import Loader from '@/vendor/loader';
-import Modal from '@/component/Model';
-import toast from 'react-hot-toast';
-import { useActiveChatStore } from '@/state/Store';
 import { RemoteUser } from '@/types/types';
+import StatCard from './components/profile/StatCard';
+import { ProfileHeader } from './components/profile/ProfileHeader';
+import { ProfileActions } from './components/profile/ProfileActions';
+import RecentMatchesList from './components/profile/RecentMatchesList';
+import EloLineChart from './components/profile/EloLineChart';
+import { useGetUserStats } from '@/game/api/queries';
+import { useAuthStore } from '@/state/authStore'; // <-- to determine current user
+import { getRankDetails } from './getRankDetails'; // <-- make sure you have this import
 
-const baseButtonClasses = "flex items-center justify-center gap-2 w-full sm:w-auto font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
-
-function StartChat({ relation_status, id }: { relation_status: string, id: number }) {
-    const navigate = useNavigate();
-    const setActiveChat = useActiveChatStore(state => state.setActiveChat);
-    const { mutate, isPending } = useMutation({
-        mutationFn: async () => {
-            const response = await api.get('/api/chat/contact', { params: { id: id } })
-            return response.data;
-        },
-        onSuccess: (data: RemoteUser) => {
-            setActiveChat(data);
-            navigate("/chat");
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Error: Could not start chat");
-        }
-    });
-
-    if (relation_status === 'blocking' || relation_status === 'block_by') return null;
-
-    return (
-        <button
-            className={`${baseButtonClasses} 
-                       bg-gray-100 hover:bg-gray-200 text-gray-800 
-                       dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white 
-                       dark:focus:ring-offset-gray-900`}
-            onClick={() => mutate()}
-            disabled={isPending}
-        >
-            {isPending ? <Loader2 className='w-5 h-5 animate-spin' /> : <ChatIcons />}
-            <span>Start Chat</span>
-        </button>
-    )
-}
-
-// --- ProfileStatus Component ---
-interface ProfileStatusProps {
-    value: number;
-    icon: React.ComponentType<{ className?: string }>;
-    text: string;
-    className: string;
-    bgColor: string;
-}
-
-function ProfileStatus({ value, icon: Icon, text, className, bgColor }: ProfileStatusProps) {
-    return (
-        <div className="text-center">
-            <div className={`flex items-center justify-center w-12 h-12 ${bgColor} rounded-xl mx-auto mb-2`}>
-                <Icon className={className} />
-            </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{text}</span>
-        </div>
-    )
-}
-
-function PlayPingPong({ relation_status }: RemoteUser) {
-    if (relation_status === 'blocking' || relation_status === 'blocked_by') return null;
-
-    return (
-        <button
-            className={`${baseButtonClasses} bg-green-600 hover:bg-green-700 text-white dark:focus:ring-offset-gray-900`} >
-            <PingPongFillIcon />
-            <span>Play PingPong</span>
-        </button>
-    )
-}
-
-function BlockAction({ id, relation_status }: RemoteUser) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { mutate: blockAction, isPending } = useBlockUser();
-
-    const status = relation_status === 'blocking' ? 'blocking' : 'none';
-
-    const display_object = {
-        'blocking': {
-            action: () => blockAction({ action: false, user_id: id }),
-            title: "Confirm Unblock",
-            message: `Are you sure you want to unblock this user? You will be able to interact with them again.`,
-            type: 'warning',
-            acceptText: "Unblock",
-            display_text: 'Unblock',
-        },
-        'none': {
-            display_text: 'Block',
-            action: () => blockAction({ action: true, user_id: id }),
-            title: "Confirm Block",
-            message: `Are you sure you want to block this user? You will no longer be able to interact with them.`,
-            type: 'danger',
-            acceptText: "Block",
-        }
-    };
-
-    const current_display = display_object[status];
-
-    return (
-        <>
-            <button
-                onClick={() => setIsModalOpen(true)}
-                className={`${baseButtonClasses} 
-                           bg-red-600 hover:bg-red-700 text-white
-                           dark:focus:ring-offset-gray-900`}
-            >
-                {isPending ? <Loader2 className='w-5 h-5 animate-spin' /> : <BlockIcon className='text-white' />}
-                <span>{current_display.display_text}</span>
-            </button>
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onDeny={() => setIsModalOpen(false)}
-                onAccept={() => { current_display.action(); setIsModalOpen(false) }}
-                denyText="Cancel"
-                {...current_display} // Pass all other props
-            />
-        </>
-    )
-}
-
-// --- FriendRequestDenyOrAccept Component ---
-function FriendRequestDenyOrAccept({ req_id, id }: RemoteUser) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { isPending: isPendingAccept, mutate: acceptRequest } = useAcceptRequest();
-    const { isPending: isPendingDeny, mutate: denyRequest } = useDenyRequest();
-    const isPending = isPendingAccept || isPendingDeny;
-
-    const handleAccept = () => {
-        acceptRequest({ req_id: req_id!, user_id: id });
-        setIsModalOpen(false);
-    }
-    const handleDeny = () => {
-        denyRequest({ req_id: req_id!, user_id: id });
-        setIsModalOpen(false);
-    }
-
-    return (
-        <>
-            <button
-                onClick={() => setIsModalOpen(true)}
-                className={`${baseButtonClasses} 
-                           bg-green-600 hover:bg-green-700 text-white
-                           dark:focus:ring-offset-gray-900`}
-            >
-                {isPending ? <Loader2 className='w-5 h-5 animate-spin' /> : <Users className='w-5 h-5' />}
-                <span>Respond to Request</span>
-            </button>
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onAccept={handleAccept}
-                onDeny={handleDeny}
-                title="Friend Request"
-                message="This user has sent you a friend request. What would you like to do?"
-                acceptText="Accept"
-                denyText="Deny"
-                type="default"
-            />
-        </>
-    )
-}
-
-// --- FriendRequestAction Component (Controller) ---
-function FriendRequestAction(data: RemoteUser) {
-    switch (data.relation_status) {
-        case 'friend':
-        case 'pending':
-        case 'none':
-            return <FriendAction {...data} />
-        case 'waiting':
-            return <FriendRequestDenyOrAccept {...data} />
-        default:
-            return null; // Handle default case
-    }
-}
-
-// --- FriendAction Component ---
-function FriendAction({ req_id, relation_status, id }: RemoteUser) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { mutate: cancelRequest, isPending: isCanceling } = useCancelRequest();
-    const { mutate: sendRequest, isPending: isSending } = useSendRequest();
-    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend();
-
-    const isPending = isCanceling || isSending || isUnfriending;
-
-    // Default to 'none' if status is null or undefined
-    const status = relation_status || 'none';
-
-    const display_object: Record<string, any> = {
-        'friend': {
-            display_text: 'Unfriend',
-            icon: <UserXLineIcon />,
-            action: () => unfriend({ user_id: id }),
-            title: "Confirm Unfriend",
-            message: "Are you sure you want to unfriend this user? This action cannot be undone.",
-            acceptText: "Unfriend",
-            type: 'danger',
-            className: `${baseButtonClasses} bg-red-600 hover:bg-red-700 text-white dark:focus:ring-offset-gray-900`
-        },
-        'pending': {
-            display_text: 'Cancel Request',
-            icon: <X className='w-5 h-5 text-white' />,
-            action: () => cancelRequest({ req_id: req_id!, user_id: id }),
-            title: "Cancel Friend Request",
-            message: "Are you sure you want to cancel your friend request to this user?",
-            acceptText: "Cancel Request",
-            type: 'warning',
-            className: `${baseButtonClasses} bg-gray-600 hover:bg-gray-700 text-white dark:focus:ring-offset-gray-900`
-        },
-        'none': {
-            display_text: 'Add Friend',
-            icon: <AddFriendIcon />,
-            action: () => sendRequest({ user_id: id }),
-            title: "Send Friend Request",
-            message: "Do you want to send a friend request to this user?",
-            acceptText: "Send",
-            type: 'info',
-            className: `${baseButtonClasses} bg-blue-600 hover:bg-blue-700 text-white dark:focus:ring-offset-gray-900`
-        }
-    };
-
-    const current_display = display_object[status];
-
-    return (
-        <>
-            <button onClick={() => setIsModalOpen(true)} className={current_display.className} >
-                {isPending ? <Loader2 className='w-5 h-5 animate-spin' /> : current_display.icon}
-                <span>{current_display.display_text}</span>
-            </button>
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onDeny={() => setIsModalOpen(false)}
-                onAccept={() => { current_display.action(); setIsModalOpen(false); }}
-                denyText="Cancel"
-                {...current_display} // Pass all other props
-            />
-        </>
-    )
-}
+const primaryButtonClasses =
+    'inline-flex items-center justify-center gap-2.5 font-semibold py-3 px-6 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-slate-950 disabled:opacity-60 disabled:cursor-not-allowed text-sm shadow-sm hover:shadow-md';
 
 const fetchUsersById = async (user_id: number) => {
     const response = await api.get(`/api/user/${user_id}`);
     return response.data;
-}
+};
 
 function UserProfile() {
     const { user_id: s_user_id } = useParams<{ user_id: string }>();
     const navigate = useNavigate();
     const user_id = s_user_id ? parseInt(s_user_id, 10) : undefined;
 
-    const { data, isLoading, isError } = useQuery<RemoteUser>({
+    const currentUser = useAuthStore((s) => s.user);
+    const isOwnProfile = !!currentUser && user_id === currentUser.id;
+
+    const { data, isLoading: isLoadingProfile, isError: isErrorProfile } = useQuery<RemoteUser>({
         queryKey: ['users', user_id],
         queryFn: () => fetchUsersById(user_id!),
-        enabled: !!user_id,
+        enabled: !!user_id && !isNaN(user_id),
     });
 
-    const handleGoBack = () => {
-        navigate(-1); // Go back to the previous page
-    }
+    const { data: stats, isLoading: isLoadingStats, isError: isErrorStats } = useGetUserStats(user_id || 0);
+    const rankDetails = getRankDetails(stats?.rank || "");
+
+    const handleGoBack = () => navigate(-1);
+
+    const isLoading = isLoadingProfile || isLoadingStats;
+    const isError = isErrorProfile || isErrorStats;
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] 
-                            rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200
-                            dark:bg-gray-900 dark:border-gray-800 dark:shadow-transparent">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950">
                 <Loader />
             </div>
         );
@@ -290,103 +53,79 @@ function UserProfile() {
 
     if (isError || !data) {
         return (
-            <div className="flex flex-col items-center justify-center col-span-13 h-[97svh] 
-                            rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200
-                            dark:bg-gray-900 dark:border-gray-800 dark:shadow-transparent">
-                <p className="text-red-500 dark:text-red-400 text-lg">Error fetching user profile.</p>
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950">
+                <div className="text-center">
+                    <div className="w-20 h-20 bg-red-100 dark:bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <X className="w-10 h-10 text-red-600 dark:text-red-400" />
+                    </div>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Error Loading Profile</p>
+                    <p className="text-gray-600 dark:text-slate-400 mb-6">Could not load user profile data.</p>
+                    <button
+                        onClick={handleGoBack}
+                        className={`${primaryButtonClasses} bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500`}
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Go Back</span>
+                    </button>
+                </div>
             </div>
         );
     }
 
-    const ProfileStatusData = [
-        {
-            value: data.wins_count ?? 0, // Use real data
-            icon: Trophy,
-            text: 'Wins',
-            bgColor: 'bg-green-100 dark:bg-green-900/40',
-            className: 'w-6 h-6 text-green-500 dark:text-green-400'
-        },
-        {
-            value: data.losses_count ?? 0, // Use real data
-            icon: X,
-            text: 'Losses',
-            bgColor: 'bg-red-100 dark:bg-red-900/40',
-            className: 'w-6 h-6 text-red-500 dark:text-red-400'
-        },
-        {
-            value: data.rank ?? 0, // Use real data
-            icon: Users,
-            text: 'Rank',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/40',
-            className: 'w-6 h-6 text-blue-500 dark:text-blue-400'
-        },
-        {
-            value: 85, // Placeholder for Win Rate
-            icon: Zap,
-            bgColor: 'bg-purple-100 dark:bg-purple-900/40',
-            text: 'Win Rate',
-            className: 'w-6 h-6 text-purple-500 dark:text-purple-400'
-        }
-    ];
-
     return (
-        <div
-            className="flex flex-col items-center col-span-13
-                       h-full rounded-xl border-gray-100 border-t-2 shadow-lg shadow-gray-200
-                       dark:bg-gray-900 dark:border-gray-800 dark:shadow-transparent"
-        >
-            <div className="w-full px-4 pt-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                {/* Back Button */}
                 <button
                     onClick={handleGoBack}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-500 
-                               hover:text-gray-800 
-                               dark:text-gray-400 dark:hover:text-gray-200
-                               transition-all duration-200 transform hover:scale-105" >
+                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-900 rounded-xl transition-all font-medium border border-transparent hover:border-gray-200 dark:hover:border-slate-800"
+                >
                     <ArrowLeft className="w-5 h-5" />
-                    <span className="text-sm font-medium">Back</span>
+                    <span>Back</span>
                 </button>
-            </div>
 
-            <div className="flex flex-col rounded-xl w-full max-w-4xl mx-auto mt-4" >
-                <div
-                    className="flex flex-col sm:flex-row w-full h-auto bg-linear-to-r from-gray-800 to-gray-600 border-t rounded-t-xl p-6 gap-6 items-center" >
-                    <img
-                        src={data.profile_picture}
-                        alt="profile"
-                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-500"
+                {/* Profile Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm p-8 mb-6">
+                    <ProfileHeader user={data} />
+                    {!isOwnProfile && <ProfileActions user={data} />}
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-6">
+                    <StatCard
+                        label="Wins"
+                        value={stats?.wins ?? 0}
+                        icon={<Trophy className="w-5 h-5" />}
+                        iconBgColor="bg-green-100 dark:bg-green-500/20"
+                        iconColor="text-green-600 dark:text-green-400"
                     />
-
-                    <div className="flex flex-col w-full text-center sm:text-left">
-                        <div className="w-full">
-                            <h1 className="font-bold text-3xl sm:text-4xl text-white">{data.display_name}</h1>
-                            <div className='flex items-center justify-center sm:justify-start gap-2 mt-1'>
-                                <p className="w-3 h-3 bg-green-500 rounded-full"></p>
-                                <p className="text-gray-300">Online Now</p>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full mt-4">
-                            <StartChat relation_status={data.relation_status} id={data.id} />
-                            <PlayPingPong {...data} />
-                            <FriendRequestAction {...data} />
-                            <BlockAction {...data} />
-                        </div>
-                    </div>
+                    <StatCard
+                        label="Losses"
+                        value={stats?.losses ?? 0}
+                        icon={<X className="w-5 h-5" />}
+                        iconBgColor="bg-red-100 dark:bg-red-500/20"
+                        iconColor="text-red-600 dark:text-red-400"
+                    />
+                    <StatCard
+                        label="Win Rate"
+                        value={`${stats?.winRate ?? 0}%`}
+                        icon={<TrendingUp className="w-5 h-5" />}
+                        iconBgColor="bg-blue-100 dark:bg-blue-500/20"
+                        iconColor="text-blue-600 dark:text-blue-400"
+                    />
+                    <StatCard
+                        label="Leaderboard"
+                        value={stats?.leaderboardPosition ? `#${stats.leaderboardPosition}` : "N/A"}
+                        icon={rankDetails.icon}
+                        iconBgColor=""
+                        iconColor={rankDetails.colorClass}
+                    />
                 </div>
-
-                <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 rounded-b-xl dark:bg-gray-800 dark:border-gray-700">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {ProfileStatusData.map((item, index) => (
-                            <ProfileStatus
-                                key={index}
-                                {...item}
-                            />
-                        ))}
-                    </div>
-                </div>
+                <EloLineChart />
+                {user_id ? <RecentMatchesList userId={user_id} limit={5} /> : null}
             </div>
         </div>
-    )
+    );
 }
 
 export default UserProfile;

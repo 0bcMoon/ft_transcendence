@@ -1,9 +1,10 @@
+// game/game.types.ts
+
 import type { WebSocket } from 'ws';
 
 export type Side = "left" | "right";
 
 export type GameMode = "remote" | "ai" | "tournament";
-
 
 export interface Scores {
     left: number;
@@ -47,21 +48,19 @@ export interface GameState {
         width: number;
         height: number;
     };
-
     score: {
         left: number;
         right: number;
     };
 }
 
-
 export interface Player {
-    id: number;       // The authenticated user ID
+    id: number;
     username: string;
     avatar: string;
-    socket: WebSocket | null; // Server-side WebSocket
+    socket: WebSocket | null;
     mode?: GameMode;
-    gameId?: number;  // The ID of the match they are in
+    gameId?: number;
 }
 
 export interface Match {
@@ -77,11 +76,9 @@ export interface Match {
     };
     state: GameState;
     startTime: number;
-    loop?: NodeJS.Timeout; // Server-side interval ID type
+    loop?: NodeJS.Timeout;
 }
 
-
-/** Defines keys pressed in a LOCAL game (one keyboard, two players). */
 export interface KeysPressed {
     w: boolean;
     s: boolean;
@@ -89,7 +86,6 @@ export interface KeysPressed {
     ArrowDown: boolean;
 }
 
-/** Represents the return value of the useLocalGame hook. */
 export interface LocalGame {
     countdown: number | null;
     isGameOver: boolean;
@@ -99,7 +95,6 @@ export interface LocalGame {
     playerNames: PlayerNames;
 }
 
-/** Represents the return value of the useRemoteGame (GameSession) hook. */
 export interface GameSession {
     side: Side | null;
     countdown: number | null;
@@ -113,15 +108,39 @@ export interface GameSession {
     handleGoHome: () => void;
 }
 
+// ✅ Updated ClientMessage with tournament fields
 export type ClientMessage =
-    | { type: "joinGame"; username: string; avatar: string; mode: GameMode; gameId?: number; }
+    | {
+        type: "joinGame";
+        username: string;
+        avatar: string;
+        mode: GameMode;
+        gameId?: number;          // For legacy tournament support
+        tournamentId?: number;    // ✅ For tournament matches
+        matchId?: number;         // ✅ For tournament matches
+    }
     | { type: "ready" }
     | { type: "move"; up: boolean; down: boolean }
     | { type: "playAgain"; mode: GameMode }
     | { type: "leaveGame" };
 
+// ✅ Updated ServerMessage with tournament fields and new message types
 export type ServerMessage =
-    | { type: "matchFound"; mode: GameMode; side: Side; playerNames: PlayerNames; playerAvatars: PlayerAvatars; id: string; }
+    | {
+        type: "matchFound";
+        mode: GameMode;
+        side: Side;
+        playerNames: PlayerNames;
+        playerAvatars: PlayerAvatars;
+        id: string;
+        round?: number;           // ✅ For tournament matches
+        matchNumber?: number;     // ✅ For tournament matches
+        tournamentId?: number;    // ✅ For tournament matches
+        matchId?: number;         // ✅ For tournament matches
+    }
+    | { type: "countdown"; count: number }  // ✅ Add countdown
     | { type: "state"; state: GameState }
     | { type: "gameOver"; winner: Side; score: Scores }
-    | { type: "leaveGame" };
+    | { type: "opponentLeft" }              // ✅ Add opponent left
+    | { type: "leaveGame" }
+    | { type: "error"; message: string };   // ✅ Add error message

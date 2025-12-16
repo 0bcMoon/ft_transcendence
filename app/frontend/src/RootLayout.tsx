@@ -3,7 +3,7 @@ import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { Loader } from "lucide-react";
 import NavBar from "./navbar/NavBar";
-import LandingPage from "./LandingPage";
+import LandingPage from "./LandingPage/LandingPage";
 
 export default function RootLayout() {
     const { isAuthenticated, isLoading } = useAuth();

@@ -23,11 +23,11 @@ export default function Tournament() {
                 </div>
 
                 <div className="space-y-3">
-                    <Link
-                        to="/game/tournament/create"
-                        className="block w-full text-center py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white" >
-                        Create Tournament
-                    </Link>
+                    {/* <Link */}
+                    {/*     to="/game/tournament/create" */}
+                    {/*     className="block w-full text-center py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white" > */}
+                    {/*     Create Tournament */}
+                    {/* </Link> */}
 
                     <Link
                         to="/game/tournament/list"

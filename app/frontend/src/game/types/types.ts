@@ -2,22 +2,6 @@ export type GameMode = "1v1" | "ai" | "tournament" | "local";
 
 export type Side = "left" | "right";
 
-export interface GlobalMatchData {
-    matchId: number;
-    mode: GameMode;
-    date: string;
-    player1_id?: number | null;
-    player1_name: string;
-    player1_avatar: string;
-    player1_score: number;
-    player2_id?: number | null;
-    player2_name: string;
-    player2_avatar: string;
-    player2_score: number;
-    winner_id?: number | null;
-}
-
-
 export interface KeysPressed {
     w: boolean;
     s: boolean;
@@ -155,8 +139,55 @@ export type ServerMessage =
         playerNames: PlayerNames;
         playerAvatars: PlayerAvatars;
         id: string;
+        round?: number;           // ✅ For tournaments
+        matchNumber?: number;     // ✅ For tournaments
+        tournamentId?: number;    // ✅ For tournaments
+        matchId?: number;         // ✅ For tournaments
     }
+    | { type: "countdown"; count: number }  // ✅ Add countdown
     | { type: "state"; state: GameState }
     | { type: "gameOver"; winner: Side; score: Scores }
-    | { type: "leaveGame" };
+    | { type: "opponentLeft" }              // ✅ Add opponent left
+    | { type: "leaveGame" }
+    | { type: "error"; message: string };   // ✅ Add err
+
+// src/types/game.types.ts
+
+export interface GlobalMatchData {
+    matchId: number;
+    mode: GameMode;
+    date: string;
+    player1_name: string;
+    player1_avatar: string | null;
+    player1_score: number;
+    player2_name: string;
+    player2_avatar: string | null;
+    player2_score: number;
+    winner_id: number | null;
+}
+
+export interface UserStats {
+    wins: number;
+    losses: number;
+    winRate: number;
+    rank: string;
+    leaderboardPosition: number;
+}
+
+export interface ScoreProgressionPoint {
+    matchId: number;
+    date: string;
+    score: number;
+}
+
+export interface MatchHistoryItem {
+    matchId: number;
+    mode: GameMode;
+    date: string;
+    isWin: number;
+    user_score: number;
+    opponent_score: number;
+    opponent_name: string | null;
+    opponent_avatar: string | null;
+}
 

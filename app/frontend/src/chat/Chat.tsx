@@ -4,14 +4,13 @@ import { ChatArea } from './ChatArea';
 import toast from 'react-hot-toast';
 
 function Chat() {
-
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/chat`);
         websocket.onerror = () => {
-            toast.error('Connection error. Please try again later.');
+            toast.error('Connection error.  Please try again later.');
         };
         ws.current = websocket;
         return () => {
@@ -19,10 +18,8 @@ function Chat() {
         };
     }, []);
 
-    // TODO: fix sidebar color unmatch 
-
     return (
-        <div className="h-full bg-gray-100 flex overflow-hidden">
+        <div className="h-full bg-gray-50 dark:bg-slate-950 flex overflow-hidden">
             {/* Contact Sidebar */}
             <ContactSidebar
                 isOpen={sidebarOpen}

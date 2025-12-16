@@ -26,7 +26,7 @@ function TournamentList() {
                         onClick={() => navigate("/game/tournament/create")}
                         className="flex-shrink-0 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-3 rounded-lg shadow-md transition-colors dark:focus:ring-offset-gray-900" >
                         <Plus size={20} />
-                        <span className="sm:inline">Create Tournament</span>
+                        {/* <span className="sm:inline">Create Tournament</span> */}
                     </button>
                 </div>
 

@@ -1,26 +1,29 @@
+// context/WebSocketContext.tsx
+
 import { createContext, useEffect, ReactNode, useContext, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './AuthContext';
 import { IEvent } from '@/home/Notification';
 import { useQueryClient } from '@tanstack/react-query';
-
+import {
+    TournamentFullToast,
+    MatchReadyToast,
+    TournamentFinishedToast,
+} from '@/notifications/components/TournamentNotifications';
 
 interface WebSocketContextType {
     socket: WebSocket | null;
     setSocket: (socket: WebSocket | null) => void;
 }
 
-
-
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
-
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const { isAuthenticated, isLoading } = useAuth();
     const queryClient = useQueryClient();
 
-    ///------------------------------------------------------h do not touch
+    //-------------------------DO NOT TOUCH-------------------------//
     function changeUserStatus(data: IEvent) {
         queryClient.setQueryData(['contacts'], (oldData: any) => {
             if (!oldData) return oldData;
@@ -42,61 +45,121 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             });
         });
     }
-    ///------------------------------------------------------h
-    /* called from a component that registers a callback for a channel */
+
+    // Invalidate tournament queries
+    function invalidateTournamentQueries(tournamentId?: number) {
+        if (tournamentId) {
+            queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+            queryClient.invalidateQueries({ queryKey: ['tournament-bracket', tournamentId] });
+            queryClient.invalidateQueries({ queryKey: ['tournament-players', tournamentId] });
+        }
+        queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    }
 
     useEffect(() => {
-        // toast.success('WebSocketProvider mounted');
-        if (isLoading || !isAuthenticated) return; // wait until auth is resolved
-        else if (socket && socket.readyState === WebSocket.OPEN) return; // already initialized
-        /* WS initialization and cleanup */
+        if (isLoading || !isAuthenticated) return;
+        if (socket && socket.readyState === WebSocket.OPEN) return;
+
         const ws = new WebSocket('ws://localhost:3000/ws/notify');
+
         ws.onopen = () => {
-            // toast.success('WebSocket connected')
-        }
+            console.log('[WebSocket] Connected');
+        };
+
         ws.onmessage = (event: MessageEvent) => {
-            const data = JSON.parse(event.data) as IEvent;
-            console.log('WebSocket message received:', data);
-            // Handle different types of messages
-            switch (data.type) {
-                case 'notify':
-                    toast.success("User become online");
-                    changeUserStatus(data);
-                    break;
-                default:
-                    console.warn('Unknown message type:', data.type);
+            try {
+                const data = JSON.parse(event.data) as IEvent;
+                console.log('[WebSocket] 📨', data.type);
+
+                switch (data.type) {
+                    case 'notify':
+                        if (data.status === 'online') {
+                            toast.success('User became online', { duration: 3000 });
+                        }
+                        changeUserStatus(data);
+                        break;
+
+                    case 'tournament_full':
+                        if (data.tournament) {
+                            toast.custom(
+                                (t) => (
+                                    <TournamentFullToast
+                                        tournament={data.tournament!}
+                                        onClose={() => toast.dismiss(t.id)}
+                                    />
+                                ),
+                                { duration: 5000, position: 'top-right' }
+                            );
+                            invalidateTournamentQueries(data.tournament.id);
+                        }
+                        break;
+
+                    case 'match_ready':
+                        if (data.tournament && data.match) {
+                            toast.custom(
+                                (t) => (
+                                    <MatchReadyToast
+                                        tournament={data.tournament!}
+                                        match={data.match!}
+                                        onClose={() => toast.dismiss(t.id)} />
+                                ),
+                                { duration: 150000, position: 'top-center' }
+                            );
+                            invalidateTournamentQueries(data.tournament.id);
+                        }
+                        break;
+
+                    case 'tournament_finished':
+                        if (data.tournament && data.champion) {
+                            toast.custom(
+                                (t) => (
+                                    <TournamentFinishedToast
+                                        tournament={data.tournament!}
+                                        champion={data.champion!}
+                                        onClose={() => toast.dismiss(t.id)}
+                                    />
+                                ),
+                                { duration: 12000, position: 'top-right' }
+                            );
+                            invalidateTournamentQueries(data.tournament.id);
+                        }
+                        break;
+
+                    default:
+                        console.warn('[WebSocket] Unknown type:', data.type);
+                }
+            } catch (error) {
+                console.error('[WebSocket] Parse error:', error);
             }
-        }
-            ;
+        };
+
         ws.onclose = () => {
-            // toast.error('WebSocket disconnected')
-        }
+            console.log('[WebSocket] Disconnected');
+        };
+
         ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            // toast.error('WebSocket error')
-        }
+            console.error('[WebSocket]  Error:', error);
+        };
+
         setSocket(ws);
+
         return () => {
-            ws?.close()
+            ws?.close();
             setSocket(null);
-        }
-    }, [isLoading, isAuthenticated]);
+        };
+    }, [isLoading, isAuthenticated, queryClient]);
 
     return (
-        <WebSocketContext.Provider value={{
-            socket: socket,
-            setSocket: setSocket,
-        }}>
+        <WebSocketContext.Provider value={{ socket, setSocket }}>
             {children}
         </WebSocketContext.Provider>
-    )
+    );
 }
 
 export const useWebSocket = () => {
-
     const context = useContext(WebSocketContext);
     if (!context) {
         throw new Error('useWebSocket must be used within a WebSocketProvider');
     }
     return context;
-}
+};

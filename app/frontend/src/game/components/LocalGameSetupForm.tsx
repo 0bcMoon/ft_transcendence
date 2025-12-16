@@ -5,8 +5,9 @@ interface Props {
     onStart: (player1: string, player2: string) => void;
 }
 
+// TextField logic is integrated here for simplicity, but can be a separate component.
 interface TextFieldProps {
-    id?: string;
+    id: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
@@ -18,7 +19,7 @@ interface TextFieldProps {
 function TextField({ id, label, value, onChange, placeholder, maxLength, error }: TextFieldProps) {
     return (
         <div className="flex flex-col gap-2">
-            <label htmlFor={id} className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+            <label htmlFor={id} className="text-sm font-semibold text-slate-300">
                 {label}
             </label>
             <input
@@ -28,11 +29,9 @@ function TextField({ id, label, value, onChange, placeholder, maxLength, error }
                 placeholder={placeholder}
                 maxLength={maxLength}
                 onChange={(e) => onChange(e.target.value)}
-                className={`px-4 py-3 text-base rounded-lg border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 transition
-                    ${error ? "border-red-500 dark:border-red-400" : "border-gray-300 dark:border-gray-700"}`}
+                className={`w-full h-12 px-4 py-3 bg-slate-800 border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${error ? 'border-red-500/50' : 'border-slate-700'}`}
             />
-            {error && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{error}</p>}
+            {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
         </div>
     );
 }
@@ -49,13 +48,12 @@ export default function LocalGameSetupForm({ onStart }: Props) {
         const name2 = player2.trim();
         const newErrors: { player1?: string; player2?: string } = {};
 
-        if (!name1)
-            newErrors.player1 = "Player 1 name is required";
-        if (!name2)
-            newErrors.player2 = "Player 2 name is required";
-        if (name1 === name2) {
-            newErrors.player1 = "Names must be different";
-            newErrors.player2 = "Names must be different";
+        if (!name1) newErrors.player1 = "Player 1 name is required.";
+        if (!name2) newErrors.player2 = "Player 2 name is required.";
+
+        if (name1 && name2 && name1 === name2) {
+            newErrors.player1 = "Player names must be different.";
+            newErrors.player2 = "Player names must be different.";
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -63,20 +61,24 @@ export default function LocalGameSetupForm({ onStart }: Props) {
             return;
         }
 
+        // Clear errors and start the game if validation passes
+        setErrors({});
         onStart(name1, name2);
     };
 
     return (
-        <div className="w-full p-8">
+        // The background of the container where this form is placed should be slate-900 or similar
+        <div className="w-full max-w-md mx-auto p-8 rounded-2xl bg-slate-900 border border-slate-800">
             <div className="flex flex-col items-center mb-8">
-                <div className="inline-flex p-3 rounded-full bg-blue-100 dark:bg-blue-900/40 mb-3">
-                    <Gamepad2 size={32} className="text-blue-600 dark:text-blue-400" />
+                {/* Themed icon */}
+                <div className="inline-flex p-4 rounded-full bg-blue-500/20 mb-4">
+                    <Gamepad2 size={32} className="text-blue-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Local Game</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter player names to start</p>
+                <h2 className="text-2xl font-bold text-white">Local Game Setup</h2>
+                <p className="text-sm text-slate-400 mt-1">Enter player names to start the match</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5 max-w-md mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <TextField
                     id="player1"
                     label="Player 1"
@@ -97,14 +99,16 @@ export default function LocalGameSetupForm({ onStart }: Props) {
                     error={errors.player2}
                 />
 
-                <button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-lg py-3 transition shadow-md" >
-                    Start Game
-                </button>
+                <div className="pt-2">
+                    <button
+                        type="submit"
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white text-base font-semibold rounded-lg transition-colors shadow-md shadow-blue-600/20"
+                    >
+                        Start Game
+                    </button>
+                </div>
             </form>
         </div>
     );
 }
-
 

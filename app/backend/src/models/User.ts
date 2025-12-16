@@ -85,7 +85,7 @@ const User = {
             friends = await userRepository.findFriends(req.user.id, search);
         else
             friends = await userRepository.getFriends(req.user.id);
-            // user foreach
+        // user foreach
         friends?.forEach(friend => {
             friend.profile_picture = friend.image_src + friend.profile_picture;
             friend.image_src = undefined;

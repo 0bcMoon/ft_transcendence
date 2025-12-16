@@ -1,334 +1,700 @@
+// src/repository/tournamentRepository.ts
+
 import db from "../../db/db";
+import { notifyUsers, IEvent } from '../notifications';
 import gameRepository from './gameRepository';
-import { Tournament, TournamentPlayer, TournamentGame } from '../types/gameTypes';
+import {
+    Tournament,
+    TournamentStatus,
+    TournamentPlayer,
+    TournamentMatch,
+    TournamentDetails,
+    CreateTournamentData,
+    BracketRound,
+    BracketMatch,
+    TournamentMatchWithPlayers,
+} from "../types/tournament.types";
 
-async function getPlayerCount(tournament_id: number): Promise<number> {
-    const row = await db.get<{ cnt: number }>(
-        `SELECT COUNT(*) as cnt FROM tournament_players WHERE tournament_id = ?`,
-        [tournament_id]
-    );
-    return row?.cnt ?? 0;
-}
+/**
+ * Get round name based on position
+ */
+function getRoundName(round: number, totalRounds: number): string {
+    const roundsFromEnd = totalRounds - round;
 
-async function startTournamentInternal(tournament_id: number, players: TournamentPlayer[]): Promise<void> {
-    await db.run(
-        `UPDATE tournaments 
-         SET status = 'active', started_at = CURRENT_TIMESTAMP, current_round = 1 
-         WHERE id = ?`,
-        [tournament_id]
-    );
+    if (roundsFromEnd === 0) return 'Finals';
+    if (roundsFromEnd === 1) return 'Semi-Finals';
+    if (roundsFromEnd === 2) return 'Quarter-Finals';
+    if (roundsFromEnd === 3) return 'Round of 16';
+    if (roundsFromEnd === 4) return 'Round of 32';
 
-    // 2. Create Round 1 games
-    let matchOrder = 1;
-    for (let i = 0; i < players.length; i += 2) {
-        const p1 = players[i];
-        const p2 = players[i + 1];
-
-        // 3. Use the safe, transactional function from gameRepository
-        const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
-            { user_id: p1.user_id, position: 1 },
-            { user_id: p2.user_id, position: 2 }
-        ]);
-
-        // 4. Link the new game to the tournament
-        await db.run(
-            `INSERT INTO tournament_games (tournament_id, game_id, round, match_order)
-             VALUES (?, ?, 1, ?)`,
-            [tournament_id, gameId, matchOrder++]
-        );
-    }
+    return `Round ${round}`;
 }
 
 const tournamentRepository = {
+    /**
+     * Create a new tournament
+     */
+    async create(data: CreateTournamentData): Promise<number> {
+        const result = await db.run(
+            `INSERT INTO tournaments (name, max_players, created_by, status, current_round, created_at) 
+             VALUES (?, ?, ?, 'registration', 1, CURRENT_TIMESTAMP)`,
+            [data.name, data.max_players, data.created_by]
+        );
 
-    async createTournament(name: string, maxPlayers = 8): Promise<number> {
-        const validSizes = [2, 4, 8, 16];
-        if (!validSizes.includes(maxPlayers)) {
-            throw new Error("Max players must be 2, 4, 8, or 16");
+        if (!result.lastID) {
+            throw new Error("Failed to create tournament");
         }
 
-        const result = await db.run(
-            `INSERT INTO tournaments (name, max_players, status, current_round) 
-             VALUES (?, ?, 'registration', 0)`,
-            [name, maxPlayers]
-        );
+        console.log(`✅ Tournament ${result.lastID} created: "${data.name}"`);
         return result.lastID;
     },
 
-    async getTournament(id: number): Promise<Tournament | undefined> {
-        return db.get<Tournament>(`SELECT * FROM tournaments WHERE id = ?`, [id]);
+    /**
+     * Find tournament by ID
+     */
+    async findById(id: number): Promise<Tournament | null> {
+        const tournament = await db.get(
+            `SELECT * FROM tournaments WHERE id = ?`,
+            [id]
+        );
+        return (tournament as Tournament) || null;
     },
 
-    // async listTournaments(): Promise<(Tournament & { players_joined: number })[]> {
-    //     return db.all<Tournament & { players_joined: number }>(
-    //         `SELECT t.*, COUNT(tp.id) as players_joined
-    //         FROM tournaments t
-    //         LEFT JOIN tournament_players tp ON t.id = tp.tournament_id
-    //         GROUP BY t.id
-    //         ORDER BY t.created_at DESC`
-    //     );
-    // },
-    async listTournaments(): Promise<Tournament[]> {
-        return db.all<Tournament>(
+    /**
+     * Find all tournaments
+     */
+    async findAll(): Promise<Tournament[]> {
+        const tournaments = await db.all(
             `SELECT * FROM tournaments ORDER BY created_at DESC`
         );
+        return tournaments as Tournament[];
     },
 
-    async listPlayers(tournament_id: number): Promise<TournamentPlayer[]> {
-        return db.all<TournamentPlayer>(
-            `SELECT * FROM tournament_players 
-             WHERE tournament_id = ? ORDER BY registered_at ASC`,
-            [tournament_id]
-        );
-    },
+    /**
+     * Get tournament details with creator and player info
+     */
+    async getDetails(tournamentId: number, currentUserId?: number): Promise<TournamentDetails | null> {
+        const tournament = await db.get(
+            `SELECT 
+                t.*,
+                u.id as creator_id,
+                u.username as creator_username,
+                (SELECT COUNT(*) FROM tournament_players WHERE tournament_id = t.id) as player_count
+             FROM tournaments t
+             LEFT JOIN users u ON t.created_by = u.id
+             WHERE t.id = ?`,
+            [tournamentId]
+        ) as any;
 
-    async registerPlayer(tournament_id: number, user_id: number, alias: string): Promise<number> {
+        if (!tournament) return null;
 
-        await db.run('BEGIN TRANSACTION');
-
-        try {
-            const tournament = await db.get<Tournament>(`SELECT * FROM tournaments WHERE id = ?`, [tournament_id]);
-            if (!tournament)
-                throw new Error("Tournament not found");
-            if (tournament.status !== 'registration')
-                throw new Error("Registration is closed");
-
-            const count = await getPlayerCount(tournament_id);
-            if (count >= tournament.max_players)
-                throw new Error("This tournament is full");
-
-            const existing = await db.get<TournamentPlayer>(
-                `SELECT id FROM tournament_players 
-                 WHERE tournament_id = ? AND (user_id = ? OR alias = ?)`,
-                [tournament_id, user_id, alias]
+        let isRegistered = false;
+        if (currentUserId) {
+            const check = await db.get(
+                `SELECT 1 FROM tournament_players WHERE tournament_id = ? AND user_id = ?`,
+                [tournamentId, currentUserId]
             );
-            if (existing) throw new Error("User or alias is already registered");
-
-            const result = await db.run(
-                `INSERT INTO tournament_players (tournament_id, user_id, alias) VALUES (?, ?, ?)`,
-                [tournament_id, user_id, alias]
-            );
-            const registrationId = result.lastID;
-            const newCount = count + 1;
-            if (newCount === tournament.max_players) {
-                const players = await this.listPlayers(tournament_id);
-                await startTournamentInternal(tournament_id, players);
-            }
-            await db.run('COMMIT');
-            return registrationId;
-
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
-        }
-    },
-
-    async startTournament(tournament_id: number): Promise<void> {
-        const tournament = await this.getTournament(tournament_id);
-        if (!tournament)
-            throw new Error("Tournament not found");
-        if (tournament.status !== 'registration')
-            throw new Error("Tournament has already started");
-
-        const players = await this.listPlayers(tournament_id);
-        if (![2, 4, 8, 16].includes(players.length)) {
-            throw new Error(`Tournaments require 2, 4, 8, or 16 players. Current: ${players.length}`);
+            isRegistered = !!check;
         }
 
-        await db.run('BEGIN TRANSACTION');
-        try {
-            await db.run(
-                `UPDATE tournaments 
-                 SET status = 'active', started_at = CURRENT_TIMESTAMP, current_round = 1 WHERE id = ?`,
-                [tournament_id]
-            );
-
-            let matchOrder = 1;
-            for (let i = 0; i < players.length; i += 2) {
-                const p1 = players[i];
-                const p2 = players[i + 1];
-
-                const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
-                    { user_id: p1.user_id, position: 1 },
-                    { user_id: p2.user_id, position: 2 }
-                ]);
-
-                await db.run(
-                    `INSERT INTO tournament_games (tournament_id, game_id, round, match_order)
-                     VALUES (?, ?, 1, ?)`,
-                    [tournament_id, gameId, matchOrder++]
-                );
-            }
-
-            await db.run('COMMIT');
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
-        }
+        return {
+            id: tournament.id,
+            name: tournament.name,
+            status: tournament.status,
+            created_by: tournament.created_by,
+            winner_id: tournament.winner_id,
+            max_players: tournament.max_players,
+            current_round: tournament.current_round,
+            started_at: tournament.started_at,
+            ended_at: tournament.ended_at,
+            created_at: tournament.created_at,
+            creator: {
+                id: tournament.creator_id,
+                username: tournament.creator_username,
+            },
+            players: [],
+            player_count: tournament.player_count,
+            is_registered: isRegistered,
+            can_start: tournament.status === 'registration' &&
+                tournament.player_count === tournament.max_players,
+        };
     },
 
-    async checkAndAdvanceRound(game_id: number): Promise<void> {
-        try {
-            const tournamentGame = await db.get<{ tournament_id: number; round: number }>(
-                `SELECT tournament_id, round FROM tournament_games WHERE game_id = ?`,
-                [game_id]
-            );
-
-            if (!tournamentGame)
-                return;
-
-            const { tournament_id, round } = tournamentGame;
-
-            const roundGames = await db.all<{ status: string }>(
-                `SELECT g.status FROM tournament_games tg
-                 JOIN games g ON tg.game_id = g.id
-                 WHERE tg.tournament_id = ? AND tg.round = ?`,
-                [tournament_id, round]
-            );
-
-            const allFinished = roundGames.every(g => g.status === 'finished');
-
-            if (allFinished) {
-                await this.advanceRound(tournament_id);
-            }
-        } catch (error) {
-            console.error(`Error checking tournament advancement for game ${game_id}:`, error);
-            throw error;
-        }
-    },
-
-    async advanceRound(tournament_id: number): Promise<void> {
-        const tournament = await this.getTournament(tournament_id);
-        if (!tournament || tournament.status !== 'active')
-            return;
-
-        const currentRound = tournament.current_round;
-
-        // Get winners from the current round
-        const roundGames = await db.all<{ winner_id: number | null }>(
-            `SELECT g.winner_id
-             FROM tournament_games tg
-             JOIN games g ON tg.game_id = g.id
-             WHERE tg.tournament_id = ? AND tg.round = ? AND g.status = 'finished'
-             ORDER BY tg.match_order ASC`,
-            [tournament_id, currentRound]
+    /**
+     * Get all players in a tournament
+     */
+    async getPlayers(tournamentId: number): Promise<TournamentPlayer[]> {
+        const players = await db.all(
+            `SELECT 
+                tp.id,
+                tp.tournament_id,
+                tp.user_id,
+                tp.seed,
+                tp.eliminated,
+                tp.registered_at,
+                u.username,
+                u.profile_picture
+             FROM tournament_players tp
+             JOIN users u ON tp.user_id = u.id
+             WHERE tp.tournament_id = ? 
+             ORDER BY tp.seed ASC`,
+            [tournamentId]
         );
 
-        const winners = roundGames.map(g => g.winner_id).filter((id): id is number => id !== null);
-        if (winners.length !== roundGames.length) throw new Error("Some games in the round are not finished or have no winner");
-
-        await db.run('BEGIN TRANSACTION');
-        try {
-            // Eliminate losers
-            const players = await this.listPlayers(tournament_id);
-            for (const player of players) {
-                if (!winners.includes(player.user_id) && player.status === 'active') {
-                    await db.run(
-                        `UPDATE tournament_players SET status = 'eliminated' WHERE id = ?`,
-                        [player.id]
-                    );
-                }
-            }
-
-            // If only one winner, tournament is over
-            if (winners.length === 1) {
-                await db.run(
-                    `UPDATE tournaments 
-                     SET status = 'finished', winner_id = ?, ended_at = CURRENT_TIMESTAMP 
-                     WHERE id = ?`,
-                    [winners[0], tournament_id]
-                );
-                await db.run(
-                    `UPDATE tournament_players SET status = 'winner' WHERE tournament_id = ? AND user_id = ?`,
-                    [tournament_id, winners[0]]
-                );
-                await db.run('COMMIT');
-                return;
-            }
-
-            // Create next round
-            const nextRound = currentRound + 1;
-            let matchOrder = 1;
-            for (let i = 0; i < winners.length; i += 2) {
-                const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
-                    { user_id: winners[i], position: 1 },
-                    { user_id: winners[i + 1], position: 2 }
-                ]);
-
-                await db.run(
-                    `INSERT INTO tournament_games (tournament_id, game_id, round, match_order)
-                     VALUES (?, ?, ?, ?)`,
-                    [tournament_id, gameId, nextRound, matchOrder++]
-                );
-            }
-
-            await db.run(
-                `UPDATE tournaments SET current_round = ? WHERE id = ?`,
-                [nextRound, tournament_id]
-            );
-
-            await db.run('COMMIT');
-        } catch (error) {
-            await db.run('ROLLBACK');
-            throw error;
-        }
+        return players as TournamentPlayer[];
     },
 
-    async getTournamentGames(tournament_id: number): Promise<TournamentGame[]> {
-        return db.all<TournamentGame>(
-            `SELECT * FROM tournament_games 
-             WHERE tournament_id = ? 
-             ORDER BY round ASC, match_order ASC`,
-            [tournament_id]
-        );
-    },
-
-    async getRoundGames(tournament_id: number, round: number): Promise<TournamentGame[]> {
-        return db.all<TournamentGame>(
-            `SELECT * FROM tournament_games 
-             WHERE tournament_id = ? AND round = ? 
-             ORDER BY match_order ASC`,
-            [tournament_id, round]
-        );
-    },
-
-    async cancelTournament(tournament_id: number): Promise<void> {
-        const tournament = await this.getTournament(tournament_id);
+    /**
+     * Register a player for a tournament
+     */
+    async registerPlayer(tournamentId: number, userId: number): Promise<void> {
+        const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
-        if (tournament.status === 'finished') throw new Error("Cannot cancel a finished tournament");
+        if (tournament.status !== 'registration') throw new Error("Registration is closed");
+
+        // Check if already registered
+        const existing = await db.get(
+            `SELECT 1 FROM tournament_players WHERE tournament_id = ? AND user_id = ?`,
+            [tournamentId, userId]
+        );
+        if (existing) throw new Error("Already registered for this tournament");
+
+        // Get current player count
+        const count = await db.get(
+            `SELECT COUNT(*) as count FROM tournament_players WHERE tournament_id = ?`,
+            [tournamentId]
+        ) as any;
+
+        const currentCount = count?.count || 0;
+
+        if (currentCount >= tournament.max_players) {
+            throw new Error("Tournament is full");
+        }
+
+        const seed = currentCount + 1;
+
+        // Register player
+        await db.run(
+            `INSERT INTO tournament_players (tournament_id, user_id, seed, eliminated, registered_at) 
+             VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+            [tournamentId, userId, seed]
+        );
+
+        console.log(`✅ Player ${userId} registered for tournament ${tournamentId} (seed ${seed})`);
+
+        // Check if tournament is now full
+        if (seed === tournament.max_players) {
+            console.log(`🎯 Tournament ${tournamentId} is FULL`);
+
+            const players = await this.getPlayers(tournamentId);
+            const playerUserIds = players.map(p => p.user_id);
+
+            // Notify all players tournament is full
+            const fullEvent: IEvent = {
+                type: 'tournament_full',
+                tournament: {
+                    id: tournamentId,
+                    name: tournament.name,
+                }
+            };
+            notifyUsers(playerUserIds, fullEvent);
+
+            // Auto-start after 5 seconds
+            setTimeout(async () => {
+                try {
+                    const tournamentCheck = await this.findById(tournamentId);
+                    if (tournamentCheck && tournamentCheck.status === 'registration') {
+                        console.log(`🚀 Auto-starting tournament ${tournamentId}`);
+                        await this.start(tournamentId);
+                    }
+                } catch (error: any) {
+                    console.error(`❌ Failed to auto-start tournament ${tournamentId}:`, error.message);
+                }
+            }, 5000);
+        }
+    },
+
+    /**
+     * Start a tournament
+     */
+    async start(tournamentId: number): Promise<void> {
+        const tournament = await this.findById(tournamentId);
+        if (!tournament) throw new Error("Tournament not found");
+        if (tournament.status !== 'registration') throw new Error("Tournament already started");
+
+        const players = await this.getPlayers(tournamentId);
+        if (players.length !== tournament.max_players) {
+            throw new Error(`Tournament must be full (${players.length}/${tournament.max_players})`);
+        }
+
+        const validSizes = [4, 8, 16, 32, 64];
+        if (!validSizes.includes(players.length)) {
+            throw new Error("Number of players must be 4, 8, 16, 32, or 64");
+        }
+
+        console.log(`\n⚙️ Starting tournament ${tournamentId} with ${players.length} players`);
+
+        // Create first round matches
+        const numMatches = players.length / 2;
+        const firstRoundMatches: Array<{
+            matchId: number;
+            player1: TournamentPlayer;
+            player2: TournamentPlayer;
+            gameId: number;
+        }> = [];
+
+        for (let i = 0; i < numMatches; i++) {
+            const player1 = players[i];
+            const player2 = players[players.length - 1 - i];
+
+            // Create game for this match
+            const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
+                { user_id: player1.user_id, position: 1 },
+                { user_id: player2.user_id, position: 2 }
+            ]);
+
+            // Create tournament match
+            const matchResult = await db.run(
+                `INSERT INTO tournament_matches 
+                 (tournament_id, round, match_number, player1_id, player2_id, game_id, status, created_at) 
+                 VALUES (?, 1, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tournamentId, i + 1, player1.id, player2.id, gameId]
+            );
+
+            if (!matchResult.lastID) {
+                throw new Error("Failed to create tournament match");
+            }
+
+            console.log(`   Match ${i + 1}: ${player1.username} vs ${player2.username} → Game ${gameId}`);
+
+            firstRoundMatches.push({
+                matchId: matchResult.lastID,
+                player1,
+                player2,
+                gameId
+            });
+        }
+
+        // Update tournament status
+        await db.run(
+            `UPDATE tournaments 
+             SET status = 'active', started_at = CURRENT_TIMESTAMP, current_round = 1 
+             WHERE id = ?`,
+            [tournamentId]
+        );
+
+        console.log(`✅ Tournament ${tournamentId} started\n`);
+
+        // Notify all players tournament started
+        const playerUserIds = players.map(p => p.user_id);
+        const startEvent: IEvent = {
+            type: 'tournament_started',
+            tournament: {
+                id: tournamentId,
+                name: tournament.name,
+            }
+        };
+        notifyUsers(playerUserIds, startEvent);
+
+        // Notify each player about their specific match
+        for (let i = 0; i < firstRoundMatches.length; i++) {
+            const match = firstRoundMatches[i];
+
+            const matchReadyEvent: IEvent = {
+                type: 'match_ready',
+                tournament: {
+                    id: tournamentId,
+                    name: tournament.name,
+                },
+                match: {
+                    id: match.matchId,
+                    round: 1,
+                    matchNumber: i + 1,
+                }
+            };
+
+            // Notify both players in the match
+            notifyUsers([match.player1.user_id, match.player2.user_id], matchReadyEvent);
+
+            console.log(`📢 Notified players for match ${match.matchId}:  ${match.player1.username} & ${match.player2.username}`);
+        }
+    },
+
+    /**
+     * Get tournament bracket
+     */
+    async getBracket(tournamentId: number): Promise<{ rounds: BracketRound[]; champion?: any } | null> {
+        const tournament = await this.findById(tournamentId);
+        if (!tournament) throw new Error("Tournament not found");
+        if (tournament.status === 'registration') return null;
+
+        const matches = await db.all(
+            `SELECT 
+                m.*,
+                p1.id as player1_id,
+                p1.seed as player1_seed,
+                u1.username as player1_username,
+                p2.id as player2_id,
+                p2.seed as player2_seed,
+                u2.username as player2_username,
+                w.id as winner_player_id,
+                uw. username as winner_username
+             FROM tournament_matches m
+             LEFT JOIN tournament_players p1 ON m.player1_id = p1.id
+             LEFT JOIN users u1 ON p1.user_id = u1.id
+             LEFT JOIN tournament_players p2 ON m.player2_id = p2.id
+             LEFT JOIN users u2 ON p2.user_id = u2.id
+             LEFT JOIN tournament_players w ON m.winner_id = w.id
+             LEFT JOIN users uw ON w.user_id = uw.id
+             WHERE m.tournament_id = ? 
+             ORDER BY m.round, m.match_number`,
+            [tournamentId]
+        ) as any[];
+
+        if (matches.length === 0) return null;
+
+        const maxRound = Math.max(...matches.map(m => m.round));
+        const rounds: BracketRound[] = [];
+
+        for (let r = 1; r <= maxRound; r++) {
+            const roundMatches = matches.filter(m => m.round === r);
+            const roundName = getRoundName(r, maxRound);
+
+            rounds.push({
+                round: r,
+                name: roundName,
+                matches: roundMatches.map(m => ({
+                    id: m.id,
+                    tournament_id: m.tournament_id,
+                    round: m.round,
+                    match_number: m.match_number,
+                    status: m.status,
+                    player1: m.player1_id ? {
+                        id: m.player1_id,
+                        username: m.player1_username,
+                        seed: m.player1_seed
+                    } : undefined,
+                    player2: m.player2_id ? {
+                        id: m.player2_id,
+                        username: m.player2_username,
+                        seed: m.player2_seed
+                    } : undefined,
+                    winner: m.winner_player_id ? {
+                        id: m.winner_player_id,
+                        username: m.winner_username
+                    } : undefined,
+                    game_id: m.game_id,
+                    scheduled_at: m.scheduled_at,
+                    completed_at: m.completed_at,
+                    created_at: m.created_at,
+                }))
+            });
+        }
+
+        let champion = undefined;
+        if (tournament.status === 'finished' && tournament.winner_id) {
+            const championUser = await db.get(
+                `SELECT u.id, u.username 
+                 FROM users u
+                 WHERE u.id = ?`,
+                [tournament.winner_id]
+            ) as any;
+
+            if (championUser) {
+                champion = {
+                    id: championUser.id,
+                    username: championUser.username,
+                };
+            }
+        }
+
+        return { rounds, champion };
+    },
+
+    /**
+     * Cancel a tournament
+     */
+    async cancel(tournamentId: number): Promise<void> {
+        const tournament = await this.findById(tournamentId);
+        if (!tournament) throw new Error("Tournament not found");
+
+        if (tournament.status === 'finished') {
+            throw new Error("Cannot cancel a finished tournament");
+        }
+
+        if (tournament.status === 'cancelled') {
+            throw new Error("Tournament is already cancelled");
+        }
 
         await db.run(
             `UPDATE tournaments 
              SET status = 'cancelled', ended_at = CURRENT_TIMESTAMP 
              WHERE id = ?`,
-            [tournament_id]
+            [tournamentId]
         );
+
+        console.log(`❌ Tournament ${tournamentId} cancelled`);
     },
 
-    async getBracket(tournament_id: number) {
-        const tournament = await this.getTournament(tournament_id);
+    /**
+     * Advance tournament round (when current round matches are complete)
+     */
+    async advanceRound(tournamentId: number): Promise<void> {
+        const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
+        if (tournament.status !== 'active') throw new Error("Tournament is not active");
 
-        // This query joins games, players, and users to get all match data
-        const games = await db.all<any>(
-            `SELECT 
-                tg.round, tg.match_order, g.id as game_id, g.status, g.winner_id,
-                gp1.user_id as player1_id, u1.username as player1_name, COALESCE(gp1.score, 0) as player1_score,
-                gp2.user_id as player2_id, u2.username as player2_name, COALESCE(gp2.score, 0) as player2_score
-             FROM tournament_games tg
-             JOIN games g ON tg.game_id = g.id
-             LEFT JOIN game_players gp1 ON g.id = gp1.game_id AND gp1.position = 1
-             LEFT JOIN users u1 ON gp1.user_id = u1.id
-             LEFT JOIN game_players gp2 ON g.id = gp2.game_id AND gp2.position = 2
-             LEFT JOIN users u2 ON gp2.user_id = u2.id
-             WHERE tg.tournament_id = ?
-             ORDER BY tg.round ASC, tg.match_order ASC`,
-            [tournament_id]
+        const currentRound = tournament.current_round;
+
+        // Get current round matches
+        const currentMatches = await db.all(
+            `SELECT * FROM tournament_matches 
+             WHERE tournament_id = ? AND round = ?`,
+            [tournamentId, currentRound]
+        ) as TournamentMatch[];
+
+        // Check if all matches are completed
+        const allCompleted = currentMatches.every(m => m.status === 'completed' && m.winner_id);
+
+        if (!allCompleted) {
+            throw new Error("Not all matches in current round are completed");
+        }
+
+        // Check if this was the final
+        if (currentMatches.length === 1) {
+            // Tournament is over
+            const finalMatch = currentMatches[0];
+
+            // Get winner with both ID and username
+            const winnerPlayer = await db.get(
+                `SELECT tp.user_id, u.username
+                 FROM tournament_players tp
+                 JOIN users u ON tp. user_id = u.id
+                 WHERE tp.id = ?`,
+                [finalMatch.winner_id]
+            ) as any;
+
+            if (!winnerPlayer) {
+                throw new Error("Winner player not found");
+            }
+
+            await db.run(
+                `UPDATE tournaments 
+                 SET status = 'finished', winner_id = ?, ended_at = CURRENT_TIMESTAMP 
+                 WHERE id = ?`,
+                [winnerPlayer.user_id, tournamentId]
+            );
+
+            console.log(`🏆 Tournament ${tournamentId} finished!  Winner: ${winnerPlayer.username} (ID: ${winnerPlayer.user_id})`);
+
+            // Notify all players tournament finished
+            const players = await this.getPlayers(tournamentId);
+            const playerUserIds = players.map(p => p.user_id);
+
+            const finishedEvent: IEvent = {
+                type: 'tournament_finished',
+                tournament: {
+                    id: tournamentId,
+                    name: tournament.name,
+                },
+                champion: {
+                    id: winnerPlayer.user_id,
+                    username: winnerPlayer.username,
+                }
+            };
+
+            notifyUsers(playerUserIds, finishedEvent);
+
+            console.log(`📢 Notified ${playerUserIds.length} players about tournament finish`);
+
+            return;
+        }
+
+        // Create next round matches
+        const nextRound = currentRound + 1;
+        const winners = currentMatches.map(m => m.winner_id).filter(Boolean); // ✅ Filter out null/undefined
+        const nextRoundMatches: Array<{
+            matchId: number;
+            player1UserId: number;
+            player2UserId: number;
+        }> = [];
+
+        for (let i = 0; i < winners.length; i += 2) {
+            const player1_id = winners[i];
+            const player2_id = winners[i + 1];
+
+            if (!player1_id || !player2_id) {
+                console.error(`❌ Missing winner for next round (match ${i / 2 + 1})`);
+                continue;
+            }
+
+            const p1 = await db.get(
+                `SELECT user_id FROM tournament_players WHERE id = ?`,
+                [player1_id]
+            ) as any;
+
+            const p2 = await db.get(
+                `SELECT user_id FROM tournament_players WHERE id = ?`,
+                [player2_id]
+            ) as any;
+
+            if (!p1 || !p2) {
+                console.error(`❌ Missing player data for next round match ${i / 2 + 1}`);
+                continue;
+            }
+
+            // Create game
+            const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
+                { user_id: p1.user_id, position: 1 },
+                { user_id: p2.user_id, position: 2 }
+            ]);
+
+            // Create match
+            const matchResult = await db.run(
+                `INSERT INTO tournament_matches 
+                 (tournament_id, round, match_number, player1_id, player2_id, game_id, status, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tournamentId, nextRound, Math.floor(i / 2) + 1, player1_id, player2_id, gameId]
+            );
+
+            if (!matchResult.lastID) {
+                throw new Error("Failed to create next round match");
+            }
+
+            nextRoundMatches.push({
+                matchId: matchResult.lastID,
+                player1UserId: p1.user_id,
+                player2UserId: p2.user_id,
+            });
+
+            console.log(`   Round ${nextRound} Match ${Math.floor(i / 2) + 1}: Player ${p1.user_id} vs Player ${p2.user_id} → Game ${gameId}`);
+        }
+
+        // Update tournament current round
+        await db.run(
+            `UPDATE tournaments SET current_round = ? WHERE id = ?`,
+            [nextRound, tournamentId]
         );
 
-        const players = await this.listPlayers(tournament_id);
+        console.log(`➡️ Tournament ${tournamentId} advanced to round ${nextRound}`);
 
-        return { tournament, players, games };
+        // Notify players about their next round matches
+        for (let i = 0; i < nextRoundMatches.length; i++) {
+            const match = nextRoundMatches[i];
+
+            const matchReadyEvent: IEvent = {
+                type: 'match_ready',
+                tournament: {
+                    id: tournamentId,
+                    name: tournament.name,
+                },
+                match: {
+                    id: match.matchId,
+                    round: nextRound,
+                    matchNumber: i + 1,
+                }
+            };
+
+            // Notify both players
+            notifyUsers([match.player1UserId, match.player2UserId], matchReadyEvent);
+            console.log(`📢 Notified players ${match.player1UserId} & ${match.player2UserId} for round ${nextRound} match ${match.matchId}`);
+        }
+    },
+
+    /**
+     * Get user's current match in a tournament
+     */
+    async getUserMatch(tournamentId: number, userId: number): Promise<TournamentMatchWithPlayers | null> {
+        // Get user's tournament player ID
+        const player = await db.get(
+            `SELECT id FROM tournament_players 
+         WHERE tournament_id = ? AND user_id = ?`,
+            [tournamentId, userId]
+        ) as any;
+
+        if (!player) return null;
+
+        // Get user's current pending match
+        const match = await db.get(
+            `SELECT 
+            m.*,
+            p1.user_id as player1_user_id,
+            u1.username as player1_username,
+            p2.user_id as player2_user_id,
+            u2.username as player2_username
+         FROM tournament_matches m
+         LEFT JOIN tournament_players p1 ON m.player1_id = p1.id
+         LEFT JOIN users u1 ON p1.user_id = u1.id
+         LEFT JOIN tournament_players p2 ON m. player2_id = p2.id
+         LEFT JOIN users u2 ON p2.user_id = u2.id
+         WHERE m.tournament_id = ? 
+           AND (m.player1_id = ? OR m.player2_id = ?)
+           AND m.status = 'pending'
+         ORDER BY m.round ASC, m.match_number ASC
+         LIMIT 1`,
+            [tournamentId, player.id, player.id]
+        ) as any;
+
+        return match || null;
+    },
+    async getTournamentMatchDetails(tournamentId: number, matchId: number) {
+        const matchData = await db.get(
+            `SELECT 
+                m.*,
+                p1.user_id as player1_user_id,
+                u1.username as player1_username,
+                u1.profile_picture as player1_avatar,
+                p2.user_id as player2_user_id,
+                u2.username as player2_username,
+                u2.profile_picture as player2_avatar
+             FROM tournament_matches m
+             LEFT JOIN tournament_players p1 ON m. player1_id = p1.id
+             LEFT JOIN users u1 ON p1.user_id = u1.id
+             LEFT JOIN tournament_players p2 ON m.player2_id = p2.id
+             LEFT JOIN users u2 ON p2.user_id = u2.id
+             WHERE m.id = ? AND m.tournament_id = ?`,
+            [matchId, tournamentId]
+        ) as any;
+
+        return matchData;
+    },
+
+    /**
+     * ✅ Verify if a user is a participant in a tournament match
+     */
+    async isPlayerInMatch(tournamentId: number, matchId: number, userId: number): Promise<boolean> {
+        const matchData = await this.getTournamentMatchDetails(tournamentId, matchId);
+
+        if (!matchData) return false;
+
+        return matchData.player1_user_id === userId || matchData.player2_user_id === userId;
+    },
+
+    /**
+     * ✅ Update tournament match status
+     */
+    async updateMatchStatus(matchId: number, status: 'pending' | 'playing' | 'completed'): Promise<void> {
+        await db.run(
+            `UPDATE tournament_matches SET status = ?  WHERE id = ?`,
+            [status, matchId]
+        );
+
+        console.log(`✅ Tournament match ${matchId} status updated to:  ${status}`);
+    },
+
+    /**
+     * ✅ Update tournament match winner
+   */
+
+    async updateMatchWinner(tournamentId: number, matchId: number, winnerPlayerId: number): Promise<void> {
+        await db.run(
+            `UPDATE tournament_matches 
+             SET winner_id = ?, status = 'completed', completed_at = CURRENT_TIMESTAMP 
+             WHERE id = ?`,
+            [winnerPlayerId, matchId]
+        );
+
+        console.log(`✅ Tournament match ${matchId} completed. Winner: ${winnerPlayerId}`);
     },
 };
 
