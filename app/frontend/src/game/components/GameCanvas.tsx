@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { GameState } from "../types/types";
-import { Canvas, Colors, Fonts } from "../utils/gameConfig";
+import { Canvas, Effects, Colors, Fonts } from "../utils/gameConfig";
 
 interface GameCanvasProps {
     gameStateRef: React.MutableRefObject<GameState | null>;
@@ -14,11 +14,7 @@ export default function GameCanvas({ gameStateRef, isGameOver, countdown }: Game
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
-
-        if (!canvas || !ctx) {
-            console.error("Canvas rendering context not found.");
-            return;
-        }
+        if (!canvas || !ctx) return;
 
         let animationFrameId: number;
 
@@ -29,76 +25,90 @@ export default function GameCanvas({ gameStateRef, isGameOver, countdown }: Game
 
         const drawCenterLine = () => {
             ctx.save();
-            ctx.setLineDash([8, 8]);
+            ctx.setLineDash([10, 15]);
             ctx.strokeStyle = Colors.LINES;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(Canvas.WIDTH / 2, 5);
-            ctx.lineTo(Canvas.WIDTH / 2, Canvas.HEIGHT - 5);
+            ctx.moveTo(Canvas.WIDTH / 2, 10);
+            ctx.lineTo(Canvas.WIDTH / 2, Canvas.HEIGHT - 10);
             ctx.stroke();
+            ctx.restore();
+        };
+
+        const drawScore = (state: GameState) => {
+            ctx.fillStyle = Colors.SCORE_TEXT;
+            ctx.font = Fonts.SCORE;
+            ctx.textAlign = "center";
+            ctx.fillText(state.score.left.toString(), Canvas.WIDTH / 2 - 90, 90);
+            ctx.fillText(state.score.right.toString(), Canvas.WIDTH / 2 + 90, 90);
+        };
+
+        // Helper to draw elements with a neon glow
+        const drawGlowElement = (draw: () => void, color: string) => {
+            ctx.save();
+            ctx.shadowBlur = Effects.GLOW_BLUR;
+            ctx.shadowColor = color;
+            draw();
             ctx.restore();
         };
 
         const drawPaddles = (state: GameState) => {
             if (state.leftPaddle) {
-                ctx.fillStyle = Colors.PADDLE_LEFT;
-                ctx.fillRect(state.leftPaddle.x, state.leftPaddle.y, state.leftPaddle.width, state.leftPaddle.height);
+                drawGlowElement(() => {
+                    ctx.fillStyle = Colors.PADDLE_LEFT;
+                    ctx.fillRect(state.leftPaddle.x, state.leftPaddle.y, state.leftPaddle.width, state.leftPaddle.height);
+                }, Colors.PADDLE_LEFT);
             }
             if (state.rightPaddle) {
-                ctx.fillStyle = Colors.PADDLE_RIGHT;
-                ctx.fillRect(state.rightPaddle.x, state.rightPaddle.y, state.rightPaddle.width, state.rightPaddle.height);
+                drawGlowElement(() => {
+                    ctx.fillStyle = Colors.PADDLE_RIGHT;
+                    ctx.fillRect(state.rightPaddle.x, state.rightPaddle.y, state.rightPaddle.width, state.rightPaddle.height);
+                }, Colors.PADDLE_RIGHT);
             }
         };
 
         const drawBall = (state: GameState) => {
-            ctx.fillStyle = Colors.BALL;
-            ctx.beginPath();
-            ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
-            ctx.fill();
+            drawGlowElement(() => {
+                ctx.fillStyle = Colors.BALL;
+                ctx.beginPath();
+                ctx.arc(state.ball.x, state.ball.y, state.ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }, Colors.BALL);
         };
 
-        const drawCountdownOverlay = (value: number) => {
-            ctx.fillStyle = Colors.OVERLAY_COUNTDOWN; // e.g., rgba(17, 24, 39, 0.75)
-            ctx.fillRect(0, 0, Canvas.WIDTH, Canvas.HEIGHT);
-
-            const circleRadius = 70; // Adjust size as needed
-            const centerX = Canvas.WIDTH / 2;
-            const centerY = Canvas.HEIGHT / 2;
-
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, circleRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.fill();
-            ctx.strokeStyle = Colors.COUNTDOWN_TEXT;
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
+        const drawCountdown = (value: number) => {
             ctx.fillStyle = Colors.COUNTDOWN_TEXT;
             ctx.font = Fonts.COUNTDOWN;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(value.toString(), centerX, centerY);
+            ctx.globalAlpha = 0.9;
+            ctx.fillText(value.toString(), Canvas.WIDTH / 2, Canvas.HEIGHT / 2);
+            ctx.globalAlpha = 1.0;
         };
 
         const renderFrame = () => {
+            ctx.clearRect(0, 0, Canvas.WIDTH, Canvas.HEIGHT);
             drawBackground();
 
             const currentGameState = gameStateRef.current;
 
-            if (countdown !== null) {
-                drawCountdownOverlay(countdown);
-            } else if (currentGameState) {
-                drawBall(currentGameState);
+            if (currentGameState && !isGameOver) {
                 drawCenterLine();
+                drawScore(currentGameState);
                 drawPaddles(currentGameState);
+                drawBall(currentGameState);
+            }
+
+            if (countdown !== null && countdown > 0) {
+                drawCountdown(countdown);
             }
 
             animationFrameId = requestAnimationFrame(renderFrame);
         };
 
         renderFrame();
-        return () => { cancelAnimationFrame(animationFrameId); };
 
+        return () => { cancelAnimationFrame(animationFrameId); };
     }, [gameStateRef, isGameOver, countdown]);
 
     return (
@@ -106,7 +116,9 @@ export default function GameCanvas({ gameStateRef, isGameOver, countdown }: Game
             ref={canvasRef}
             width={Canvas.WIDTH}
             height={Canvas.HEIGHT}
-            className="w-full rounded-lg border border-gray-700 shadow-inner"
+            // This makes the canvas responsive while maintaining its aspect ratio.
+            // The parent div will handle rounding, borders, and shadows.
+            className="w-full aspect-video"
         />
     );
 }

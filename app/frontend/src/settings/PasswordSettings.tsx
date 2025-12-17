@@ -8,29 +8,28 @@ interface PasswordSettingsProps {
 }
 
 function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordSettingsProps) {
-
     const errors = useValidationStore((state) => state);
     const [readOnly, setReadOnly] = useState(true);
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 dark:bg-gray-800 dark:border-gray-700">
-
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2 dark:text-white">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <Lock className="w-5 h-5" />
                 Change Password
             </h3>
 
             <div className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                         Current Password
                     </label>
                     <div className="relative">
                         <input
                             name="current_password"
                             type={showPasswords.current ? 'text' : 'password'}
-                            className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300
-                                       dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500 dark:focus:ring-offset-gray-800'
+                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg 
+                                       text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-slate-500
+                                       focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder="Enter current password"
                             autoComplete="current-password"
                             readOnly={readOnly}
@@ -39,7 +38,8 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                         <button
                             type="button"
                             onClick={() => togglePasswordVisibility('current')}
-                            className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400" >
+                            className="absolute right-3 top-3.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400"
+                        >
                             {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                     </div>
@@ -50,15 +50,16 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
 
                 <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                             New Password
                         </label>
                         <div className="relative">
                             <input
                                 name="new_password"
                                 type={showPasswords.new ? 'text' : 'password'}
-                                className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300
-                                           dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500 dark:focus:ring-offset-gray-800'
+                                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg 
+                                           text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="Enter new password"
                                 autoComplete="new-password"
                                 readOnly={readOnly}
@@ -67,7 +68,8 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                             <button
                                 type="button"
                                 onClick={() => togglePasswordVisibility('new')}
-                                className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400" >
+                                className="absolute right-3 top-3.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400"
+                            >
                                 {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
@@ -77,15 +79,16 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                             Confirm New Password
                         </label>
                         <div className="relative">
                             <input
                                 name="confirm_password"
                                 type={showPasswords.confirm ? 'text' : 'password'}
-                                className='w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300
-                                           dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-500 dark:focus:ring-offset-gray-800'
+                                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg 
+                                           text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-slate-500
+                                           focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="Confirm new password"
                                 autoComplete="new-password"
                                 readOnly={readOnly}
@@ -94,7 +97,8 @@ function PasswordSettings({ showPasswords, togglePasswordVisibility }: PasswordS
                             <button
                                 type="button"
                                 onClick={() => togglePasswordVisibility('confirm')}
-                                className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400" >
+                                className="absolute right-3 top-3.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400"
+                            >
                                 {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>

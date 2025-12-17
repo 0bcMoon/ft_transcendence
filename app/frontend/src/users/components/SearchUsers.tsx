@@ -1,21 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Search, User2 } from 'lucide-react';
 import UserCard from './UserCard';
 import LoadingSpinner from './LoadingSpinner';
 import { useSearchUsers } from '../hooks/useApi';
 import { useNavigate } from 'react-router-dom';
 
-
-
 const SearchUsers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
     const { data: users = [], isLoading, error } = useSearchUsers(searchTerm);
-    let timer: NodeJS.Timeout;
+    const timerRef = useRef<NodeJS.Timeout>();
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        clearTimeout(timer);
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
         const value = e.target.value;
-        timer = setTimeout(() => {
+        timerRef.current = setTimeout(() => {
             setSearchTerm(value);
         }, 400);
     };
@@ -24,13 +25,17 @@ const SearchUsers = () => {
         <div className="space-y-6">
             {/* Search Bar */}
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+                <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 w-6 h-6" />
                 <input
                     name='search'
                     type="text"
                     placeholder="Search for people..."
                     onChange={handleChange}
-                    className="w-full pl-12 pr-6 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                    className="w-full pl-14 pr-6 py-2 text-lg border border-gray-200 dark:border-slate-700 
+                               bg-white dark:bg-slate-800 text-gray-900 dark:text-white 
+                               placeholder:text-gray-500 dark:placeholder:text-slate-500
+                               rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               focus:border-transparent transition-all duration-200"
                 />
             </div>
 
@@ -45,14 +50,14 @@ const SearchUsers = () => {
 
                     {error && (
                         <div className="text-center py-8">
-                            <p className="text-red-500">Error searching users. Please try again.</p>
+                            <p className="text-red-500 dark:text-red-400">Error searching users. Please try again. </p>
                         </div>
                     )}
 
                     {!isLoading && !error && (
                         <>
                             <div className="flex items-center justify-between">
-                                <p className="text-base text-gray-600 font-medium">
+                                <p className="text-lg text-gray-600 dark:text-slate-400 font-medium">
                                     {users.length} {users.length === 1 ? 'result' : 'results'} found
                                 </p>
                             </div>
@@ -78,8 +83,8 @@ const SearchUsers = () => {
 
                             {users.length === 0 && searchTerm.length > 0 && (
                                 <div className="text-center py-12">
-                                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-500">No users found matching "{searchTerm}"</p>
+                                    <Search className="w-16 h-16 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
+                                    <p className="text-lg text-gray-500 dark:text-slate-400">No users found matching "{searchTerm}"</p>
                                 </div>
                             )}
                         </>
@@ -89,8 +94,8 @@ const SearchUsers = () => {
 
             {searchTerm.length === 0 && (
                 <div className="text-center py-12">
-                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">Start typing to search for people</p>
+                    <Search className="w-16 h-16 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
+                    <p className="text-lg text-gray-500 dark:text-slate-400">Start typing to search for people</p>
                 </div>
             )}
         </div>

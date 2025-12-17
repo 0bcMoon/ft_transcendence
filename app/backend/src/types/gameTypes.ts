@@ -25,12 +25,13 @@ export interface GamePlayer {
 export interface Tournament {
     id: number;
     name: string;
-    status: TournamentStatus;
-    winner_id: number | null;
+    status: 'registration' | 'active' | 'finished' | 'cancelled';
+    created_by: number;
+    winner_id?: number;
     max_players: number;
     current_round: number;
-    started_at: string | null;
-    ended_at: string | null;
+    started_at?: string;
+    ended_at?: string;
     created_at: string;
 }
 

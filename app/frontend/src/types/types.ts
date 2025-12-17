@@ -25,22 +25,6 @@ export type GameMode = "1v1" | "ai" | "tournament" | "local";
 
 export type Side = "left" | "right";
 
-export interface GlobalMatchData {
-    matchId: number;
-    mode: GameMode;
-    date: string;
-    player1_id?: number | null;
-    player1_name: string;
-    player1_avatar: string;
-    player1_score: number;
-    player2_id?: number | null;
-    player2_name: string;
-    player2_avatar: string;
-    player2_score: number;
-    winner_id?: number | null;
-}
-
-
 export interface KeysPressed {
     w: boolean;
     s: boolean;

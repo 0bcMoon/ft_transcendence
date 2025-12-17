@@ -1,64 +1,94 @@
-import { useAuthStore } from "@/state/authStore";
-import { useRegisterTournamentPlayer } from "../api/mutations";
-import { Tournament } from "../api/gameApi";
-import { useNavigate } from "react-router-dom";
-import { Trophy, Loader2, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Trophy, Users, Calendar, ChevronRight } from "lucide-react";
 
-const STATUS_COLORS = {
-    registration: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
-    active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
-    finished: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    cancelled: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
-} as const;
+// Assuming 'Tournament' type is defined elsewhere
+import { Tournament } from "../api/gameApi";
 
 interface TournamentCardProps {
     tournament: Tournament;
 }
 
-export function TournamentCard({ tournament }: TournamentCardProps) {
-    const navigate = useNavigate();
-    const user = useAuthStore(s => s.user);
-    const { mutate: registerPlayer, isPending } = useRegisterTournamentPlayer();
+// --- Sub-Component for a clean Status Badge ---
+const StatusBadge = ({ status }: { status: string }) => {
+    switch (status) {
+        case 'registration':
+            // "Registration" is the actionable state, so we won't show a simple badge.
+            // The parent component will show a "Join" button instead.
+            return null;
+        case 'active':
+            return (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Live
+                </div>
+            );
+        case 'finished':
+            return <div className="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-xs font-medium">Finished</div>;
+        case 'cancelled':
+            return <div className="px-3 py-1 rounded-full bg-slate-800 text-slate-500 text-xs font-medium">Cancelled</div>;
+        default:
+            return null;
+    }
+};
 
-    const handleJoin = () => {
-        if (!user) return;
-        registerPlayer(
-            { tournamentId: tournament.id, userId: user.id, alias: user.username },
-            { onSuccess: () => navigate(`/game/tournament/${tournament.id}`) }
-        );
-    };
+export function TournamentCard({ tournament }: TournamentCardProps) {
+    const isJoinable = tournament.status === 'registration';
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex items-center gap-4">
-            <div className="bg-blue-100 dark:bg-blue-900/40 p-3 rounded-full">
-                <Trophy size={24} className="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{tournament.name}</h3>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    <Users size={14} />
-                    <span>{tournament.max_players} players</span>
+        // The entire card is a Link for semantic correctness and better accessibility
+        <Link
+            to={`/game/tournament/${tournament.id}`}
+            className="block bg-slate-900 rounded-2xl border border-slate-800 p-6 
+                       transition-all duration-300 group
+                       hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-600/10 hover:-translate-y-1"
+        >
+            <div className="flex items-start justify-between gap-6">
+
+                {/* Left Side: Icon and Info */}
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0 mt-1">
+                        <Trophy className="text-slate-400" size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">
+                            {tournament.name}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-slate-400">
+                            <div className="flex items-center gap-1.5">
+                                <Users size={14} />
+                                <span>{tournament.current_players ?? 0} / {tournament.max_players} players</span>
+                            </div>
+                            {tournament.started_at && (
+                                <>
+                                    <span className="text-slate-700">•</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar size={14} />
+                                        {/* Using a more robust date formatting */}
+                                        <span>{new Date(tournament.started_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${STATUS_COLORS[tournament.status]}`}>
-                    {tournament.status}
-                </span>
+
+                {/* Right Side: Status or Join Button */}
+                <div className="flex items-center flex-shrink-0 h-full mt-1">
+                    {isJoinable ? (
+                        // A clear Call-to-Action button for joinable tournaments
+                        <div className="flex items-center gap-2 text-sm font-semibold text-blue-400">
+                            Join Tournament <ChevronRight size={16} />
+                        </div>
+                    ) : (
+                        <StatusBadge status={tournament.status} />
+                    )}
+                </div>
+
             </div>
-            <div className="flex gap-2">
-                <button
-                    onClick={() => navigate(`/game/tournament/${tournament.id}`)}
-                    className="px-4 py-2 rounded-lg font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
-                >
-                    View
-                </button>
-                <button
-                    onClick={handleJoin}
-                    disabled={tournament.status !== "registration" || isPending}
-                    className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                    {isPending && <Loader2 size={14} className="animate-spin" />}
-                    {isPending ? "Joining..." : "Join"}
-                </button>
-            </div>
-        </div>
+        </Link>
     );
 }
+

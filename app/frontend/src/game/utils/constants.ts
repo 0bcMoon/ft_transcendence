@@ -1,6 +1,6 @@
 export const Canvas = {
-    WIDTH: 800,
-    HEIGHT: 600,
+    WIDTH: 1000,
+    HEIGHT: 800,
 };
 
 export const Rules = {
@@ -8,7 +8,7 @@ export const Rules = {
 };
 
 export const Paddle = {
-    WIDTH: 10,
+    WIDTH: 15,
     HEIGHT: 80,
     SPEED: 8,
     OFFSET: 30,

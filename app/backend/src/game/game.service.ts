@@ -1,131 +1,389 @@
+// game/game.server.ts
+
 import { WebSocket } from 'ws';
-import {
-    ClientMessage, GameMode, Match, Player, Side, GameState,
-    PlayerNames, PlayerAvatars, Scores
-} from './game.types';
+import { ClientMessage, GameMode, Player, Side, GameState } from './game.types';
 import { initState, moveBall, checkGameOver, resetBall } from './game.physics';
 import { Rules, Paddle, Canvas } from './game.config';
-import gameRepository from '../repository/gameRepository'; // Import your repository
+import gameRepository from '../repository/gameRepository';
 import tournamentRepository from '../repository/tournamentRepository';
 
-// --- Server-Side Types ---
-interface ServerMatch extends Match {
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface BaseMatch {
+    gameId: number;
+    state: GameState;
+    startTime: number;
     keys: {
-        left: { up: boolean, down: boolean };
-        right: { up: boolean, down: boolean };
+        left: { up: boolean; down: boolean };
+        right: { up: boolean; down: boolean };
     };
     loop?: NodeJS.Timeout;
 }
 
-// --- In-Memory State ---
-const players = new Map<number, Player>(); // Map<userId, Player>
-const matches = new Map<number, ServerMatch>(); // Map<gameId, ServerMatch>
-const queue = new Map<GameMode, Player[]>(); // Matchmaking queue for 'remote'
+interface RemoteMatch extends BaseMatch {
+    mode: 'remote';
+    players: { left: Player; right: Player };
+    ready: { left: boolean; right: boolean };
+}
 
-// --- Helper Functions ---
+interface TournamentMatch extends BaseMatch {
+    mode: 'tournament';
+    players: { left?: Player; right?: Player };
+    ready: { left: boolean; right: boolean };
+    tournamentId: number;
+    matchId: number;
+    round: number;
+    matchNumber: number;
+}
 
-function getPlayerMatch(userId: number): ServerMatch | undefined {
-    const player = players.get(userId);
+type ServerMatch = RemoteMatch | TournamentMatch;
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+const players = new Map<number, Player>();
+const matches = new Map<number, ServerMatch>();
+const remoteQueue: Player[] = [];
+
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+function getPlayer(userId: number): Player | undefined {
+    return players.get(userId);
+}
+
+function getMatch(userId: number): ServerMatch | undefined {
+    const player = getPlayer(userId);
     return player?.gameId ? matches.get(player.gameId) : undefined;
 }
 
 function getPlayerSide(userId: number, match: ServerMatch): Side | null {
-    if (match.players.left?.id === userId) return "left";
-    if (match.players.right?.id === userId) return "right";
+    if (match.players.left?.id === userId) return 'left';
+    if (match.players.right?.id === userId) return 'right';
     return null;
 }
 
-function moveServerPaddles(state: GameState, keys: ServerMatch['keys']) {
-    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-    // Use 'leftPaddle' and 'rightPaddle' to match your GameState type
-    if (state.leftPaddle) {
-        if (keys.left.up) state.leftPaddle.y -= Paddle.SPEED;
-        if (keys.left.down) state.leftPaddle.y += Paddle.SPEED;
-        state.leftPaddle.y = clamp(state.leftPaddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
-    }
-    if (state.rightPaddle) {
-        if (keys.right.up) state.rightPaddle.y -= Paddle.SPEED;
-        if (keys.right.down) state.rightPaddle.y += Paddle.SPEED;
-        state.rightPaddle.y = clamp(state.rightPaddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
+function sendMessage(player: Player | undefined, message: object): void {
+    if (player?.socket?.readyState === WebSocket.OPEN) {
+        player.socket.send(JSON.stringify(message));
     }
 }
 
-async function persistAndEndGame(match: ServerMatch, winner: Side) {
-    if (match.loop) clearInterval(match.loop);
-
-    const winnerId = (winner === "left" ? match.players.left?.id : match.players.right?.id) ?? null;
-
-    try {
-        await gameRepository.updatePlayerScoreByPosition(match.gameId, 1, match.state.score.left);
-        await gameRepository.updatePlayerScoreByPosition(match.gameId, 2, match.state.score.right);
-        await gameRepository.finishGame(match.gameId, winnerId);
-
-        // If it's a tournament, check for round advancement
-        if (match.mode === 'tournament') {
-            // We don't await this, let it run in the background
-            void tournamentRepository.checkAndAdvanceRound(match.gameId);
-        }
-    } catch (err) {
-        console.error("Failed to persist game:", err);
-    }
-
-    const gameOverMessage = JSON.stringify({
-        type: "gameOver",
-        winner: winner,
-        score: match.state.score
-    });
-    match.players.left?.socket?.send(gameOverMessage);
-    match.players.right?.socket?.send(gameOverMessage);
-
-    matches.delete(match.gameId);
+function sendError(player: Player, message: string): void {
+    sendMessage(player, { type: 'error', message });
 }
 
-function startGameLoop(gameId: number) {
+function broadcastToMatch(match: ServerMatch, message: object): void {
+    sendMessage(match.players.left, message);
+    sendMessage(match.players.right, message);
+}
+
+// ============================================================================
+// GAME PHYSICS
+// ============================================================================
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+}
+
+function updatePaddle(
+    paddle: { y: number } | undefined,
+    keys: { up: boolean; down: boolean }
+): void {
+    if (!paddle) return;
+
+    if (keys.up) paddle.y -= Paddle.SPEED;
+    if (keys.down) paddle.y += Paddle.SPEED;
+    paddle.y = clamp(paddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
+}
+
+function updatePaddles(state: GameState, keys: ServerMatch['keys']): void {
+    updatePaddle(state.leftPaddle, keys.left);
+    updatePaddle(state.rightPaddle, keys.right);
+}
+
+function startGameLoop(gameId: number): void {
     const match = matches.get(gameId);
     if (!match) return;
 
     match.loop = setInterval(() => {
-        moveServerPaddles(match.state, match.keys);
+        updatePaddles(match.state, match.keys);
 
         moveBall(match.state, (scorer: Side) => {
             if (checkGameOver(match.state)) {
-                const winner = match.state.score.left >= Rules.MAX_SCORE ? "left" : "right";
-                void persistAndEndGame(match, winner);
+                const winner = match.state.score.left >= Rules.MAX_SCORE ? 'left' : 'right';
+                void endGame(match, winner);
             } else {
                 resetBall(match.state, scorer);
             }
         });
 
-        const stateMessage = JSON.stringify({ type: "state", state: match.state });
-        match.players.left?.socket?.send(stateMessage);
-        match.players.right?.socket?.send(stateMessage);
+        broadcastToMatch(match, { type: 'state', state: match.state });
     }, 16);
 }
 
-/**
- * Creates a 'remote' match (matchmaking).
- * This function is ONLY for 'remote' mode.
- */
-async function createRemoteMatch(matchedPlayers: [Player, Player]) {
-    const [playerLeft, playerRight] = matchedPlayers;
-    let gameId: number;
+function stopGameLoop(match: ServerMatch): void {
+    if (match.loop) {
+        clearInterval(match.loop);
+        match.loop = undefined;
+    }
+}
+
+// ============================================================================
+// GAME PERSISTENCE
+// ============================================================================
+
+async function saveGameScores(match: ServerMatch): Promise<void> {
+    await gameRepository.updatePlayerScore(match.gameId, 1, match.state.score.left);
+    await gameRepository.updatePlayerScore(match.gameId, 2, match.state.score.right);
+}
+
+async function saveGameResult(gameId: number, winnerId: number | null): Promise<void> {
+    await gameRepository.finish(gameId, winnerId);
+}
+
+async function cancelGame(gameId: number): Promise<void> {
+    try {
+        await gameRepository.cancel(gameId);
+        console.log(`✅ Game ${gameId} cancelled`);
+    } catch (err) {
+        console.error(`❌ Failed to cancel game ${gameId}:`, err);
+    }
+}
+
+// ============================================================================
+// GAME END
+// ============================================================================
+
+async function updateTournamentResult(
+    match: TournamentMatch,
+    winnerId: number
+): Promise<void> {
+    try {
+        const gamePlayers = await gameRepository.getPlayers(match.gameId);
+        const winnerGamePlayer = gamePlayers.find(p => p.user_id === winnerId);
+        if (!winnerGamePlayer) return;
+
+        const tournamentPlayers = await tournamentRepository.getPlayers(match.tournamentId);
+        const winnerTournamentPlayer = tournamentPlayers.find(p => p.user_id === winnerId);
+        if (!winnerTournamentPlayer) return;
+
+        await tournamentRepository.updateMatchWinner(
+            match.tournamentId,
+            match.matchId,
+            winnerTournamentPlayer.id
+        );
+        await tournamentRepository.advanceRound(match.tournamentId);
+
+        console.log(`✅ Tournament ${match.tournamentId} match ${match.matchId} updated`);
+    } catch (err) {
+        console.error(`❌ Failed to update tournament:`, err);
+    }
+}
+
+async function endGame(match: ServerMatch, winner: Side): Promise<void> {
+    stopGameLoop(match);
+
+    const winnerId = winner === 'left'
+        ? match.players.left?.id
+        : match.players.right?.id;
 
     try {
-        // 1. Create the game and players in the database
-        gameId = await gameRepository.createGameAndAddPlayers('remote', [
-            { user_id: playerLeft.id, position: 1 },
-            { user_id: playerRight.id, position: 2 }
-        ]);
-    } catch (err) {
-        console.error("Failed to create remote game in database:", err);
-        return;
-    }
+        await saveGameScores(match);
+        await saveGameResult(match.gameId, winnerId ?? null);
 
-    // 2. Create the in-memory match
-    const match: ServerMatch = {
-        gameId: gameId,
+        // --- ELO and rank update for remote games
+        if ((match.mode === "remote" || match.mode === "tournament") && winnerId) {
+            try {
+                const gamePlayers = await gameRepository.getPlayers(match.gameId);
+                if (!gamePlayers || gamePlayers.length !== 2) {
+                    throw new Error("Could not find both players in game_players for ELO update");
+                }
+                // Get both user_ids (skip AI if present, just use non-NULL)
+                const [gp1, gp2] = gamePlayers;
+                const userIds = [gp1.user_id, gp2.user_id].filter(Boolean) as number[];
+                if (userIds.length === 2) {
+                    const [uid1, uid2] = userIds;
+                    // Split into winner, loser
+                    const loserId = uid1 === winnerId ? uid2 : uid1;
+                    console.log(`🔄 Updating ELO for winner ${winnerId} and loser ${loserId}`);
+
+                    const [winnerStats, loserStats] = await Promise.all([
+                        gameRepository.getPlayerStats(winnerId),
+                        gameRepository.getPlayerStats(loserId),
+                    ]);
+                    if (winnerStats && loserStats) {
+                        console.log(`[ELO] Before - Winner ${winnerId}: ${winnerStats.elo_rating}, Loser ${loserId}: ${loserStats.elo_rating}`);
+                        // ELO formula
+                        const K = 24;
+                        const expected = 1 / (1 + Math.pow(10, (loserStats.elo_rating - winnerStats.elo_rating) / 400));
+                        const diff = Math.round(K * (1 - expected));
+                        const newWinnerElo = winnerStats.elo_rating + diff;
+                        const newLoserElo = loserStats.elo_rating - diff;
+                        const getRank = (elo: number) => {
+                            if (elo >= 1600) return "Master";
+                            if (elo >= 1400) return "Platinum";
+                            if (elo >= 1200) return "Gold";
+                            if (elo >= 1000) return "Silver";
+                            return "Bronze";
+                        };
+                        await Promise.all([
+                            gameRepository.updatePlayerStats(
+                                winnerId,
+                                newWinnerElo,
+                                getRank(newWinnerElo),
+                                winnerStats.wins + 1,
+                                winnerStats.losses
+                            ),
+                            gameRepository.updatePlayerStats(
+                                loserId,
+                                newLoserElo,
+                                getRank(newLoserElo),
+                                loserStats.wins,
+                                loserStats.losses + 1
+                            ),
+                            gameRepository.insertEloHistory({
+                                user_id: winnerId,
+                                game_id: match.gameId,
+                                elo_change: diff,
+                                new_elo: newWinnerElo,
+                                result: "win",
+                            }),
+                            gameRepository.insertEloHistory({
+                                user_id: loserId,
+                                game_id: match.gameId,
+                                elo_change: -diff,
+                                new_elo: newLoserElo,
+                                result: "loss",
+                            }),
+                        ]);
+                        console.log(`[ELO] Winner ${winnerId} -> ${newWinnerElo} (${diff}), Loser ${loserId} -> ${newLoserElo} (${-diff})`);
+                    }
+                } else {
+                    throw new Error("game_players has less than 2 human users for this game.");
+                }
+            } catch (err) {
+                console.error("ELO/rank update failed:", err);
+            }
+        }
+
+        if (match.mode === 'tournament' && winnerId) {
+            await updateTournamentResult(match, winnerId);
+        }
+
+        broadcastToMatch(match, {
+            type: 'gameOver',
+            winner,
+            score: match.state.score
+        });
+
+        matches.delete(match.gameId);
+        console.log(`✅ Game ${match.gameId} ended. Winner: ${winnerId}`);
+    } catch (err) {
+        console.error(`❌ Failed to end game ${match.gameId}:`, err);
+    }
+}
+// ============================================================================
+// REMOTE GAME
+// ============================================================================
+
+async function createRemoteGame(player1: Player, player2: Player): Promise<number> {
+    return await gameRepository.createGameAndAddPlayers('remote', [
+        { user_id: player1.id, position: 1 },
+        { user_id: player2.id, position: 2 }
+    ]);
+}
+
+function createRemoteMatch(gameId: number, player1: Player, player2: Player): RemoteMatch {
+    return {
+        gameId,
         mode: 'remote',
-        players: { left: playerLeft, right: playerRight },
+        players: { left: player1, right: player2 },
+        ready: { left: false, right: false },
+        state: initState(),
+        startTime: Date.now(),
+        keys: {
+            left: { up: false, down: false },
+            right: { up: false, down: false }
+        }
+    };
+}
+
+function notifyRemoteMatchFound(match: RemoteMatch): void {
+    const { left, right } = match.players;
+
+    const baseMessage = {
+        type: 'matchFound',
+        id: match.gameId.toString(),
+        mode: 'remote' as GameMode,
+        playerNames: { left: left.username, right: right.username },
+        playerAvatars: { left: left.avatar, right: right.avatar }
+    };
+
+    sendMessage(left, { ...baseMessage, side: 'left' });
+    sendMessage(right, { ...baseMessage, side: 'right' });
+}
+
+async function matchRemotePlayers(player1: Player, player2: Player): Promise<void> {
+    try {
+        const gameId = await createRemoteGame(player1, player2);
+        const match = createRemoteMatch(gameId, player1, player2);
+
+        matches.set(gameId, match);
+        player1.gameId = gameId;
+        player2.gameId = gameId;
+
+        notifyRemoteMatchFound(match);
+        console.log(`✅ Remote match ${gameId}: ${player1.username} vs ${player2.username}`);
+    } catch (err) {
+        console.error('❌ Failed to create remote match:', err);
+    }
+}
+
+function addToRemoteQueue(player: Player): void {
+    console.log(`🎮 ${player.username} joining remote queue...`);
+    remoteQueue.push(player);
+
+    if (remoteQueue.length >= 2) {
+        const player1 = remoteQueue.shift()!;
+        const player2 = remoteQueue.shift()!;
+        void matchRemotePlayers(player1, player2);
+    }
+}
+
+function removeFromRemoteQueue(userId: number): void {
+    const index = remoteQueue.findIndex(p => p.id === userId);
+    if (index > -1) {
+        remoteQueue.splice(index, 1);
+    }
+}
+
+// ============================================================================
+// TOURNAMENT GAME
+// ============================================================================
+
+async function fetchTournamentMatchData(tournamentId: number, matchId: number) {
+    return await tournamentRepository.getTournamentMatchDetails(tournamentId, matchId);
+}
+
+function validateTournamentPlayer(playerId: number, matchData: any): boolean {
+    return matchData.player1_user_id === playerId || matchData.player2_user_id === playerId;
+}
+
+function createTournamentMatch(
+    gameId: number,
+    tournamentId: number,
+    matchId: number,
+    matchData: any
+): TournamentMatch {
+    return {
+        gameId,
+        mode: 'tournament',
+        players: {},
         ready: { left: false, right: false },
         state: initState(),
         startTime: Date.now(),
@@ -133,138 +391,184 @@ async function createRemoteMatch(matchedPlayers: [Player, Player]) {
             left: { up: false, down: false },
             right: { up: false, down: false }
         },
+        tournamentId,
+        matchId,
+        round: matchData.round,
+        matchNumber: matchData.match_number
     };
-    matches.set(gameId, match);
-
-    // 3. Update player objects with the new gameId
-    playerLeft.gameId = gameId;
-    playerRight.gameId = gameId;
-
-    // 4. Send "matchFound" to both players
-    const playerNames: PlayerNames = {
-        left: playerLeft.username,
-        right: playerRight.username,
-    };
-    const playerAvatars: PlayerAvatars = {
-        left: playerLeft.avatar,
-        right: playerRight.avatar,
-    };
-
-    playerLeft.socket?.send(JSON.stringify({
-        type: "matchFound", side: "left", id: gameId.toString(),
-        mode: 'remote', playerNames, playerAvatars,
-    }));
-    playerRight.socket?.send(JSON.stringify({
-        type: "matchFound", side: "right", id: gameId.toString(),
-        mode: 'remote', playerNames, playerAvatars,
-    }));
 }
 
-/**
- * Handles a player joining a 'remote' (matchmaking) queue.
- */
-function handleRemoteJoin(player: Player) {
-    console.log(`Player ${player.username} joining 'remote' queue...`);
-    if (!queue.has("remote")) queue.set("remote", []);
-    const remoteQueue = queue.get("remote")!;
+function getOrCreateTournamentMatch(
+    gameId: number,
+    tournamentId: number,
+    matchId: number,
+    matchData: any
+): TournamentMatch {
+    let match = matches.get(gameId) as TournamentMatch | undefined;
 
-    remoteQueue.push(player);
-
-    if (remoteQueue.length >= 2) {
-        const player1 = remoteQueue.shift()!;
-        const player2 = remoteQueue.shift()!;
-        void createRemoteMatch([player1, player2]);
-    }
-}
-
-/**
- * Handles a player joining a specific 'tournament' game.
- */
-async function handleTournamentJoin(player: Player, gameId: number) {
-    console.log(`Player ${player.username} joining tournament game ${gameId}...`);
-    player.gameId = gameId;
-
-    // 1. Find or create the in-memory match
-    let match = matches.get(gameId);
     if (!match) {
-        // This is the FIRST player to join this game, create the match in memory
-        const dbGame = await gameRepository.getGameById(gameId);
-        if (!dbGame || dbGame.mode !== 'tournament') {
-            console.error(`Player ${player.id} tried to join non-existent/invalid tournament game ${gameId}`);
-            player.socket?.close(1008, "Tournament game not found");
-            return;
-        }
-
-        match = {
-            gameId: gameId,
-            mode: 'tournament',
-            players: {}, // Players will be added as they connect
-            ready: { left: false, right: false },
-            state: initState(),
-            startTime: Date.now(),
-            keys: {
-                left: { up: false, down: false },
-                right: { up: false, down: false }
-            },
-        };
+        match = createTournamentMatch(gameId, tournamentId, matchId, matchData);
         matches.set(gameId, match);
     }
 
-    // 2. Add this player to their slot ('left' or 'right')
-    const gamePlayers = await gameRepository.getGamePlayers(gameId);
-    const myDbInfo = gamePlayers.find(p => p.user_id === player.id);
-    const side = myDbInfo?.position === 1 ? 'left' : 'right';
+    return match;
+}
+
+function assignPlayerToTournamentMatch(
+    player: Player,
+    match: TournamentMatch,
+    matchData: any
+): void {
+    player.gameId = match.gameId;
+    const side: Side = matchData.player1_user_id === player.id ? 'left' : 'right';
     match.players[side] = player;
+    console.log(`✅ ${player.username} assigned to ${side} side`);
+}
 
-    // 3. If BOTH players are now connected, send "matchFound"
-    if (match.players.left && match.players.right &&
-        match.players.left.socket && match.players.right.socket) {
+function areBothPlayersConnected(match: TournamentMatch): boolean {
+    return !!(match.players.left?.socket && match.players.right?.socket);
+}
 
-        const playerNames: PlayerNames = {
-            left: match.players.left.username,
-            right: match.players.right.username,
-        };
-        const playerAvatars: PlayerAvatars = {
-            left: match.players.left.avatar,
-            right: match.players.right.avatar,
-        };
+async function notifyTournamentMatchReady(
+    match: TournamentMatch,
+    matchData: any
+): Promise<void> {
+    const baseMessage = {
+        type: 'matchFound',
+        id: match.gameId.toString(),
+        mode: 'tournament' as GameMode,
+        playerNames: {
+            left: matchData.player1_username,
+            right: matchData.player2_username
+        },
+        playerAvatars: {
+            left: matchData.player1_avatar || null,
+            right: matchData.player2_avatar || null
+        },
+        round: matchData.round,
+        matchNumber: matchData.match_number,
+        tournamentId: match.tournamentId,
+        matchId: match.matchId
+    };
 
-        match.players.left.socket.send(JSON.stringify({
-            type: "matchFound", side: "left", id: gameId.toString(),
-            mode: 'tournament', playerNames, playerAvatars,
-        }));
-        match.players.right.socket.send(JSON.stringify({
-            type: "matchFound", side: "right", id: gameId.toString(),
-            mode: 'tournament', playerNames, playerAvatars,
-        }));
+    sendMessage(match.players.left, { ...baseMessage, side: 'left' });
+    sendMessage(match.players.right, { ...baseMessage, side: 'right' });
 
-        console.log(`Tournament match ${gameId} is ready for players.`);
+    await tournamentRepository.updateMatchStatus(match.matchId, 'playing');
+    console.log(`✅ Tournament match ${match.matchId} ready`);
+}
+
+async function joinTournamentMatch(
+    player: Player,
+    tournamentId: number,
+    matchId: number
+): Promise<void> {
+    console.log(`🏆 ${player.username} joining tournament ${tournamentId} match ${matchId}...`);
+
+    try {
+        const matchData = await fetchTournamentMatchData(tournamentId, matchId);
+
+        if (!matchData?.game_id) {
+            sendError(player, 'Tournament match not found');
+            return;
+        }
+
+        if (!validateTournamentPlayer(player.id, matchData)) {
+            sendError(player, 'You are not in this match');
+            return;
+        }
+
+        const match = getOrCreateTournamentMatch(
+            matchData.game_id,
+            tournamentId,
+            matchId,
+            matchData
+        );
+
+        assignPlayerToTournamentMatch(player, match, matchData);
+
+        if (areBothPlayersConnected(match)) {
+            await notifyTournamentMatchReady(match, matchData);
+        } else {
+            console.log(`⏳ Waiting for other player in match ${matchId}...`);
+        }
+    } catch (err) {
+        console.error(`❌ Failed to join tournament match:`, err);
+        sendError(player, 'Failed to join tournament match');
     }
 }
 
-// --- Main Message Handlers ---
+// ============================================================================
+// PLAYER DISCONNECT
+// ============================================================================
 
-async function handleJoinGame(userId: number, data: ClientMessage & { type: "joinGame" }, socket: WebSocket) {
+function handlePlayerDisconnect(userId: number, match: ServerMatch): void {
+    stopGameLoop(match);
+
+    const remainingSide: Side = match.players.left?.id === userId ? 'right' : 'left';
+    const remainingPlayer = match.players[remainingSide];
+
+    if (remainingPlayer?.socket?.readyState === WebSocket.OPEN) {
+        sendMessage(remainingPlayer, { type: 'opponentLeft' });
+        void endGame(match, remainingSide);
+        console.log(`✅ Player ${userId} left. ${remainingPlayer.id} wins by forfeit`);
+    } else {
+        void cancelGame(match.gameId);
+        matches.delete(match.gameId);
+        console.log(`✅ Both players disconnected from match ${match.gameId}`);
+    }
+}
+
+function cleanupPlayer(userId: number): void {
+    const player = getPlayer(userId);
+    if (!player) return;
+
+    const match = getMatch(userId);
+    if (match) {
+        handlePlayerDisconnect(userId, match);
+    }
+
+    removeFromRemoteQueue(userId);
+
+    player.gameId = undefined;
+    player.mode = undefined;
+    console.log(`✅ Player ${userId} cleaned up`);
+}
+
+// ============================================================================
+// MESSAGE HANDLERS
+// ============================================================================
+
+async function handleJoinGame(
+    userId: number,
+    data: ClientMessage & { type: 'joinGame' },
+    socket: WebSocket
+): Promise<void> {
     const player: Player = {
         id: userId,
         username: data.username,
         avatar: data.avatar,
-        socket: socket,
-        mode: data.mode,
+        socket,
+        mode: data.mode
     };
+
     players.set(userId, player);
 
-    if (data.mode === "remote") {
-        handleRemoteJoin(player);
-    } else if (data.mode === "tournament") {
-        await handleTournamentJoin(player, data.gameId!);
+    if (data.mode === 'remote') {
+        addToRemoteQueue(player);
+    }
+    else if (data.mode === 'tournament') {
+        if (data.tournamentId && data.matchId) {
+            await joinTournamentMatch(player, data.tournamentId, data.matchId);
+        } else {
+            sendError(player, 'Tournament ID and Match ID are required');
+        }
     }
 }
 
-function handleReady(userId: number) {
-    const match = getPlayerMatch(userId);
-    const player = players.get(userId);
-    if (!match || !player) return;
+async function handleReady(userId: number): Promise<void> {
+    const match = getMatch(userId);
+    if (!match) return;
 
     const side = getPlayerSide(userId, match);
     if (!side) return;
@@ -272,111 +576,93 @@ function handleReady(userId: number) {
     match.ready[side] = true;
 
     if (match.ready.left && match.ready.right) {
-        // For 'remote' games, we update the DB status
         if (match.mode === 'remote') {
-            gameRepository.startGame(match.gameId)
-                .then(() => {
-                    console.log(`Match ${match.gameId} starting loop!`);
-                    startGameLoop(match.gameId);
-                })
-                .catch(err => console.error("Failed to start game:", err));
+            try {
+                await gameRepository.start(match.gameId);
+                console.log(`✅ Remote match ${match.gameId} starting!`);
+                startGameLoop(match.gameId);
+            } catch (err) {
+                console.error('❌ Failed to start game:', err);
+            }
         } else {
-            // 'tournament' games are already 'playing', just start the loop
-            console.log(`Match ${match.gameId} starting loop!`);
+            console.log(`✅ Tournament match ${match.matchId} starting!`);
             startGameLoop(match.gameId);
         }
     }
 }
 
-function handleMove(userId: number, data: ClientMessage & { type: "move" }) {
-    const match = getPlayerMatch(userId);
+function handleMove(userId: number, data: ClientMessage & { type: 'move' }): void {
+    const match = getMatch(userId);
     if (!match) return;
+
     const side = getPlayerSide(userId, match);
     if (!side) return;
+
     match.keys[side].up = data.up ?? false;
     match.keys[side].down = data.down ?? false;
 }
 
-function handleLeaveGame(userId: number): void {
-    const player = players.get(userId);
+function handlePlayAgain(userId: number): void {
+    const player = getPlayer(userId);
     if (!player) return;
 
-    const match = getPlayerMatch(userId);
-    if (match) {
-        if (match.loop) clearInterval(match.loop);
+    cleanupPlayer(userId);
 
-        const remainingPlayerSide: Side = match.players.left?.id === userId ? "right" : "left";
-        const remainingPlayer = match.players[remainingPlayerSide];
-
-        if (remainingPlayer && remainingPlayer.socket?.readyState === WebSocket.OPEN) {
-            console.log(`Player ${userId} left. Player ${remainingPlayer.id} wins ${match.gameId} by forfeit.`);
-            void persistAndEndGame(match, remainingPlayerSide);
-        } else {
-            console.log(`Both players disconnected from match ${match.gameId}. Cancelling.`);
-            gameRepository.cancelGame(match.gameId).catch(err => {
-                console.error("Failed to cancel game in DB:", err);
-            });
-            matches.delete(match.gameId);
-        }
-    }
-
-    queue.forEach((q) => {
-        const index = q.findIndex(p => p.id === userId);
-        if (index > -1) q.splice(index, 1);
-    });
-
-    player.gameId = undefined;
-    player.mode = undefined;
-    console.log(`Cleaned up player ${userId}`);
+    void handleJoinGame(
+        userId,
+        {
+            type: 'joinGame',
+            username: player.username,
+            avatar: player.avatar,
+            mode: 'remote'
+        },
+        player.socket!
+    );
 }
 
-function handlePlayAgain(userId: number, mode: GameMode) {
-    const player = players.get(userId);
-    if (!player) return;
+// ============================================================================
+// PUBLIC API
+// ============================================================================
 
-    if (mode === 'tournament') {
-        console.warn(`Player ${userId} tried to 'playAgain' in a tournament. Ignoring.`);
-        return; // Not allowed in tournaments
-    }
-
-    handleLeaveGame(userId); // Clean up old match
-
-    handleJoinGame(userId, { // Re-join 'remote' queue
-        type: "joinGame",
-        username: player.username,
-        avatar: player.avatar,
-        mode: 'remote', // Only 'remote' can be played again
-    }, player.socket!);
-}
-
-// --- Main Exported Functions ---
-
-export function handleMessage(userId: number, data: ClientMessage, socket: WebSocket): void {
-    if (data.type === "joinGame") {
-        void handleJoinGame(userId, data, socket); // Handle async
+export function handleMessage(
+    userId: number,
+    data: ClientMessage,
+    socket: WebSocket
+): void {
+    if (data.type === 'joinGame') {
+        void handleJoinGame(userId, data, socket);
         return;
     }
 
-    const player = players.get(userId);
+    const player = getPlayer(userId);
     if (!player) {
-        console.warn(`Message from unknown player: ${userId}. Type: ${data.type}`);
-        socket.close(1008, "Player not registered");
+        console.warn(`⚠️ Unknown player ${userId}`);
+        socket.close(1008, 'Player not registered');
         return;
     }
+
     player.socket = socket;
 
     switch (data.type) {
-        case "ready": handleReady(userId); break;
-        case "move": handleMove(userId, data); break;
-        case "playAgain": handlePlayAgain(userId, data.mode); break;
-        case "leaveGame": handleLeaveGame(userId); break;
+        case 'ready':
+            void handleReady(userId);
+            break;
+        case 'move':
+            handleMove(userId, data);
+            break;
+        case 'playAgain':
+            handlePlayAgain(userId);
+            break;
+        case 'leaveGame':
+            cleanupPlayer(userId);
+            break;
         default:
-            console.warn(`Unknown message type received: ${(data as any).type}`);
+            console.warn(`⚠️ Unknown message type: ${(data as any).type}`);
     }
 }
 
 export function removePlayer(userId: number): void {
-    handleLeaveGame(userId);
+    cleanupPlayer(userId);
     players.delete(userId);
-    console.log(`Player ${userId} removed from server.`);
+    console.log(`✅ Player ${userId} removed`);
 }

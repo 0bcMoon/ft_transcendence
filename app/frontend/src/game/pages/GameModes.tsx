@@ -1,73 +1,56 @@
-import { Users, Award, Users2, Bot } from "lucide-react";
-import { GameModeCard } from "../components/GameModeCard";
+import { GameModeCard } from '../components/GameModeCard';
+import { Globe, Trophy, Users, X } from 'lucide-react';
 
-export default function GameMode() {
-    const gameModes = [
-        {
-            to: "/game/quick/play",
-            icon: <Users size={48} strokeWidth={1.5} />,
-            title: "Quick Match",
-            description: "Play online against other players"
-        },
-        {
-            to: "/game/local/play",
-            icon: <Users2 size={48} strokeWidth={1.5} />,
-            title: "Local Game",
-            description: "Play with a friend nearby"
-        },
-        {
-            to: "/game/ai/play",
-            icon: <Bot size={48} strokeWidth={1.5} />,
-            title: "VS AI",
-            description: "Practice against computer"
-        },
-        {
-            to: "/game/tournament",
-            icon: <Award size={48} strokeWidth={1.5} />,
-            title: "Tournament",
-            description: "Compete in ranked matches"
-        },
-    ];
-
+function GameModes() {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-6xl mx-auto px-6 py-12">
-
+        < div className="h-full overflow-y-auto bg-slate-950 no-scrollbar flex items-center justify-center py-24 px-6" >
+            <div className="max-w-7xl w-full">
                 <div className="text-center mb-16">
-                    <div className="inline-block mb-6">
-                        <div className="w-20 h-20 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center">
-                            <div className="w-12 h-12 border-4 border-white dark:border-gray-900 rounded-full" />
-                        </div>
-                    </div>
-
-                    <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
-                        Ping Pong Arena
+                    <h1 className="text-4xl md:text-6xl font-black text-white mb-4">
+                        Choose Your Geme Mode
                     </h1>
-
-                    <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                        Choose your game mode and start playing. Challenge friends, compete in tournaments, or practice your skills.
+                    <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                        Four distinct ways to play and prove your mastery over the table.
                     </p>
                 </div>
 
-                <div className="mb-16">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-                        Game Modes
-                    </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <GameModeCard
+                        to="/game/local/play"
+                        icon={<Users size={32} />}
+                        title="Local Games"
+                        description="Play classic 1v1 matches with a friend on the same keyboard or with shared controllers."
+                        colorClass="green"
+                    />
+                    <GameModeCard
+                        to="/game/quick/play"
+                        icon={<Globe size={32} />}
+                        title="Remote Game"
+                        description="Challenge players from around the world in ranked or casual online matches."
+                        colorClass="blue"
+                    />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {gameModes.map((mode) => (
-                            <GameModeCard
-                                key={mode.title}
-                                to={mode.to}
-                                icon={mode.icon}
-                                title={mode.title}
-                                description={mode.description}
-                            />
-                        ))}
-                    </div>
+                    <GameModeCard
+                        to="/game/ai/play"
+                        icon={<X size={32} />}
+                        title="TIC-TAC-TOE"
+                        description="Test your skills against our advanced AI with multiple difficulty levels and training modes."
+                        colorClass="purple"
+                    />
+
+                    <GameModeCard
+                        to="/game/tournaments"
+                        icon={<Trophy size={32} />}
+                        title="Tournaments"
+                        description="Automated daily and weekly elimination brackets with prize pools and global rankings."
+                        colorClass="cyan"
+                    />
+
+
                 </div>
-
             </div>
-        </div>
+        </div >
     );
 }
+
+export default GameModes;

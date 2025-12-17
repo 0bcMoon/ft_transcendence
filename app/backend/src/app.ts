@@ -12,11 +12,7 @@ import game from "./game.routes";
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
-import {
-    serializerCompiler,
-    validatorCompiler,
-    ZodTypeProvider,
-} from "fastify-type-provider-zod";
+import { serializerCompiler, validatorCompiler, ZodTypeProvider, } from "fastify-type-provider-zod";
 
 // This import is essential. It loads the types from the plugin.
 import multipart from '@fastify/multipart';

@@ -60,17 +60,14 @@ export function useLocalGame() {
         setScore({ left: 0, right: 0 });
     }, []);
 
-    /**
-     * Persists the final game results to the database.
-     */
-    const persistFinishedGame = useCallback(async (final: Scores, sideWinner: Side | null) => {
+    const persistFinishedGame = useCallback(async (score: Scores, sideWinner: Side | null) => {
         const id = gameIdRef.current;
-        if (id === null) return; // No game ID, cannot save
+        if (id === null)
+            return;
 
         try {
-            // Assumes Player 1 (left) is local, Player 2 (right) is the logged-in user
-            await updateScoreMutation.mutateAsync({ gameId: id, score: final.left, position: 1 });
-            await updateScoreMutation.mutateAsync({ gameId: id, score: final.right, position: 2 });
+            await updateScoreMutation.mutateAsync({ gameId: id, score: score.left, position: 1 });
+            await updateScoreMutation.mutateAsync({ gameId: id, score: score.right, position: 2 });
 
             const winnerId = (sideWinner === "right") ? user?.id ?? null : null;
             await finishGameMutation.mutateAsync({ gameId: id, winnerId });
@@ -80,9 +77,6 @@ export function useLocalGame() {
         }
     }, [updateScoreMutation, finishGameMutation, user]);
 
-    /**
-     * Callback passed to `moveBall`. Runs *after* a point is scored.
-     */
     const handleScore = useCallback((scorer: Side) => {
         const state = gameStateRef.current;
         if (!state || isGameOverRef.current)
@@ -154,7 +148,7 @@ export function useLocalGame() {
             startLoop();
         } catch (e) {
             console.error("Failed to create/start local game:", e);
-            hasStartedRef.current = false; // Allow retry if it failed
+            hasStartedRef.current = false;
         }
     }, [createGameMutation, startGameMutation, startLoop, user]);
 

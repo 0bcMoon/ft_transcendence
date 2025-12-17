@@ -9,6 +9,7 @@ const gameRoute: FastifyPluginAsync = async (fastify) => {
         socket.on("message", (raw) => {
             try {
                 const msg = JSON.parse(raw.toString());
+                console.log("Received message:", msg);
                 handleMessage(userId, msg, socket);
             } catch (err) {
                 fastify.log.warn(err, `Failed to parse WebSocket message from ${userId}`);

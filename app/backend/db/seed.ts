@@ -47,9 +47,14 @@ db.serialize(async () => {
     // Create some fixed users
     const fixedUsers = [
         ["hicham", "Hicham Benoukaiss", "hicham@mail.com"],
-        ["jebli", "Mohamed Regrag", "mohamed@mail.com"],
+        ["mregrag", "Mohamed Regrag", "mohamed@mail.com"],
         ["zaid", "Zaid kotbi", "zaid@mail.com"],
         ["microb", "khona microb", "microb@mail.com"],
+        ["zeko", "zakaria", "zakaria@mail.com"],
+        ["user1", "khona microb", "user1@mail.com"],
+        ["user2", "khona microb", "user2@mail.com"],
+        ["user3", "khona microb", "user3@mail.com"],
+        ["user4", "khona microb", "user4@mail.com"],
         ["hmouda", "Mohammed El Bouazizi", faker.internet.email()]
     ];
 

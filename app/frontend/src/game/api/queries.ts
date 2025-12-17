@@ -1,16 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { tournamentApi, gameApi, GameWithPlayers } from '../api/gameApi';
 import { GameMode } from '../types/types';
 import { Tournament, TournamentPlayer, TournamentGame } from '../api/gameApi';
-
-export type UserStats = {
-    wins: number;
-    losses: number;
-    winRate: number; // percent (0-100)
-    score: number;   // wins*3 - losses
-    rank: number | null;
-};
-
+import type { GlobalMatchData, UserStats, ScoreProgressionPoint } from '../types/types';
+import { tournamentApi, gameApi, GameWithPlayers, RecentMatch } from '../api/gameApi';
 
 import {
     BracketPlayer,
@@ -32,6 +24,17 @@ export interface MatchHistoryItemData {
     opponent_avatar: string | null; // Opponent's avatar (or null)
 }
 
+export type TopPlayer = {
+    user_id: number;
+    username: string;
+    display_name: string;
+    avatar: string | null;
+    elo_rating: number;
+    rank: string;
+    wins: number;
+    losses: number;
+};
+
 export const qk = {
     tournaments: ['tournaments'],
     tournament: (id: number) => ['tournament', id],
@@ -39,6 +42,7 @@ export const qk = {
     tournamentGames: (id: number) => ['tournamentGames', id],
     tournamentRoundGames: (id: number, round: number) => ['tournamentRoundGames', id, round],
     tournamentBracket: (id: number) => ['tournamentBracket', id],
+    recentMatches: (userId: number, limit: number) => ['recentMatches', userId, limit],
 };
 
 // ==================== TOURNAMENT QUERIES ============================
@@ -60,6 +64,31 @@ export const useListTournaments = () => {
 //     });
 // };
 
+export const useGetTopPlayers = (limit: number = 10) => {
+    return useQuery<TopPlayer[], Error>({
+        queryKey: ['top-players', limit],
+        queryFn: () => gameApi.getTopPlayers(limit),
+        enabled: limit > 0,
+    });
+};
+
+export const useGetUserStats = (userId: number) => {
+    return useQuery<UserStats, Error>({
+        queryKey: ['user-stats', userId],
+        queryFn: () => gameApi.getUserStats(userId),
+        enabled: !!userId,
+    });
+};
+
+export const useGetScoreProgression = (userId: number, limit: number = 10) => {
+    return useQuery<ScoreProgressionPoint[], Error>({
+        queryKey: ['score-progression', userId, limit],
+        queryFn: () => gameApi.getUserScoreProgression(userId, limit),
+        enabled: !!userId,
+    });
+};
+
+
 export const useGetTournament = (tournamentId: number) => {
     return useQuery<Tournament, Error>({
         queryKey: qk.tournament(tournamentId),
@@ -68,11 +97,20 @@ export const useGetTournament = (tournamentId: number) => {
     });
 };
 
+export const useGetRecentMatches = (userId: number, limit: number = 10) => {
+    return useQuery<RecentMatch[], Error>({
+        queryKey: qk.recentMatches(userId, limit),
+        queryFn: () => gameApi.getUserRecentMatches(userId, limit),
+        enabled: !!userId,
+    });
+};
+
 export const useGetGlobalMatches = (limit: number = 10) => {
-    return useQuery({
-        queryKey: ['globalMatches', limit],
+    return useQuery<GlobalMatchData[], Error>({
+        queryKey: ['global-matches', limit],
         queryFn: () => gameApi.getRecentGlobalMatches(limit),
-        enabled: true,
+        staleTime: 30000,
+        refetchInterval: 60000,
     });
 };
 
@@ -119,18 +157,6 @@ export const useGetMatchHistory = (userId: number) => {
 
 };
 
-export const useGetUserStats = (userId?: number) => {
-    return useQuery<UserStats, Error>({
-        queryKey: ['userStats', userId],
-        queryFn: () => {
-            if (!userId) throw new Error('No user ID provided');
-            return gameApi.getUserStats(userId);
-        },
-        enabled: !!userId,
-    });
-};
-
-
 export const useGetGameDetails = (gameId: number) => {
     return useQuery<GameWithPlayers | null, Error>({
         queryKey: ['gameDetails', gameId],
@@ -138,6 +164,17 @@ export const useGetGameDetails = (gameId: number) => {
         enabled: !!gameId,
     });
 };
+
+export function useUserMatch(tournamentId: number, enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['tournament', tournamentId, 'user-match'],
+        queryFn: () => tournamentApi.getUserMatch(tournamentId),
+        enabled: enabled && !!tournamentId && tournamentId > 0,
+        staleTime: 3000, // 3 seconds
+        refetchInterval: 5000, // Poll every 5 seconds
+        retry: 1, // Only retry once on failure
+    });
+}
 
 export const useGetBracketData = (tournamentId: number) => {
     return useQuery<TournamentData | null, Error>({

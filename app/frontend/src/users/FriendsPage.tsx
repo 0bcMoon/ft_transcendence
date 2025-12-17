@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Users, UserPlus, UserX } from 'lucide-react';
+import { Search, Users, UserPlus, UserX, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import FriendsList from './components/FriendsList';
 import SearchUsers from './components/SearchUsers';
 import FriendRequests from './components/FriendRequests';
@@ -9,6 +10,9 @@ type TabType = 'friends' | 'search' | 'requests' | 'blocked';
 
 const FriendsPage = () => {
     const [activeTab, setActiveTab] = useState<TabType>('friends');
+    const navigate = useNavigate();
+
+    const handleGoBack = () => navigate(-1);
 
     const tabs = [
         { id: 'friends' as TabType, label: 'Friends', icon: Users },
@@ -32,22 +36,33 @@ const FriendsPage = () => {
         }
     };
 
-
     return (
-        <div className="h-full bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-slate-950 py-6 px-4">
+            <div className="max-w-6xl mx-auto">
+                {/* Back Button */}
+                <button
+                    onClick={handleGoBack}
+                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-gray-600 dark:text-slate-400 
+                               hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-900 
+                               rounded-lg transition-all font-medium"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span>Back</span>
+                </button>
 
-                <div className="mb-6 sm:mb-10">
-                    <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 dark:text-gray-100">
+                {/* Page Header */}
+                <div className="mb-8">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                         Friends
                     </h1>
-                    <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400">
+                    <p className="text-base text-gray-600 dark:text-slate-400">
                         Manage your connections and discover new people
                     </p>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8 dark:bg-gray-800 dark:border-gray-800">
-                    <div className="flex overflow-x-auto justify-center">
+                {/* Tabs Navigation */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 mb-6 overflow-hidden shadow-sm">
+                    <div className="flex overflow-x-auto no-scrollbar">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -55,23 +70,24 @@ const FriendsPage = () => {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-8
-                                                py-3 sm:py-5 font-medium whitespace-nowrap transition-all duration-200
-                                                border-b-2 text-sm sm:text-base 
+                                    className={`flex items-center justify-center gap-2.  5 px-6 sm:px-8
+                                                py-4 font-semibold whitespace-nowrap transition-all duration-200
+                                                border-b-2 text-base flex-1 sm:flex-initial
                                         ${isActive
-                                            ? 'text-blue-600 border-blue-600 bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:bg-blue-500/10'
-                                            : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800'
+                                            ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-500/10'
+                                            : 'text-gray-600 dark:text-slate-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800'
                                         }`}
                                 >
-                                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                                    <span className="hidden lg:inline">{tab.label}</span>
+                                    <Icon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">{tab.label}</span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8 dark:bg-gray-800 dark:border-gray-800">
+                {/* Content Area */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                     <RenderContent />
                 </div>
             </div>

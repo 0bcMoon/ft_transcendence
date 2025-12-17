@@ -3,16 +3,26 @@ import { useAuthStore } from '@/state/authStore';
 import { ArrowLeft, Trophy, Clock, Calendar, Target, Loader2, XCircle } from 'lucide-react';
 import { useGetGameDetails } from "../api/queries";
 
-function PlayerCard({ name, avatar, score, isWinner }: { name: string; avatar: string; score: number; isWinner: boolean; isUser: boolean; }) {
+function PlayerCard({ name, avatar, score, isWinner, userId }: { name: string; avatar: string; score: number; isWinner: boolean; isUser: boolean; userId?: number; }) {
+    const navigate = useNavigate();
+
+    const handleAvatarClick = () => {
+        if (userId) {
+            navigate(`/users/${userId}`);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center">
             <div className="relative">
                 <img
                     src={`${import.meta.env.VITE_API_URL}/public/${avatar}`}
                     alt={name}
-                    className={`w-32 h-32 rounded-full object-cover border-4 ${isWinner
-                        ? 'border-green-500 dark:border-green-400'
-                        : 'border-red-500 dark:border-red-400'
+                    onClick={handleAvatarClick}
+                    className={`w-32 h-32 rounded-full object-cover border-4 ${userId ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                        } ${isWinner
+                            ? 'border-green-500 dark:border-green-400'
+                            : 'border-red-500 dark:border-red-400'
                         }`}
                     onError={(e) => (e.currentTarget.src = `https://placehold.co/128x128/71717a/a3a3a3?text=${name.charAt(0)}`)}
                 />
@@ -21,13 +31,17 @@ function PlayerCard({ name, avatar, score, isWinner }: { name: string; avatar: s
                     : 'bg-red-500 dark:bg-red-400'
                     }`}>
                     {isWinner ? (
-                        <Trophy size={18} className="text-white dark:text-green-950" />
+                        <Trophy size={18} className="text-white" />
                     ) : (
-                        <XCircle size={18} className="text-white dark:text-red-950" />
+                        <XCircle size={18} className="text-white" />
                     )}
                 </div>
             </div>
-            <h3 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
+            <h3
+                onClick={handleAvatarClick}
+                className={`mt-4 text-xl font-bold text-gray-900 dark:text-white ${userId ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''
+                    }`}
+            >
                 {name}
             </h3>
             <p className={`mt-3 text-5xl font-bold ${isWinner
@@ -42,12 +56,12 @@ function PlayerCard({ name, avatar, score, isWinner }: { name: string; avatar: s
 
 function StatItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string; }) {
     return (
-        <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
             <div className="text-gray-900 dark:text-white">
                 {icon}
             </div>
             <div className="flex-1">
-                <p className="text-xs text-gray-500 dark:text-gray-500 font-medium mb-0.5">{label}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-0. 5">{label}</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{value}</p>
             </div>
         </div>
@@ -64,10 +78,10 @@ export default function MatchDetailsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="animate-spin text-gray-900 dark:text-white" size={32} />
-                    <p className="text-gray-600 dark:text-gray-400">Loading match details...</p>
+                    <p className="text-gray-600 dark:text-slate-400">Loading match details...</p>
                 </div>
             </div>
         );
@@ -75,7 +89,7 @@ export default function MatchDetailsPage() {
 
     if (isError || !gameDetails) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-gray-900 dark:text-white text-lg font-semibold mb-4">Match not found</p>
                     <button
@@ -93,8 +107,10 @@ export default function MatchDetailsPage() {
     const opponentPlayer = gameDetails.players.find(p => p.user_id !== user?.id) || gameDetails.players[1];
     const userName = userPlayer?.username || (userPlayer?.position === 1 ? "Player 1" : "Player 2");
     const userAvatar = userPlayer?.avatar || "";
+    const userId = userPlayer?.user_id;
     const opponentName = opponentPlayer?.username || (opponentPlayer?.position === 1 ? "Player 1" : "Player 2");
     const opponentAvatar = opponentPlayer?.avatar || "";
+    const opponentId = opponentPlayer?.user_id;
     const isWin = gameDetails.winner_id === userPlayer?.user_id;
 
     let duration = "N/A";
@@ -107,7 +123,7 @@ export default function MatchDetailsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
 
                 {/* Header */}
@@ -128,7 +144,7 @@ export default function MatchDetailsPage() {
                 </div>
 
                 {/* Players Section */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 mb-8 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 border border-gray-200 dark:border-slate-800">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 items-center">
                         {/* User Player */}
                         <PlayerCard
@@ -137,6 +153,7 @@ export default function MatchDetailsPage() {
                             score={userPlayer?.score ?? 0}
                             isWinner={isWin}
                             isUser={true}
+                            userId={userId}
                         />
 
                         {/* VS Divider */}
@@ -145,7 +162,7 @@ export default function MatchDetailsPage() {
                                 <div className="w-16 h-16 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center mx-auto mb-2">
                                     <span className="text-2xl font-bold text-white dark:text-gray-900">VS</span>
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-500">{gameDetails.mode}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400">{gameDetails.mode}</p>
                             </div>
                         </div>
 
@@ -156,12 +173,13 @@ export default function MatchDetailsPage() {
                             score={opponentPlayer?.score ?? 0}
                             isWinner={!isWin}
                             isUser={false}
+                            userId={opponentId}
                         />
                     </div>
                 </div>
 
                 {/* Match Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 mb-8">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-slate-800 mb-8">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Match Information</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -193,17 +211,17 @@ export default function MatchDetailsPage() {
 
                     {/* Timeline */}
                     {gameDetails.started_at && gameDetails.ended_at && (
-                        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div className="pt-6 border-t border-gray-200 dark:border-slate-800">
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Timeline</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600 dark:text-gray-400">Started</span>
+                                    <span className="text-gray-600 dark:text-slate-400">Started</span>
                                     <span className="font-medium text-gray-900 dark:text-white">
                                         {new Date(gameDetails.started_at).toLocaleTimeString()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-gray-600 dark:text-gray-400">Ended</span>
+                                    <span className="text-gray-600 dark:text-slate-400">Ended</span>
                                     <span className="font-medium text-gray-900 dark:text-white">
                                         {new Date(gameDetails.ended_at).toLocaleTimeString()}
                                     </span>

@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS "users" (
 );
 
 
-
 CREATE TABLE IF NOT EXISTS "messages" (
     "id" INTEGER,
     "sender_id" INT NOT NULL,
@@ -73,85 +72,118 @@ CREATE TABLE IF NOT EXISTS "blocks" (
     PRIMARY KEY("id" AUTOINCREMENT)
 );
 
--- Games: All matches played
+------------------------Games---------------------
+
+
+-- Games table
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mode TEXT NOT NULL CHECK(mode IN ('ai','local','remote','tournament','multiplayer')),
-    status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting','playing','finished','cancelled')),
-    winner_id INTEGER, -- References users(id)
+    mode TEXT NOT NULL CHECK(mode IN ('local', 'remote', 'ai', 'tournament')),
+    status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting', 'playing', 'finished', 'cancelled')),
+    winner_id INTEGER,
     started_at TIMESTAMP,
     ended_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_games_mode   ON games(mode);
-CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
-CREATE INDEX IF NOT EXISTS idx_games_winner ON games(winner_id);
-
--- Game Players: Who played in each game, their position and score
+-- Game players table
 CREATE TABLE IF NOT EXISTS game_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game_id INTEGER NOT NULL,   -- References games(id)
-    user_id INTEGER,            -- References users(id), NULL if AI
-    position INTEGER NOT NULL,  -- 1 = left, 2 = right, etc.
-    score INTEGER NOT NULL DEFAULT 0,
-    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(game_id, position),
+    game_id INTEGER NOT NULL,
+    user_id INTEGER,
+    position INTEGER NOT NULL CHECK(position IN (1, 2)),
+    score INTEGER DEFAULT 0,
+    is_ai INTEGER DEFAULT 0 NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE(game_id, position)
 );
 
-CREATE INDEX IF NOT EXISTS idx_gp_game ON game_players(game_id);
-CREATE INDEX IF NOT EXISTS idx_gp_user ON game_players(user_id);
-
--- Tournaments: All tournament events
+-- Tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration','active','finished','cancelled')),
-    winner_id INTEGER,          -- References users(id)
-    max_players INTEGER NOT NULL DEFAULT 8,
-    current_round INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished', 'cancelled')),
+    created_by INTEGER NOT NULL,
+    winner_id INTEGER,
+    max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16, 32, 64)),
+    current_round INTEGER DEFAULT 1,
     started_at TIMESTAMP,
     ended_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
-CREATE INDEX IF NOT EXISTS idx_tournaments_winner ON tournaments(winner_id);
-
--- Tournament Players: Who joined each tournament
+-- Tournament players table
 CREATE TABLE IF NOT EXISTS tournament_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER NOT NULL,   -- References tournaments(id)
-    user_id INTEGER NOT NULL,         -- References users(id)
-    alias TEXT NOT NULL,              -- Nickname in tournament
-    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','eliminated','winner')),
-    registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tournament_id, user_id),
-    UNIQUE(tournament_id, alias),
+    tournament_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    seed INTEGER NOT NULL,
+    eliminated INTEGER DEFAULT 0,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(tournament_id, user_id),
+    UNIQUE(tournament_id, seed)
+);
+
+-- Tournament matches table
+CREATE TABLE IF NOT EXISTS tournament_matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id INTEGER NOT NULL,
+    round INTEGER NOT NULL,
+    match_number INTEGER NOT NULL,
+    player1_id INTEGER,
+    player2_id INTEGER,
+    winner_id INTEGER,
+    game_id INTEGER,
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'playing', 'completed')),
+    scheduled_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY (player1_id) REFERENCES tournament_players(id) ON DELETE SET NULL,
+    FOREIGN KEY (player2_id) REFERENCES tournament_players(id) ON DELETE SET NULL,
+    FOREIGN KEY (winner_id) REFERENCES tournament_players(id) ON DELETE SET NULL,
+    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE SET NULL,
+    UNIQUE(tournament_id, round, match_number)
+);
+
+CREATE TABLE IF NOT EXISTS player_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    elo_rating INTEGER DEFAULT 1000 NOT NULL,
+    rank TEXT DEFAULT 'Silver' NOT NULL,
+    wins INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_tp_tournament ON tournament_players(tournament_id);
-CREATE INDEX IF NOT EXISTS idx_tp_user ON tournament_players(user_id);
-
--- Tournament Games: Which games are in which tournament/round/order
-CREATE TABLE IF NOT EXISTS tournament_games (
+-- ELO history table
+CREATE TABLE IF NOT EXISTS elo_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tournament_id INTEGER NOT NULL,   -- References tournaments(id)
-    game_id INTEGER NOT NULL,         -- References games(id)
-    round INTEGER NOT NULL,
-    match_order INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(tournament_id, game_id),
-    UNIQUE(tournament_id, round, match_order),
-    FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
-    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+    user_id INTEGER NOT NULL,
+    game_id INTEGER,
+    elo_change INTEGER NOT NULL,
+    new_elo INTEGER NOT NULL,
+    result TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_tg_round ON tournament_games(tournament_id, round, match_order);
-CREATE INDEX IF NOT EXISTS idx_tg_game  ON tournament_games(game_id);
+
+
+-- Indexes for performance optimization
+
+CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
+CREATE INDEX IF NOT EXISTS idx_games_mode ON games(mode);
+CREATE INDEX IF NOT EXISTS idx_game_players_user ON game_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_game_players_game ON game_players(game_id);
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+CREATE INDEX IF NOT EXISTS idx_tournament_players_tournament ON tournament_players(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_matches_tournament ON tournament_matches(tournament_id);

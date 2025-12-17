@@ -2,6 +2,39 @@ import { FastifyInstance } from "fastify";
 import { WebSocket } from "@fastify/websocket";
 import fastify from "./app";
 
+type NotificationType =
+    | 'notify'
+    | 'subscribe'
+    | 'unsubscribe'
+    | 'message'
+    | 'friend_request'
+    | 'friend_accept'
+    | 'game_invite'
+    | 'tournament_started'
+    | 'tournament_full'
+    | 'match_ready'
+    | 'tournament_finished';
+
+export interface IEvent {
+    type: NotificationType;
+    status?: 'online' | 'offline';
+    id?: number;
+    subscribers?: number[];
+    tournament?: {
+        id: number;
+        name: string;
+    };
+    match?: {
+        id: number;
+        round: number;
+        matchNumber: number;
+    };
+    champion?: {
+        id: number;
+        username: string;
+    };
+}
+
 const online = new Map<number, WebSocket>();
 
 const subscribers = new Map<number, Set<number>>(); // userId -> Set of subscriberIds
@@ -24,22 +57,43 @@ export function unsubscribe(userId: number, subscriberId: number[]) {
         subscribers.get(subId)?.delete(userId);
         if (subscribers.get(subId)?.size === 0) subscribers.delete(subId);
     });
-
 }
 
-type NotificationType = 'notify' | 'subscribe' | 'unsubscribe' | 'message' | 'friend_request' | 'friend_accept' | 'game_invite';
-
-export interface IEvent {
-    type: NotificationType;
-    status?: 'online' | 'offline';
-    id?: number; // user id for status change
-    subscribers?: number[];
-}
 
 export function notify(userId: number, event: string) {
     const subs = subscribers.get(userId);
     if (!subs) return fastify.log.warn(`No subscribers for user ${userId}`);
     subs.forEach(subId => online.get(subId)?.send(event));
+}
+
+export function notifyUser(userId: number, event: IEvent) {
+    const connection = online.get(userId);
+    if (connection && connection.readyState === WebSocket.OPEN) {
+        connection.send(JSON.stringify(event));
+        fastify.log.info(`Sent ${event.type} to user ${userId}`);
+    } else {
+        fastify.log.warn(`User ${userId} is not online`);
+    }
+}
+
+// Send notification to multiple users
+export function notifyUsers(userIds: number[], event: IEvent) {
+    userIds.forEach(userId => {
+        notifyUser(userId, event);
+    });
+    fastify.log.info(`Broadcast ${event.type} to ${userIds.length} users`);
+}
+
+// Send notification to all online users
+export function broadcastToAll(event: IEvent) {
+    let sentCount = 0;
+    online.forEach((socket, userId) => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(event));
+            sentCount++;
+        }
+    });
+    fastify.log.info(`Broadcast ${event.type} to ${sentCount} online users`);
 }
 
 export default async function(fastify: FastifyInstance) {
