@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { gameApi, tournamentApi } from './gameApi';
-import type { GameMode, Game, GamePlayer } from './gameApi';
+import type { Game, GamePlayer } from './gameApi';
+import type { GameMode } from '@/types/types';
 
 
 type GameInput = {
@@ -13,6 +14,7 @@ type GameResponse = {
     game: Game;
     players: GamePlayer[];
 };
+
 /* ---------------- Game Mutations ---------------- */
 
 
@@ -48,10 +50,9 @@ export const useStartGame = () => {
 
 export function useUpdateScore() {
     const queryClient = useQueryClient();
-
     return useMutation({
-        mutationFn: ({ gameId, score, userId, position }: { gameId: number; score: number; userId?: number; position?: number }) =>
-            gameApi.updateScore({ gameId, score, userId, position }),
+        mutationFn: ({ gameId, score, position }: { gameId: number; score: number; position: number }) =>
+            gameApi.updateScore({ gameId, score, position }),
         onSuccess: (_, { gameId }) => {
             queryClient.invalidateQueries({ queryKey: ['game', gameId] });
             toast.success('Score updated successfully!');
@@ -61,7 +62,6 @@ export function useUpdateScore() {
         },
     });
 }
-
 
 export function useFinishGame() {
     const queryClient = useQueryClient();
@@ -120,7 +120,7 @@ export function useRegisterTournamentPlayer() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (payload: { tournamentId: number; userId: number; alias: string }) =>
-            tournamentApi.registerPlayer(payload.tournamentId, payload.userId, payload.alias),
+            tournamentApi.registerPlayer(payload.tournamentId),
         onSuccess: (_, variables) => {
             toast.success("Successfully joined tournament!");
             queryClient.invalidateQueries({ queryKey: ['tournaments'] });
@@ -137,9 +137,9 @@ export function useStartTournament() {
     return useMutation({
         mutationFn: (tournamentId: number) => tournamentApi.startTournament(tournamentId),
         onSuccess: (tournament) => {
-            toast.success(`Tournament "${tournament.name}" started!`);
+            toast.success(`Tournament started!`);
             queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-            queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] });
+            queryClient.invalidateQueries({ queryKey: ['tournament', tournament] });
         },
         onError: (error) => {
             toast.error(`Error starting tournament: ${error.message}`);
@@ -147,33 +147,4 @@ export function useStartTournament() {
     });
 }
 
-export function useAdvanceTournamentRound() {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (tournamentId: number) => tournamentApi.advanceRound(tournamentId),
-        onSuccess: (data, tournamentId) => {
-            toast.success(data.message);
-            queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
-            queryClient.invalidateQueries({ queryKey: ['tournamentBracket', tournamentId] });
-        },
-        onError: (error) => {
-            toast.error(`Error advancing round: ${error.message}`);
-        },
-    });
-}
 
-export function useCancelTournament() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (tournamentId: number) => tournamentApi.cancelTournament(tournamentId),
-        onSuccess: (data, tournamentId) => {
-            toast.success(`Tournament "${data.tournament.name}" cancelled!`);
-            queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-            queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
-        },
-        onError: (error: Error) => {
-            toast.error(`Error cancelling tournament: ${error.message}`);
-        },
-    });
-}

@@ -1,22 +1,17 @@
-// components/tournament/tabs/PlayersTab.tsx
-
 import { useTournamentPlayers } from '../../../hooks/queries/useTournamentQueries';
-import { Loader2, User, Users } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import { useState } from 'react';
 
 interface PlayersTabProps {
     tournamentId: number;
 }
 
-// A themed and cleaned-up Avatar sub-component
 function PlayerAvatar({ username }: { username: string }) {
     const [imageError, setImageError] = useState(false);
 
-    // Using a consistent avatar provider
     const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=020617&color=FFFFFF&bold=true`;
 
     if (imageError) {
-        // Fallback with themed colors
         return (
             <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-lg">
@@ -39,7 +34,6 @@ function PlayerAvatar({ username }: { username: string }) {
 export function PlayersTab({ tournamentId }: PlayersTabProps) {
     const { data: players, isLoading, error } = useTournamentPlayers(tournamentId);
 
-    // --- 1. Loading State ---
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -49,7 +43,6 @@ export function PlayersTab({ tournamentId }: PlayersTabProps) {
         );
     }
 
-    // --- 2. Error State ---
     if (error) {
         return (
             <div className="text-center py-16 text-red-400">
@@ -58,7 +51,6 @@ export function PlayersTab({ tournamentId }: PlayersTabProps) {
         );
     }
 
-    // --- 3. "No Players" Empty State ---
     if (!players || players.length === 0) {
         return (
             <div className="text-center bg-slate-900 border border-slate-800 rounded-2xl p-12">
@@ -75,7 +67,6 @@ export function PlayersTab({ tournamentId }: PlayersTabProps) {
         );
     }
 
-    // --- 4. Main Player List Display ---
     return (
         <div className="space-y-6">
             {/* Professional Header */}
@@ -83,9 +74,6 @@ export function PlayersTab({ tournamentId }: PlayersTabProps) {
                 <h3 className="text-lg font-bold text-white">
                     Registered Players
                 </h3>
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-800 text-slate-300">
-                    {players.length} / {players[0]?.tournament?.max_players || 'N/A'}
-                </span>
             </div>
 
             {/* Modern Player List */}

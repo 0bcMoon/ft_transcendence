@@ -4,8 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTournamentMatch } from '@/game/hooks/useTournamentMatch';
 import GameCanvas from '@/game/components/GameCanvas';
 import PlayersHeader from '@/game/components/PlayersHeader';
-import GameOver from '@/game/components/GameOver';
-import WaitingOverlay from '@/game/components/WaitingOverlay';
 import TournamentMatchInfo from '@/game/components/tournament/TournamentMatchInfo';
 import { Trophy, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';

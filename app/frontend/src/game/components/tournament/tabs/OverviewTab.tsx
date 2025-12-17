@@ -1,7 +1,5 @@
-// components/tournament/tabs/OverviewTab.tsx
-
 import { TournamentDetails } from "../../../types/tournament";
-import { Calendar, Users, User, Trophy, Clock, Target } from "lucide-react";
+import { Calendar, Users, User, Clock, Target } from "lucide-react";
 
 interface OverviewTabProps {
     tournament: TournamentDetails;

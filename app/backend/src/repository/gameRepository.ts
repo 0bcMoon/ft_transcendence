@@ -8,7 +8,6 @@ import {
     GamePlayerWithUser,
     GameWithPlayers,
     PlayerData,
-    UserStats,
     ScoreProgressionPoint,
     RecentMatch,
     MatchHistoryItem,
@@ -16,10 +15,28 @@ import {
     GameStatus,
 } from "../types/game.types";
 
+export type EloProgressPoint = {
+    new_elo: number;
+    created_at: string; // ISO date
+};
+
 const gameRepository = {
-    /**
-     * Get user score progression
-     */
+
+    async getUserEloProgression(userId: number, limit = 30): Promise<EloProgressPoint[]> {
+        console.log('✅ gameRepository loaded')
+        const rows = await db.all<EloProgressPoint>(
+            `
+        SELECT new_elo, created_at
+        FROM elo_history
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        `,
+            [userId, limit]
+        );
+        return rows.reverse();
+    },
+
     async getPlayerStatsSummary(userId: number) {
         // 1. Get user stats including elo_rating
         const row = await db.get<{
@@ -133,80 +150,6 @@ const gameRepository = {
         return (rows as ScoreProgressionPoint[]).reverse();
     },
 
-    /**
-     * Get user statistics
-     */
-    async getUserStats(userId: number): Promise<UserStats | null> {
-        if (!userId || Number.isNaN(userId)) return null;
-
-        const statsSql = `
-            SELECT
-                u.id AS user_id,
-                COALESCE(SUM(CASE WHEN g.status = 'finished' AND g.winner_id = u.id THEN 1 ELSE 0 END), 0) AS wins,
-                COALESCE(SUM(CASE 
-                    WHEN g.status = 'finished' 
-                    AND gp.user_id = u. id 
-                    AND (g.winner_id IS NULL OR g.winner_id != u.id) 
-                    THEN 1 ELSE 0 
-                END), 0) AS losses
-            FROM users u
-            LEFT JOIN game_players gp ON gp.user_id = u. id
-            LEFT JOIN games g ON g.id = gp.game_id
-            WHERE u.id = ?
-            GROUP BY u. id
-        `;
-
-        const rows = await db.all(statsSql, [userId]);
-
-        if (!rows || rows.length === 0) {
-            return {
-                wins: 0,
-                losses: 0,
-                winRate: 0,
-                score: 0,
-                rank: null,
-            };
-        }
-
-        const row = rows[0] as any;
-        const wins = Number(row.wins ?? 0);
-        const losses = Number(row.losses ?? 0);
-        const totalGames = wins + losses;
-        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100 * 100) / 100 : 0;
-        const score = wins * 3 - losses;
-
-        const rankSql = `
-            WITH user_scores AS (
-                SELECT
-                    u.id AS user_id,
-                    (COALESCE(SUM(CASE WHEN g.status = 'finished' AND g.winner_id = u.id THEN 1 ELSE 0 END), 0) * 3 
-                    - COALESCE(SUM(CASE 
-                        WHEN g.status = 'finished' 
-                        AND gp.user_id = u.id 
-                        AND (g.winner_id IS NULL OR g.winner_id != u.id) 
-                        THEN 1 ELSE 0 
-                    END), 0)) AS score
-                FROM users u
-                LEFT JOIN game_players gp ON gp.user_id = u.id
-                LEFT JOIN games g ON g.id = gp.game_id
-                GROUP BY u.id
-            )
-            SELECT COUNT(*) + 1 AS rank
-            FROM user_scores
-            WHERE score > ? 
-        `;
-
-        const rankRows = await db.all(rankSql, [score]);
-        const rank = rankRows && rankRows.length > 0 ? Number((rankRows[0] as any).rank) : null;
-
-        return {
-            wins,
-            losses,
-            winRate,
-            score,
-            rank,
-        };
-    },
 
     /**
      * Get recent global matches
