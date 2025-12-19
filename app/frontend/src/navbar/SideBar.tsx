@@ -16,7 +16,7 @@ export default function SideBar({ isSidebarOpen, onClose }: SideBarProps) {
         { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/users", label: "Friends", icon: ContactRound },
-        { link: currentUser ? `/users/${currentUser.id}` : "/users", label: "Profile", icon: User2 },
+        { link: currentUser ? `/users/${currentUser.id}` : "/profile", label: "Profile", icon: User2 },
         { link: "/settings", label: "Settings", icon: Settings },
     ]
 

@@ -4,11 +4,7 @@ interface MatchCardProps {
     match: BracketMatch;
 }
 
-function PlayerDisplay({ player, score, isWinner }: {
-    player: BracketPlayer | null;
-    score: number | null;
-    isWinner: boolean;
-}) {
+function PlayerDisplay({ player, score, isWinner }: { player: BracketPlayer | null; score: number | null; isWinner: boolean; }) {
     const name = player?.name || "TBD";
     const isTBD = !player;
 

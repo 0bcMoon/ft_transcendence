@@ -13,6 +13,32 @@ import type {
 export type GameStatus = 'waiting' | 'playing' | 'finished' | 'cancelled';
 export type TournamentStatus = 'registration' | 'active' | 'finished' | 'cancelled';
 
+export interface GameDetail {
+    id: number;
+    mode: string;
+    status: string;
+    winner_id: number | null;
+    started_at: string | null;
+    ended_at: string | null;
+    created_at: string;
+}
+
+export interface GamePlayerDetail {
+    position: number;
+    user_id: number | null;
+    username: string | null;
+    avatar_url: string | null;
+    score: number | null;
+    is_ai: boolean;
+    joined_at: string;
+    elo_change: number | null;
+    new_elo: number | null;
+    result: string | null;
+    display_name?: string;
+    image_src?: string;
+    profile_picture?: string;
+}
+
 export interface RecentMatch {
     id: number;                    // game id
     mode: 'remote' | 'tournament';
@@ -180,6 +206,15 @@ export type EloProgressPoint = {
 // ==================== GAME API ====================
 
 export const gameApi = {
+    async getGameDetail(gameId: number): Promise<GameDetail> {
+        const { data } = await api.get<GameDetail>(`/api/games/${gameId}/detail`);
+        return data;
+    },
+
+    async getGamePlayers(gameId: number): Promise<GamePlayerDetail[]> {
+        const { data } = await api.get<GamePlayerDetail[]>(`/api/games/${gameId}/players`);
+        return Array.isArray(data) ? data : [];
+    },
     async getRecentGlobalMatches(limit: number = 10): Promise<GlobalMatchData[]> {
         const { data } = await api.get<GlobalMatchData[]>(`/api/games/recent?limit=${limit}`);
         return Array.isArray(data) ? data : [];

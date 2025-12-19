@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { WebSocket } from "@fastify/websocket";
+import WebSocket from "ws";
+
 import fastify from "./app";
 
 type NotificationType =
@@ -68,13 +69,20 @@ export function notify(userId: number, event: string) {
 
 export function notifyUser(userId: number, event: IEvent) {
     const connection = online.get(userId);
-    if (connection && connection.readyState === WebSocket.OPEN) {
-        connection.send(JSON.stringify(event));
-        fastify.log.info(`Sent ${event.type} to user ${userId}`);
-    } else {
-        fastify.log.warn(`User ${userId} is not online`);
+    if (!connection) {
+        fastify.log.warn(`User ${userId} has no connection stored`);
+        return;
     }
+
+    if (connection.readyState !== WebSocket.OPEN) {
+        fastify.log.warn(`User ${userId} socket not OPEN (state: ${connection.readyState})`);
+        return;
+    }
+
+    connection.send(JSON.stringify(event));
+    fastify.log.info(`Sent ${event.type} to user ${userId}`);
 }
+
 
 // Send notification to multiple users
 export function notifyUsers(userIds: number[], event: IEvent) {
