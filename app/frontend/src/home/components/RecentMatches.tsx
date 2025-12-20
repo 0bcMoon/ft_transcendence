@@ -1,30 +1,30 @@
-import { Link } from "react-router-dom";
-import { History } from "lucide-react";
-import { useGetGlobalMatches } from "@/game/api/queries";
-import type { GlobalMatchData } from "@/game/types/types";
+import { Link } from "react-router-dom"
+import { History } from "lucide-react"
+import { useGetGlobalMatches } from "@/game/api/queries"
+import type { GlobalMatchData } from "@/game/types/types"
 
 type Props = {
-    limit?: number;
-};
+    limit?: number
+}
 
 export default function RecentMatches({ limit = 6 }: Props) {
-    const { data: matches = [], isLoading, isError } = useGetGlobalMatches(limit);
+    const { data: matches = [], isLoading, isError } = useGetGlobalMatches(limit)
 
     const getAvatar = (avatar: string | null, name: string) =>
         avatar
             ? `${import.meta.env.VITE_API_URL}/public/${avatar}`
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=64`;
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=64`
 
     const getModeLabel = (mode: string) => {
-        const labels = { remote: '1v1', local: 'Local', ai: 'AI', tournament: 'Tournament' };
-        return labels[mode as keyof typeof labels] || mode;
-    };
+        const labels = { remote: "1v1", local: "Local", ai: "AI", tournament: "Tournament" }
+        return labels[mode as keyof typeof labels] || mode
+    }
 
     const getWinner = (match: GlobalMatchData) => {
-        if (match.player1_score > match.player2_score) return 'p1';
-        if (match.player2_score > match.player1_score) return 'p2';
-        return 'draw';
-    };
+        if (match.player1_score > match.player2_score) return "p1"
+        if (match.player2_score > match.player1_score) return "p2"
+        return "draw"
+    }
 
     return (
         <section className="mb-10">
@@ -33,10 +33,7 @@ export default function RecentMatches({ limit = 6 }: Props) {
                     <History className="w-6 h-6 text-blue-400" />
                     Recent Matches
                 </h2>
-                <Link
-                    to="/matches"
-                    className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition"
-                >
+                <Link to="/history" className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition">
                     See all matches &rarr;
                 </Link>
             </div>
@@ -57,9 +54,7 @@ export default function RecentMatches({ limit = 6 }: Props) {
                     </div>
                 )}
                 {isError && (
-                    <div className="py-10 text-center text-red-400 font-semibold text-base">
-                        Failed to load matches
-                    </div>
+                    <div className="py-10 text-center text-red-400 font-semibold text-base">Failed to load matches</div>
                 )}
                 {!isLoading && !isError && matches.length === 0 && (
                     <div className="py-10 text-center text-slate-400 text-base">
@@ -70,9 +65,9 @@ export default function RecentMatches({ limit = 6 }: Props) {
                 {!isLoading && !isError && matches.length > 0 && (
                     <ul className="divide-y divide-slate-800">
                         {matches.slice(0, limit).map((match) => {
-                            const winner = getWinner(match);
-                            const p1Win = winner === "p1";
-                            const p2Win = winner === "p2";
+                            const winner = getWinner(match)
+                            const p1Win = winner === "p1"
+                            const p2Win = winner === "p2"
                             return (
                                 <li key={match.matchId}>
                                     <Link
@@ -81,12 +76,15 @@ export default function RecentMatches({ limit = 6 }: Props) {
                                     >
                                         <div className="flex items-center gap-3 flex-1">
                                             <img
-                                                src={getAvatar(match.player1_avatar, match.player1_name)}
+                                                src={getAvatar(match.player1_avatar, match.player1_name) || "/placeholder.svg"}
                                                 alt={match.player1_name}
                                                 className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
                                             />
                                             <div>
-                                                <p className={`text-sm font-semibold ${p1Win ? "text-blue-200" : "text-slate-400"} group-hover:text-white transition`}>
+                                                <p
+                                                    className={`text-sm font-semibold ${p1Win ? "text-blue-200" : "text-slate-400"
+                                                        } group-hover:text-white transition`}
+                                                >
                                                     {match.player1_name}
                                                 </p>
                                                 <p className="text-xs text-slate-400">
@@ -101,24 +99,28 @@ export default function RecentMatches({ limit = 6 }: Props) {
                                         </div>
                                         <div className="flex items-center gap-3 flex-1 justify-end">
                                             <div className="text-right">
-                                                <p className={`text-sm font-semibold ${p2Win ? "text-blue-200" : "text-slate-400"} group-hover:text-white transition`}>
+                                                <p
+                                                    className={`text-sm font-semibold ${p2Win ? "text-blue-200" : "text-slate-400"
+                                                        } group-hover:text-white transition`}
+                                                >
                                                     {match.player2_name}
                                                 </p>
                                                 <p className="text-xs text-slate-400">Opponent</p>
                                             </div>
                                             <img
-                                                src={getAvatar(match.player2_avatar, match.player2_name)}
+                                                src={getAvatar(match.player2_avatar, match.player2_name) || "/placeholder.svg"}
                                                 alt={match.player2_name}
                                                 className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
                                             />
                                         </div>
                                     </Link>
                                 </li>
-                            );
+                            )
                         })}
                     </ul>
                 )}
             </div>
         </section>
-    );
+    )
 }
+

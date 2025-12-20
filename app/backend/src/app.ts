@@ -95,8 +95,8 @@ fastify.register(oauthPlugin, {
             tokenPath: "/oauth/token",
         },
     },
-    startRedirectPath: "/auth/oauth/42",
-    callbackUri: "http://localhost:3000/auth/oauth/42/callback",
+    startRedirectPath: "/api/auth/oauth/42",
+    callbackUri: "http://localhost:3000/api/auth/oauth/42/callback",
     scope: ["public"],
 });
 
@@ -109,8 +109,8 @@ fastify.register(oauthPlugin, {
         },
         auth: oauthPlugin.GOOGLE_CONFIGURATION,
     },
-    startRedirectPath: "/auth/oauth/google",
-    callbackUri: "http://localhost:3000/auth/oauth/google/callback",
+    startRedirectPath: "/api/auth/oauth/google",
+    callbackUri: "http://localhost:3000/api/auth/oauth/google/callback",
     scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",

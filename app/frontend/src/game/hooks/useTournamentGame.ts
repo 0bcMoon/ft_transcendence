@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // ✅ Import useParams
+import { useNavigate, useParams } from "react-router-dom";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 
-// This is the correct key state for a single player
 type KeysPressed = { up: boolean; down: boolean };
 
 export function useTournamentGame() {
@@ -18,7 +17,6 @@ export function useTournamentGame() {
     const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef<KeysPressed>({ up: false, down: false });
 
-    // --- UI State ---
     const [side, setSide] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -29,7 +27,6 @@ export function useTournamentGame() {
     const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
     const [waiting, setWaiting] = useState(true); // "Waiting for opponent..."
 
-    // Refs for checking state inside stale closures (setInterval, onmessage)
     const isGameOverRef = useRef(isGameOver);
     const countdownRef = useRef(countdown);
     useEffect(() => { isGameOverRef.current = isGameOver; }, [isGameOver]);
@@ -108,10 +105,8 @@ export function useTournamentGame() {
             websocket.close();
             wsRef.current = null;
         };
-        // ✅ 'gameId' is now a dependency
     }, [userId, username, avatar, gameId]);
 
-    // --- Countdown Timer ---
     useEffect(() => {
         if (countdown === null) return;
         if (countdown === 0) {
@@ -140,7 +135,6 @@ export function useTournamentGame() {
         return () => clearInterval(interval);
     }, [side]); // Re-runs when 'side' is set
 
-    // --- Keyboard Listeners ---
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, pressed: boolean) => {
             if (e.key === "ArrowUp" || e.key === "w") {
@@ -164,14 +158,10 @@ export function useTournamentGame() {
         };
     }, []); // Runs once
 
-    // --- UI Handlers ---
 
-    // ✅ This is the only navigation function needed.
-    // It sends 'leaveGame' and goes to the tournament bracket.
     const handleGoHome = useCallback(() => {
         wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
         wsRef.current?.close();
-        // ✅ Navigate back to the bracket, not the site home
         navigate(`/game/tournament/${gameId}`);
     }, [navigate, gameId]); // Depends on navigate and gameId
 
@@ -187,7 +177,6 @@ export function useTournamentGame() {
         finalScore,
         score,
         waiting,
-        // ❌ 'handlePlayAgain' is removed
         handleGoHome, // This is the main "exit" function
     };
 }

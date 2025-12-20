@@ -1,84 +1,83 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Search, MessageCircle, UserX, Users } from 'lucide-react';
-import UserCard from './UserCard';
-import LoadingSpinner from './LoadingSpinner';
-import { useFriends } from '../hooks/useApi';
-import { useNavigate } from 'react-router-dom';
-import { useActiveChatStore } from '@/state/Store';
-import Modal from '@/component/Model';
-import { RemoteUser } from '@/types/types';
-import { useUnFriend } from '@/api/mutations';
-import { unsubscribe } from '@/home/Notification';
-import { useWebSocket } from '@/context/WebSocketContext';
-import toast from 'react-hot-toast';
+import { useCallback, useEffect, useState } from "react"
+import { Search, MessageCircle, UserX, Users } from "lucide-react"
+import UserCard from "./UserCard"
+import LoadingSpinner from "./LoadingSpinner"
+import { useFriends } from "../hooks/useApi"
+import { useNavigate } from "react-router-dom"
+import { useActiveChatStore } from "@/state/Store"
+import Modal from "@/component/Model"
+import type { RemoteUser } from "@/types/types"
+import { useUnFriend } from "../hooks/useApi"
+import { unsubscribe } from "@/home/Notification"
+import { useWebSocket } from "@/context/WebSocketContext"
 
 const FriendsList = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const { data: friends = [], isLoading, error } = useFriends();
-    const navigate = useNavigate();
-    const setActiveChat = useActiveChatStore(state => state.setActiveChat);
-    const [currentUserId, setcurrentUserId] = useState<number | undefined>(undefined);
-    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend();
+    const [searchTerm, setSearchTerm] = useState("")
+    const { data: friends = [], isLoading, error } = useFriends()
+    const navigate = useNavigate()
+    const setActiveChat = useActiveChatStore((state) => state.setActiveChat)
+    const [currentUserId, setcurrentUserId] = useState<number | undefined>(undefined)
+    const { mutate: unfriend, isPending: isUnfriending } = useUnFriend()
 
-    const { socket } = useWebSocket();
-    const isConnected = socket && socket.readyState === WebSocket.OPEN;
+    const { socket } = useWebSocket()
+    const isConnected = socket && socket.readyState === WebSocket.OPEN
 
     // Filter friends based on search term
     const filteredFriends = useCallback(() => {
-        return friends.filter((friend) =>
-            friend.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (friend.username && friend.username.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-    }, [friends, searchTerm])();
+        return friends.filter(
+            (friend) =>
+                friend.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (friend.username && friend.username.toLowerCase().includes(searchTerm.toLowerCase())),
+        )
+    }, [friends, searchTerm])()
 
-    const friends_id = friends.map((friend) => friend.id);
+    const friends_id = friends.map((friend) => friend.id)
 
     useEffect(() => {
         return () => {
-            if (!socket || !isConnected || isLoading || friends_id.length === 0) return;
-            toast.success(`Unsubscribed from friends' presence: ${friends_id.join(', ')}`);
-            unsubscribe(socket, friends_id);
-        };
-    }, [isLoading, isConnected, socket, friends_id]);
+            if (!socket || !isConnected || isLoading || friends_id.length === 0) return
+            unsubscribe(socket, friends_id)
+        }
+    }, [isLoading, isConnected, socket, friends_id])
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
                 <LoadingSpinner size="lg" />
             </div>
-        );
+        )
     }
 
     if (error) {
         return (
             <div className="text-center py-12">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-red-600 dark:text-red-400" />
+                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-red-400" />
                 </div>
-                <p className="text-red-600 dark:text-red-400 font-semibold">Error loading friends</p>
-                <p className="text-gray-600 dark:text-slate-400 text-sm mt-1">Please try again later</p>
+                <p className="text-red-400 font-semibold">Error loading friends</p>
+                <p className="text-slate-400 text-sm mt-1">Please try again later</p>
             </div>
-        );
+        )
     }
 
     const startChat = (user: RemoteUser) => {
-        setActiveChat(user);
-        navigate("/chat");
-    };
+        setActiveChat(user)
+        navigate("/chat")
+    }
 
     return (
         <div className="space-y-6">
             {/* Search Bar */}
             <div className="relative">
-                <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-500 w-6 h-6" />
+                <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-500 w-6 h-6" />
                 <input
-                    name='search'
+                    name="search"
                     type="text"
                     placeholder="Search for people..."
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-14 pr-6 py-2 text-lg border border-gray-200 dark:border-slate-700 
-                               bg-white dark:bg-slate-800 text-gray-900 dark:text-white 
-                               placeholder:text-gray-500 dark:placeholder:text-slate-500
+                    className="w-full pl-14 pr-6 py-2 text-lg border border-slate-700 
+                               bg-slate-800 text-white 
+                               placeholder:text-slate-500
                                rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 
                                focus:border-transparent transition-all duration-200"
                 />
@@ -86,15 +85,14 @@ const FriendsList = () => {
 
             {/* Friends Count */}
             <div className="flex items-center justify-between">
-                <p className="text-base text-gray-700 dark:text-slate-300 font-semibold">
-                    {filteredFriends.length} {filteredFriends.length === 1 ? 'Friend' : 'Friends'}
+                <p className="text-base text-slate-300 font-semibold">
+                    {filteredFriends.length} {filteredFriends.length === 1 ? "Friend" : "Friends"}
                     {searchTerm && ` found`}
                 </p>
                 {searchTerm && (
                     <button
-                        onClick={() => setSearchTerm('')}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 
-                                   dark:hover:text-blue-300 font-medium transition-colors"
+                        onClick={() => setSearchTerm("")}
+                        className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
                     >
                         Clear search
                     </button>
@@ -106,7 +104,10 @@ const FriendsList = () => {
                 isOpen={currentUserId !== undefined}
                 onClose={() => setcurrentUserId(undefined)}
                 onDeny={() => setcurrentUserId(undefined)}
-                onAccept={() => { unfriend({ user_id: currentUserId! }); setcurrentUserId(undefined) }}
+                onAccept={() => {
+                    unfriend({ user_id: currentUserId! })
+                    setcurrentUserId(undefined)
+                }}
                 title="Unfriend User"
                 message="Are you sure you want to unfriend this user?  You can send them a friend request again later."
                 acceptText="Unfriend"
@@ -125,7 +126,7 @@ const FriendsList = () => {
                                 user={friend}
                                 actions={[
                                     {
-                                        label: 'Message',
+                                        label: "Message",
                                         icon: MessageCircle,
                                         onClick: () => startChat(friend),
                                         primary: true,
@@ -133,7 +134,7 @@ const FriendsList = () => {
                                     {
                                         isLoading: isUnfriending,
                                         disabled: isUnfriending,
-                                        label: 'Unfriend',
+                                        label: "Unfriend",
                                         icon: UserX,
                                         onClick: () => setcurrentUserId(friend.id),
                                         destructive: true,
@@ -145,26 +146,24 @@ const FriendsList = () => {
                 </div>
             ) : (
                 <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <div className="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         {searchTerm ? (
-                            <Search className="w-10 h-10 text-gray-400 dark:text-slate-600" />
+                            <Search className="w-10 h-10 text-slate-600" />
                         ) : (
-                            <Users className="w-10 h-10 text-gray-400 dark:text-slate-600" />
+                            <Users className="w-10 h-10 text-slate-600" />
                         )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        {searchTerm ? 'No Friends Found' : 'No Friends Yet'}
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                        {searchTerm ? "No Friends Found" : "No Friends Yet"}
                     </h3>
-                    <p className="text-gray-600 dark:text-slate-400">
-                        {searchTerm
-                            ? `No friends match "${searchTerm}"`
-                            : 'Start adding friends to see them here'
-                        }
+                    <p className="text-slate-400">
+                        {searchTerm ? `No friends match "${searchTerm}"` : "Start adding friends to see them here"}
                     </p>
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
-export default FriendsList;
+export default FriendsList
+

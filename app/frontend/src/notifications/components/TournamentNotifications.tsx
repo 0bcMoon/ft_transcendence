@@ -1,7 +1,4 @@
-// src/components/tournament/TournamentToasts.tsx
-
 import { Trophy, Swords, Play, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface TournamentToastProps {
     tournament: { id: number; name: string };
@@ -16,7 +13,7 @@ export function TournamentFullToast({ tournament, onClose }: TournamentToastProp
             </div>
             <div className="flex-1">
                 <p className="font-bold text-base">Tournament Full</p>
-                <p className="text-sm text-gray-300">{tournament.name}</p>
+                <p className="text-sm text-gray-300">{"TEST"}</p>
                 <p className="text-xs text-green-400 mt-1">Starting in 5 seconds</p>
             </div>
             <button
@@ -29,56 +26,15 @@ export function TournamentFullToast({ tournament, onClose }: TournamentToastProp
     );
 }
 
-// export function TournamentStartedToast({ tournament, onClose }: TournamentToastProps) {
-//     const handlePlayNow = () => {
-//         onClose();
-//         window.location.href = `/tournaments/${tournament.id}/bracket`;  // ✅ Go to bracket
-//     };
-//
-//     return (
-//         <div className="bg-gray-800 border border-blue-500/50 rounded-xl shadow-2xl p-5 min-w-[360px]">
-//             <div className="flex items-center gap-3 mb-4">
-//                 <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-//                     <Play className="w-6 h-6 text-blue-400" />
-//                 </div>
-//                 <div className="flex-1">
-//                     <p className="text-xl font-bold text-white">Tournament Started</p>
-//                     <p className="text-sm text-gray-300">{tournament.name}</p>
-//                 </div>
-//                 <button
-//                     onClick={onClose}
-//                     className="text-gray-400 hover:text-white transition-colors"
-//                 >
-//                     <X className="w-5 h-5" />
-//                 </button>
-//             </div>
-//
-//             <button
-//                 onClick={handlePlayNow}
-//                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-//             >
-//                 <Play className="w-4 h-4" />
-//                 <span>View Bracket</span>
-//             </button>
-//         </div>
-//     );
-// }
-
-// ✅ UPDATED - Navigate to actual match
-export function MatchReadyToast({
-    tournament,
-    match,
-    onClose
-}: TournamentToastProps & {
+export function MatchReadyToast({ tournament, match, onClose }: TournamentToastProps & {
     match: {
-        id: number;          // ✅ Add match ID
+        id: number;
         round: number;
         matchNumber: number;
     }
 }) {
     const handleJoinMatch = () => {
         onClose();
-        // ✅ Navigate to the specific match page
         window.location.href = `/game/tournament/${tournament.id}/match/${match.id}`;
     };
 

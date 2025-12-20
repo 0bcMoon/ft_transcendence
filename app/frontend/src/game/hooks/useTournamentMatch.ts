@@ -1,5 +1,3 @@
-// src/game/hooks/useTournamentMatch.ts
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
@@ -73,15 +71,14 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
         websocket.onopen = () => {
             console.log(`WebSocket connected. Joining tournament match...`);
 
-            // ✅ Send tournamentId and matchId
             websocket.send(
                 JSON.stringify({
                     type: "joinGame",
                     username,
                     avatar: avatar || "",
                     mode: "tournament",
-                    tournamentId,    // ✅ Add this
-                    matchId,         // ✅ Add this
+                    tournamentId,
+                    matchId,
                 })
             );
         };
@@ -97,7 +94,6 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
 
-                    // ✅ Extract tournament data
                     if (msg.round) setRound(msg.round);
                     if (msg.matchNumber) setMatchNumber(msg.matchNumber);
 

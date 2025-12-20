@@ -43,7 +43,7 @@
   }
 }
 
-. animate-float {
+.animate-float {
   animation: float linear infinite;
 }
 
@@ -51,7 +51,7 @@
   animation: spin-reverse linear infinite;
 }
 
-. animate-shimmer {
+.animate-shimmer {
   animation: shimmer 2s infinite;
 }
 

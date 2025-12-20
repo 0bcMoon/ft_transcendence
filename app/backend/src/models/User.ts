@@ -328,7 +328,9 @@ const User = {
 
 
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
+
         const data = await req.file();
+
         if (!data) {
             return reply.status(400).send({ message: 'No file uploaded' });
         }
@@ -338,15 +340,15 @@ const User = {
         // Define the path where the file will be saved
         const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
         const filePath = path.join(uploadDir, uniqueFilename);
-        // console.log(uploadDir, filePath)
-
 
         await pipeline(data.file, createWriteStream(filePath));
+
         const result = await userRepository.updateProfilePicture(req.user.id, uniqueFilename);
-        if (result === undefined) {
-            await fs.unlink(filePath); // Clean up the file if the update fails
-            return reply.status(400).send({ message: 'Failed to update profile image' });
-        }
+        // if (result === undefined) {
+        //     await fs.unlink(filePath); // Clean up the file if the update fails
+        //     return reply.status(400).send({ message: 'Failed to update profile image' });
+        // }
+
         if (result && result !== "default.jpg") {
             try {
                 await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result));
@@ -364,7 +366,6 @@ const User = {
         }
 
         user.profile_picture = user.image_src + user.profile_picture;
-
         return reply.status(200).send({
             id: user.id,
             display_name: user.display_name,

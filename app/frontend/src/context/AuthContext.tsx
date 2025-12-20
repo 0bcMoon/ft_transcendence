@@ -1,4 +1,3 @@
-// AuthContext.tsx
 import api, { deleteCookie } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import Loader from '@/vendor/loader';
@@ -12,7 +11,6 @@ interface AuthContextType {
     isLoading: boolean;
 }
 
-// Create the context
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -48,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
     useEffect(() => {
-        useAuthStore.getState().login(data)
+        useAuthStore.getState().login(data as any);
     }, [data]);
 
     if (isLoadingUser) {

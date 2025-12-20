@@ -1,28 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { GameMode } from '../types/types';
-import { Tournament, TournamentPlayer, TournamentGame } from '../api/gameApi';
+import { Tournament, TournamentPlayer } from '../api/gameApi';
 import type { GlobalMatchData, UserStats, ScoreProgressionPoint } from '../types/types';
-import { tournamentApi, gameApi, GameWithPlayers, RecentMatch } from '../api/gameApi';
+import { tournamentApi, gameApi, GameWithPlayers, RecentMatch, EloProgressPoint } from '../api/gameApi';
 
-import {
-    BracketPlayer,
-    BracketMatch,
-    TournamentData,
-    buildMatchesFromBracketData,
-    fillTournamentSlots,
-    buildEmptyMatches
-} from '../utils/tournamentUtils';
-
-export interface MatchHistoryItemData {
+export interface MatchHistoryItem {
     matchId: number;
     mode: GameMode;
-    date: string;       // This will be the 'ended_at' timestamp
-    isWin: boolean;
+    date: string;
+    isWin: number;
     user_score: number;
     opponent_score: number;
-    opponent_name: string | null; // Opponent's name (or null if AI/local)
-    opponent_avatar: string | null; // Opponent's avatar (or null)
+    opponent_name: string | null;
+    opponent_avatar: string | null;
 }
+
 
 export type TopPlayer = {
     user_id: number;
@@ -55,15 +47,6 @@ export const useListTournaments = () => {
 };
 
 
-
-// export const useListTournaments = (user_id: number | null) => {
-//     // This query now expects the API to return the joined status
-//     return useQuery<Tournament[], Error>({
-//         queryKey: [qk.tournaments, user_id],
-//         queryFn: () => tournamentApi.listTournaments(user_id),
-//     });
-// };
-
 export const useGetTopPlayers = (limit: number = 10) => {
     return useQuery<TopPlayer[], Error>({
         queryKey: ['top-players', limit],
@@ -77,6 +60,14 @@ export const useGetUserStats = (userId: number) => {
         queryKey: ['user-stats', userId],
         queryFn: () => gameApi.getUserStats(userId),
         enabled: !!userId,
+    });
+};
+
+export const useGetUserEloProgression = (userId: number, limit: number = 30) => {
+    return useQuery<EloProgressPoint[], Error>({
+        queryKey: ['user-elo-progression', userId, limit],
+        queryFn: () => gameApi.getUserEloProgression(userId, limit),
+        enabled: !!userId && limit > 0,
     });
 };
 
@@ -133,7 +124,7 @@ export const useListPlayers = (tournamentId: number) => {
 };
 
 export const useGetTournamentGames = (tournamentId: number) => {
-    return useQuery<TournamentGame[], Error>({
+    return useQuery<Tournament[], Error>({
         queryKey: qk.tournamentGames(tournamentId),
         queryFn: () => tournamentApi.getTournamentGames(tournamentId),
         enabled: !!tournamentId,
@@ -141,7 +132,7 @@ export const useGetTournamentGames = (tournamentId: number) => {
 };
 
 export const useGetRoundGames = (tournamentId: number, round: number) => {
-    return useQuery<TournamentGame[], Error>({
+    return useQuery<Tournament[], Error>({
         queryKey: qk.tournamentRoundGames(tournamentId, round),
         queryFn: () => tournamentApi.getRoundGames(tournamentId, round),
         enabled: !!tournamentId && !!round, // Won't run if round is 0
@@ -149,7 +140,7 @@ export const useGetRoundGames = (tournamentId: number, round: number) => {
 };
 
 export const useGetMatchHistory = (userId: number) => {
-    return useQuery<MatchHistoryItemData[], Error>({
+    return useQuery<MatchHistoryItem[], Error>({
         queryKey: ['matchHistory', userId],
         queryFn: () => gameApi.getMatchHistory(userId) as Promise<MatchHistoryItemData[]>,
         enabled: !!userId,
@@ -162,69 +153,5 @@ export const useGetGameDetails = (gameId: number) => {
         queryKey: ['gameDetails', gameId],
         queryFn: () => gameApi.getGameDetails(gameId),
         enabled: !!gameId,
-    });
-};
-
-export function useUserMatch(tournamentId: number, enabled: boolean = true) {
-    return useQuery({
-        queryKey: ['tournament', tournamentId, 'user-match'],
-        queryFn: () => tournamentApi.getUserMatch(tournamentId),
-        enabled: enabled && !!tournamentId && tournamentId > 0,
-        staleTime: 3000, // 3 seconds
-        refetchInterval: 5000, // Poll every 5 seconds
-        retry: 1, // Only retry once on failure
-    });
-}
-
-export const useGetBracketData = (tournamentId: number) => {
-    return useQuery<TournamentData | null, Error>({
-        queryKey: qk.tournamentBracket(tournamentId),
-        queryFn: async () => {
-            if (!tournamentId)
-                return null;
-
-            // 1. Fetch data
-            const [tournament, registered] = await Promise.all([
-                tournamentApi.getTournament(tournamentId),
-                tournamentApi.listPlayers(tournamentId),
-            ]);
-
-            if (!tournament)
-                return null;
-
-            let matches: BracketMatch[] = [];
-            if (tournament.status === "active" || tournament.status === "finished") {
-                try {
-                    const bracketData = await tournamentApi.getBracket(tournamentId);
-                    console.log("Fetched-----> bracket data:", bracketData);
-                    matches = buildMatchesFromBracketData(bracketData);
-                    console.log("Processed matches:", matches);
-                } catch (err) {
-                    console.error("Error fetching bracket data:", err);
-                }
-            }
-
-            const regPlayers: BracketPlayer[] = registered
-                .sort((a: TournamentPlayer, b: TournamentPlayer) => a.registered_at.localeCompare(b.registered_at))
-                .map((p: TournamentPlayer) => ({ id: p.user_id, name: p.alias }));
-            console.log("Registered players:", regPlayers);
-            console.log("regestered", registered);
-
-            const players = fillTournamentSlots(regPlayers, tournament.max_players);
-
-            if (matches.length === 0) {
-                matches = buildEmptyMatches(players);
-            }
-
-            return {
-                id: String(tournament.id),
-                name: tournament.name,
-                players,
-                matches,
-                status: tournament.status,
-                maxPlayers: tournament.max_players,
-            };
-        },
-        enabled: !!tournamentId,
     });
 };

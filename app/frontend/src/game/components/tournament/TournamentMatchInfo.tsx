@@ -11,7 +11,7 @@ type Props = {
     matchNumber?: number;
 };
 
-export default function TournamentMatchInfo({ tournamentId, matchId, round, matchNumber }: Props) {
+export default function TournamentMatchInfo({ tournamentId, round, matchNumber }: Props) {
     const [tournament, setTournament] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
