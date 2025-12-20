@@ -2,17 +2,17 @@ import HeroHeader from "./components/HeroHeader";
 import LiveTournament from "./components/LiveTournament";
 import RecentMatches from "./components/RecentMatches";
 import TopPlayers from "./components/TopPlayers";
-import CompetitiveRanking from "./components/CompetitiveRanking"; // new -- see below
+import CompetitiveRanking from "./components/CompetitiveRanking";
 
-function Home() {
+export default function HomePage() {
     return (
-        <div className="h-full overflow-y-auto bg-slate-950 no-scrollbar flex items-start justify-center py-20 px-8">
+        <div className="h-full overflow-y-auto bg-slate-950 no-scrollbar flex items-start justify-center py-20 px-4 sm:px-8">
             <div className="max-w-7xl w-full">
                 <HeroHeader />
                 <LiveTournament />
                 <CompetitiveRanking />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    <div className="col-span-2">
+                    <div className="lg:col-span-2">
                         <RecentMatches />
                     </div>
                     <div>
@@ -21,7 +21,5 @@ function Home() {
                 </div>
             </div>
         </div>
-    );
+    )
 }
-
-export default Home;

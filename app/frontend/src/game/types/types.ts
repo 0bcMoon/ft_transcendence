@@ -13,6 +13,17 @@ export interface BracketPlayer {
     name: string;
 }
 
+export interface LeaderboardPlayer {
+    user_id: number
+    username: string
+    display_name: string | null
+    avatar: string | null
+    elo_rating: number
+    rank: "Bronze" | "Silver" | "Gold" | "Platinum" | "Master"
+    wins: number
+    losses: number
+}
+
 export interface BracketMatch {
     id: string;
     gameId: number;

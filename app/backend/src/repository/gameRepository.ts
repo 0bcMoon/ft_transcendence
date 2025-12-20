@@ -13,17 +13,75 @@ import {
     MatchHistoryItem,
     GameMode,
     GameStatus,
+    EloProgressPoint,
+    GameDetail,
+    GamePlayerDetail
 } from "../types/game.types";
-
-export type EloProgressPoint = {
-    new_elo: number;
-    created_at: string; // ISO date
-};
 
 const gameRepository = {
 
+    async getGameDetail(gameId: number): Promise<GameDetail | undefined> {
+        return await db.get<GameDetail>(
+            `SELECT id, mode, status, winner_id, started_at, ended_at, created_at
+       FROM games
+       WHERE id = ?`,
+            [gameId]
+        );
+    },
+
+    async getGamePlayers(gameId: number): Promise<GamePlayerDetail[]> {
+        const players = await db.all<{
+            position: number;
+            user_id: number | null;
+            username: string | null;
+            display_name: string | null;
+            profile_picture: string | null;
+            image_src: string | null;
+            score: number | null;
+            is_ai: number;
+            joined_at: string;
+            elo_change: number | null;
+            new_elo: number | null;
+            result: string | null;
+        }>(
+            `SELECT
+                gp.position,
+                gp.user_id,
+                u.username,
+                u.display_name,
+                u.profile_picture,
+                u.image_src,
+                gp.score,
+                gp.is_ai,
+                gp.joined_at,
+                eh.elo_change,
+                eh.new_elo,
+                eh.result
+            FROM game_players gp
+            LEFT JOIN users u ON gp.user_id = u.id
+            LEFT JOIN elo_history eh ON eh.game_id = gp.game_id AND eh.user_id = gp.user_id
+            WHERE gp.game_id = ?
+            ORDER BY gp.position ASC`,
+            [gameId]
+        );
+
+        return players.map(p => ({
+            position: p.position,
+            user_id: p.user_id,
+            username: p.username,
+            display_name: p.display_name,
+            profile_picture: p.profile_picture,
+            image_src: p.image_src,
+            score: p.score,
+            is_ai: !!p.is_ai,
+            joined_at: p.joined_at,
+            elo_change: p.elo_change ?? null,
+            new_elo: p.new_elo ?? null,
+            result: p.result ?? null,
+        }));
+    },
+
     async getUserEloProgression(userId: number, limit = 30): Promise<EloProgressPoint[]> {
-        console.log('✅ gameRepository loaded')
         const rows = await db.all<EloProgressPoint>(
             `
         SELECT new_elo, created_at

@@ -1,12 +1,53 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import gameRepository from "../repository/gameRepository";
+import { GameDetail } from "../types/game.types";
+import { GamePlayerDetail } from "../types/game.types";
 
 export type EloProgressPoint = {
     new_elo: number;
     created_at: string; // ISO date
 };
 
+
 export const Game = {
+    getGameDetail: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const gameId = Number((req.params as any).gameId);
+            if (!gameId || Number.isNaN(gameId)) {
+                return reply.status(400).send({ error: "Invalid game ID" });
+            }
+
+            const detail: GameDetail | undefined = await gameRepository.getGameDetail(gameId);
+            if (!detail) return reply.status(404).send({ error: "Game not found" });
+
+            return reply.status(200).send(detail);
+        } catch (err) {
+            const error = err as Error;
+            return reply.status(500).send({
+                error: "Failed to get game detail",
+                details: error.message,
+            });
+        }
+    },
+
+    getGamePlayers: async (req: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const gameId = Number((req.params as any).gameId);
+            if (!gameId || Number.isNaN(gameId)) {
+                return reply.status(400).send({ error: "Invalid game ID" });
+            }
+
+            const players: GamePlayerDetail[] = await gameRepository.getGamePlayers(gameId);
+            console.log(`players retrieved: ${JSON.stringify(players)}`);
+            return reply.status(200).send(players);
+
+        } catch (err) {
+            return reply.status(500).send({
+                error: "Failed to get players details",
+                details: (err as Error).message,
+            });
+        }
+    },
     getUserEloProgression: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const userId = Number((req.params as any).userId);  // <-- corrected!

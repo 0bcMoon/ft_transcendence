@@ -1,161 +1,226 @@
-import { Medal, Gem, Crown, Trophy } from "lucide-react";
-import { useGetTopPlayers } from "@/game/api/queries";
+import { useGetTopPlayers } from "@/game/api/queries"
+import { Trophy, Medal, Crown } from "lucide-react"
+import type { LeaderboardPlayer } from "@/game/types/types"
+import { Link } from "react-router-dom"
 
-const rankConfig = {
-    Bronze: { color: "text-amber-600", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Medal, iconColor: "#d97706" },
-    Silver: { color: "text-slate-400", bg: "bg-slate-500/10", border: "border-slate-500/20", icon: Medal, iconColor: "#94a3b8" },
-    Gold: { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20", icon: Medal, iconColor: "#facc15" },
-    Platinum: { color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20", icon: Gem, iconColor: "#22d3ee" },
-    Master: { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", icon: Crown, iconColor: "#c084fc" }
-};
+const getPlayerAvatar = (player: LeaderboardPlayer): string => {
+    if (player.avatar) {
+        return `${import.meta.env.VITE_API_URL}/public/${player.avatar}`
+    }
+    const name = player.display_name || player.username
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&size=200`
+}
 
-const getAvatar = (avatar: string | null, name: string) =>
-    avatar
-        ? `${import.meta.env.VITE_API_URL}/public/${avatar}`
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=96`;
+const calculateWinRate = (player: LeaderboardPlayer) => {
+    const total = player.wins + player.losses
+    return total > 0 ? Math.round((player.wins / total) * 100) : 0
+}
 
 export default function LeaderboardPage() {
-    const { data: topPlayers, isLoading, isError } = useGetTopPlayers(25);
-
-    const top3 = topPlayers?.slice(0, 3) ?? [];
-    const rest = topPlayers?.slice(3) ?? [];
+    const { data: topPlayers, isLoading, isError } = useGetTopPlayers(25)
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="text-slate-400">Loading...</div>
+            <div className="h-full flex items-center justify-center bg-slate-950">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-400">Loading rankings...</p>
+                </div>
             </div>
-        );
+        )
     }
 
     if (isError) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="text-red-400">Failed to load leaderboard</div>
+            <div className="h-full flex items-center justify-center bg-slate-950">
+                <div className="text-center">
+                    <p className="text-red-400 font-semibold mb-2">Failed to load leaderboard</p>
+                    <p className="text-slate-400 text-sm">Please try again later</p>
+                </div>
             </div>
-        );
+        )
     }
 
+    const topThree = topPlayers?.slice(0, 3) || []
+    const restPlayers = topPlayers?.slice(3) || []
+
+    const podiumOrder = topThree.length === 3 ? [topThree[1], topThree[0], topThree[2]] : topThree
+
     return (
-        <div className="min-h-screen bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-20">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6">
-                        <Trophy className="w-10 h-10 text-white" />
+        <div className="h-full overflow-y-auto bg-slate-950 py-6 px-4">
+            <div className="max-w-6xl mx-auto">
+                <div className="mb-8">
+                    <div className="flex items-center gap-4 mb-3">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                            <Trophy className="w-7 h-7 text-white" strokeWidth={2} />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl sm:text-4xl font-bold text-white">Leaderboard</h1>
+                            <p className="text-base text-slate-400 mt-1">Top players ranked by ELO rating</p>
+                        </div>
                     </div>
-                    <h1 className="text-5xl sm:text-6xl font-bold text-white mb-4">
-                        Leaderboard
-                    </h1>
-                    <p className="text-slate-400 text-xl max-w-2xl mx-auto">
-                        Compete, climb, and conquer the ranks
-                    </p>
                 </div>
 
-                {/* Top 3 Podium */}
-                {top3.length > 0 && (
-                    <div className="mb-16 grid grid-cols-3 gap-6 max-w-4xl mx-auto">
-                        {/* Second Place */}
-                        <div className="flex flex-col items-center pt-12">
-                            <div className="relative">
-                                <img
-                                    src={getAvatar(top3[1]?.avatar, top3[1]?.display_name ?? top3[1]?.username)}
-                                    alt={top3[1]?.display_name || top3[1]?.username}
-                                    className="w-24 h-24 rounded-full object-cover ring-4 ring-slate-600"
-                                />
-                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-700 text-white w-10 h-10 rounded-full flex items-center justify-center text-base font-bold">
-                                    2
-                                </div>
-                            </div>
-                            <h3 className="mt-5 text-white font-semibold text-base truncate w-full text-center">
-                                {top3[1]?.display_name || top3[1]?.username}
-                            </h3>
-                            <p className="text-slate-400 text-sm">{top3[1]?.elo_rating} ELO</p>
-                        </div>
+                {topThree.length > 0 && (
+                    <div className="mb-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                            {podiumOrder.map((player) => {
+                                const position = topThree.indexOf(player) + 1
+                                const name = player.display_name || player.username
+                                const winRate = calculateWinRate(player)
 
-                        {/* First Place */}
-                        <div className="flex flex-col items-center">
-                            <div className="relative">
-                                <img
-                                    src={getAvatar(top3[0]?.avatar, top3[0]?.display_name ?? top3[0]?.username)}
-                                    alt={top3[0]?.display_name || top3[0]?.username}
-                                    className="w-32 h-32 rounded-full object-cover ring-4 ring-yellow-400"
-                                />
-                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-orange-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
-                                    1
-                                </div>
-                                <Crown className="absolute -top-8 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400" />
-                            </div>
-                            <h3 className="mt-5 text-white font-bold text-xl truncate w-full text-center">
-                                {top3[0]?.display_name || top3[0]?.username}
-                            </h3>
-                            <p className="text-slate-300 text-base font-medium">{top3[0]?.elo_rating} ELO</p>
-                        </div>
+                                // Styling based on position
+                                const isFirst = position === 1
+                                const isSecond = position === 2
+                                const isThird = position === 3
 
-                        {/* Third Place */}
-                        <div className="flex flex-col items-center pt-12">
-                            <div className="relative">
-                                <img
-                                    src={getAvatar(top3[2]?.avatar, top3[2]?.display_name ?? top3[2]?.username)}
-                                    alt={top3[2]?.display_name || top3[2]?.username}
-                                    className="w-24 h-24 rounded-full object-cover ring-4 ring-amber-700"
-                                />
-                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-amber-700 text-white w-10 h-10 rounded-full flex items-center justify-center text-base font-bold">
-                                    3
-                                </div>
-                            </div>
-                            <h3 className="mt-5 text-white font-semibold text-base truncate w-full text-center">
-                                {top3[2]?.display_name || top3[2]?.username}
-                            </h3>
-                            <p className="text-slate-400 text-sm">{top3[2]?.elo_rating} ELO</p>
+                                return (
+                                    <Link
+                                        key={player.user_id}
+                                        to={`/users/${player.user_id}`}
+                                        className={`
+                      rounded-2xl bg-slate-900 shadow-xl p-6 hover:scale-105 transition-transform cursor-pointer
+                      flex flex-col items-center text-center
+                      ${isFirst ? "md:order-2 md:pt-0" : ""}
+                      ${isSecond ? "md:order-1 md:pt-8" : ""}
+                      ${isThird ? "md:order-3 md:pt-8" : ""}
+                    `}
+                                    >
+                                        {/* Medal/Crown Icon */}
+                                        <div className="mb-4">
+                                            {isFirst && (
+                                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg">
+                                                    <Crown className="w-8 h-8 text-white" />
+                                                </div>
+                                            )}
+                                            {isSecond && (
+                                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center shadow-lg">
+                                                    <Medal className="w-7 h-7 text-white" />
+                                                </div>
+                                            )}
+                                            {isThird && (
+                                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center shadow-lg">
+                                                    <Medal className="w-7 h-7 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Avatar */}
+                                        <img
+                                            src={getPlayerAvatar(player) || "/placeholder.svg"}
+                                            alt={name}
+                                            className={`rounded-full object-cover mb-3 ${isFirst ? "w-24 h-24" : "w-20 h-20"}`}
+                                        />
+
+                                        {/* Position Badge */}
+                                        <div
+                                            className={`
+                      font-bold mb-2 px-3 py-1 rounded-full
+                      ${isFirst ? "text-lg bg-yellow-500/20 text-yellow-400" : ""}
+                      ${isSecond ? "text-base bg-slate-500/20 text-slate-300" : ""}
+                      ${isThird ? "text-base bg-amber-600/20 text-amber-500" : ""}
+                    `}
+                                        >
+                                            #{position}
+                                        </div>
+
+                                        {/* Player Name */}
+                                        <h3 className={`font-bold text-white mb-1 ${isFirst ? "text-xl" : "text-lg"}`}>{name}</h3>
+
+                                        {/* Rank Badge */}
+                                        <span
+                                            className={`
+                      px-3 py-1 text-xs font-semibold rounded-md mb-3
+                      ${isFirst ? "bg-blue-500/30 text-blue-300" : "bg-slate-700 text-slate-300"}
+                    `}
+                                        >
+                                            {player.rank}
+                                        </span>
+
+                                        {/* Stats */}
+                                        <div className="space-y-2 w-full">
+                                            <div className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-2">
+                                                <span className="text-sm text-slate-400">ELO</span>
+                                                <span className="text-base font-bold text-blue-300">{player.elo_rating}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-2">
+                                                <span className="text-sm text-slate-400">Record</span>
+                                                <span className="text-sm font-semibold text-white">
+                                                    <span className="text-green-400">{player.wins}W</span>
+                                                    <span className="text-slate-500 mx-1">/</span>
+                                                    <span className="text-red-400">{player.losses}L</span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-2">
+                                                <span className="text-sm text-slate-400">Win Rate</span>
+                                                <span className="text-base font-bold text-white">{winRate}%</span>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                )
+                            })}
                         </div>
                     </div>
                 )}
 
-                {/* Rankings List */}
-                <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 overflow-hidden">
-                    {rest.map((player, idx) => {
-                        const rank = player.rank as keyof typeof rankConfig;
-                        const config = rankConfig[rank] || rankConfig.Silver;
-                        const Icon = config.icon;
-                        const position = idx + 4;
+                {restPlayers.length > 0 && (
+                    <div className="rounded-2xl bg-slate-900 shadow-xl overflow-hidden">
+                        {restPlayers.map((player, idx) => {
+                            const position = idx + 4
+                            const name = player.display_name || player.username
+                            const winRate = calculateWinRate(player)
 
-                        return (
-                            <div
-                                key={player.user_id}
-                                className="flex items-center gap-5 p-5 hover:bg-slate-800/50 transition-colors border-b border-slate-800 last:border-b-0"
-                            >
-                                <div className="w-10 text-center">
-                                    <span className="text-slate-400 font-semibold text-base">{position}</span>
-                                </div>
-
-                                <img
-                                    src={getAvatar(player.avatar, player.display_name ?? player.username)}
-                                    alt={player.display_name ?? player.username}
-                                    className="w-14 h-14 rounded-full object-cover"
-                                />
-
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-white font-medium truncate text-base">
-                                            {player.display_name || player.username}
-                                        </span>
-                                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color} border ${config.border}`}>
-                                            <Icon className="w-3.5 h-3.5" />
-                                            {player.rank}
-                                        </span>
+                            return (
+                                <Link
+                                    key={player.user_id}
+                                    to={`/users/${player.user_id}`}
+                                    className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 hover:bg-blue-900/30 transition-colors cursor-pointer"
+                                >
+                                    <div className="w-10 sm:w-12 flex-shrink-0 flex items-center justify-center">
+                                        <span className="text-lg sm:text-xl font-bold text-slate-400">#{position}</span>
                                     </div>
-                                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                                        <span>{player.elo_rating} ELO</span>
-                                        <span className="text-green-400">{player.wins}W</span>
-                                        <span className="text-red-400">{player.losses}L</span>
+
+                                    <img
+                                        src={getPlayerAvatar(player) || "/placeholder.svg"}
+                                        alt={name}
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover flex-shrink-0"
+                                    />
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="text-sm sm:text-base font-semibold text-white truncate">{name}</h3>
+                                            <span className="px-2 py-0.5 text-xs font-medium bg-slate-700 text-slate-300 rounded-md">
+                                                {player.rank}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400">
+                                            <span className="font-semibold text-slate-300">{player.elo_rating} ELO</span>
+                                            <span className="text-green-400">{player.wins}W</span>
+                                            <span className="text-red-400">{player.losses}L</span>
+                                            <span className="hidden sm:inline text-slate-400">{winRate}%</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+
+                                    <div className="sm:hidden flex-shrink-0 text-right">
+                                        <div className="text-sm font-semibold text-white">{winRate}%</div>
+                                        <div className="text-xs text-slate-400">WR</div>
+                                    </div>
+                                </Link>
+                            )
+                        })}
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {topPlayers?.length === 0 && (
+                    <div className="rounded-2xl bg-slate-900 shadow-xl p-16 text-center">
+                        <Trophy className="w-12 h-12 text-slate-600 mb-3 mx-auto" />
+                        <p className="text-white font-semibold mb-1">No players yet</p>
+                        <p className="text-slate-400 text-sm">Be the first to compete!</p>
+                    </div>
+                )}
             </div>
         </div>
-    );
+    )
 }
+

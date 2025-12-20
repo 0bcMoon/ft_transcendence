@@ -1,5 +1,3 @@
-// game/game.types.ts
-
 import type { WebSocket } from 'ws';
 
 export type Side = "left" | "right";
@@ -108,39 +106,18 @@ export interface GameSession {
     handleGoHome: () => void;
 }
 
-// ✅ Updated ClientMessage with tournament fields
 export type ClientMessage =
     | {
         type: "joinGame";
         username: string;
         avatar: string;
         mode: GameMode;
-        gameId?: number;          // For legacy tournament support
-        tournamentId?: number;    // ✅ For tournament matches
-        matchId?: number;         // ✅ For tournament matches
+        gameId?: number;
+        tournamentId?: number;
+        matchId?: number;
     }
     | { type: "ready" }
     | { type: "move"; up: boolean; down: boolean }
     | { type: "playAgain"; mode: GameMode }
     | { type: "leaveGame" };
 
-// ✅ Updated ServerMessage with tournament fields and new message types
-export type ServerMessage =
-    | {
-        type: "matchFound";
-        mode: GameMode;
-        side: Side;
-        playerNames: PlayerNames;
-        playerAvatars: PlayerAvatars;
-        id: string;
-        round?: number;           // ✅ For tournament matches
-        matchNumber?: number;     // ✅ For tournament matches
-        tournamentId?: number;    // ✅ For tournament matches
-        matchId?: number;         // ✅ For tournament matches
-    }
-    | { type: "countdown"; count: number }  // ✅ Add countdown
-    | { type: "state"; state: GameState }
-    | { type: "gameOver"; winner: Side; score: Scores }
-    | { type: "opponentLeft" }              // ✅ Add opponent left
-    | { type: "leaveGame" }
-    | { type: "error"; message: string };   // ✅ Add error message

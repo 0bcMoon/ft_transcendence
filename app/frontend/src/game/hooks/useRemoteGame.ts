@@ -53,6 +53,12 @@ export function useRemoteGame() {
         setWaiting(true);
     }, []);
 
+    const handleGoHome = useCallback(() => {
+        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
+        wsRef.current?.close();
+        navigate("/");
+    }, [navigate]);
+
     useEffect(() => {
         if (!userId || !username) {
             console.log("User not loaded, WebSocket connection aborted.");
@@ -71,6 +77,8 @@ export function useRemoteGame() {
 
         websocket.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
+            if (msg.type === "matchFound")
+                console.log('available message', msg.playerAvatars);
 
             switch (msg.type) {
                 case "matchFound":
@@ -117,7 +125,7 @@ export function useRemoteGame() {
             websocket.close();
             wsRef.current = null;
         };
-    }, [userId, username, avatar, resetGameState]); // resetGameState is stable
+    }, [userId, username, avatar, resetGameState]);
 
     useEffect(() => {
         if (countdown === null) return;
@@ -150,7 +158,7 @@ export function useRemoteGame() {
         }, 16); // ~60fps
 
         return () => clearInterval(interval);
-    }, [side]); // Re-runs when 'side' is set
+    }, [side]);
 
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, pressed: boolean) => {
@@ -162,6 +170,16 @@ export function useRemoteGame() {
                 e.preventDefault();
                 keysPressed.current.down = pressed;
             }
+            if (pressed && e.key === "Enter" && isGameOverRef.current) {
+                e.preventDefault();
+                handlePlayAgain();
+            }
+
+            if (pressed && e.key === "Escape") {
+                e.preventDefault();
+                handleGoHome();
+            }
+
         };
 
         const down = (e: KeyboardEvent) => handleKey(e, true);
@@ -173,18 +191,12 @@ export function useRemoteGame() {
             window.removeEventListener("keydown", down);
             window.removeEventListener("keyup", up);
         };
-    }, []); // Runs once
+    }, [handleGoHome]);
 
     const handlePlayAgain = useCallback(() => {
         wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "remote" }));
         resetGameState();
     }, [resetGameState]);
-
-    const handleGoHome = useCallback(() => {
-        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-        wsRef.current?.close();
-        navigate("/");
-    }, [navigate]);
 
     return {
         gameStateRef,

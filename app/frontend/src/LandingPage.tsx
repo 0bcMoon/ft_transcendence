@@ -89,7 +89,7 @@ const LandingPage: React.FC = () => {
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                             <Activity size={18} className="text-white" />
                         </div>
-                        <span>PONG<span className="text-blue-500">.1337</span></span>
+                        PONG<span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">.1337</span>
                     </div>
                     <div className="hidden md:flex items-center gap-8">
                         <a href="#modes" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Game Modes</a>

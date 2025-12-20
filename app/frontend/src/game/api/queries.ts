@@ -3,6 +3,7 @@ import { GameMode } from '../types/types';
 import { Tournament, TournamentPlayer } from '../api/gameApi';
 import type { GlobalMatchData, UserStats, ScoreProgressionPoint } from '../types/types';
 import { tournamentApi, gameApi, GameWithPlayers, RecentMatch, EloProgressPoint } from '../api/gameApi';
+import { GameDetail, GamePlayerDetail } from '../api/gameApi';
 
 export interface MatchHistoryItem {
     matchId: number;
@@ -38,6 +39,22 @@ export const qk = {
 };
 
 // ==================== TOURNAMENT QUERIES ============================
+
+export const useGetGameDetail = (gameId: number) => {
+    return useQuery<GameDetail, Error>({
+        queryKey: ['game-detail', gameId],
+        queryFn: () => gameApi.getGameDetail(gameId),
+        enabled: !!gameId,
+    });
+};
+
+export const useGetGamePlayers = (gameId: number) => {
+    return useQuery<GamePlayerDetail[], Error>({
+        queryKey: ['game-players', gameId],
+        queryFn: () => gameApi.getGamePlayers(gameId),
+        enabled: !!gameId,
+    });
+};
 
 export const useListTournaments = () => {
     return useQuery<Tournament[], Error>({

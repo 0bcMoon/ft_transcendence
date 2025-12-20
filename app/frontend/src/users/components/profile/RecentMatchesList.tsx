@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { History, ArrowRight } from 'lucide-react';
-import { useAuthStore } from '@/state/authStore';
 import { useGetRecentMatches } from '../../../game/api/queries';
 import type { RecentMatch } from '../../../game/api/gameApi';
 
@@ -10,7 +9,6 @@ type Props = {
 };
 
 export default function RecentMatchesList({ userId, limit = 5 }: Props) {
-    const currentUser = useAuthStore((s) => s.user);
     const {
         data: matches = [],
         isLoading,
@@ -32,9 +30,8 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
 
     const getModeLabel = (mode: string) => {
         const labels: Record<string, string> = {
-            remote: '1v1',
+            remote: 'Online Match',
             local: 'Local',
-            ai: 'AI',
             tournament: 'Tournament',
         };
         return labels[mode] || mode;
@@ -108,9 +105,6 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
                             const winner = getWinner(match);
                             const p1Win = winner === 'p1';
                             const p2Win = winner === 'p2';
-                            const isP1User = currentUser?.id === match.player1_id;
-                            const isP2User = currentUser?.id === match.player2_id;
-
                             return (
                                 <li key={match.id}>
                                     <Link
@@ -132,7 +126,6 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
                                                         <p className={`text-xs font-medium truncate ${p1Win ? 'text-white' : 'text-slate-400'}`}>
                                                             {match.player1_name}
                                                         </p>
-                                                        {isP1User && <span className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded shadow-lg shadow-blue-600/20">You</span>}
                                                     </div>
                                                 </div>
 
@@ -147,7 +140,6 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
                                                 <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
                                                     <div className="min-w-0 text-right">
                                                         <p className={`text-xs font-medium truncate ${p2Win ? 'text-white' : 'text-slate-400'}`}>{match.player2_name}</p>
-                                                        {isP2User && <span className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded shadow-lg shadow-blue-600/20">You</span>}
                                                     </div>
                                                     <img
                                                         src={getAvatar(match.player2_avatar, match.player2_name)}
@@ -177,7 +169,6 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
                                                 <div className="min-w-0">
                                                     <p className={`text-sm font-medium truncate ${p1Win ? 'text-white' : 'text-slate-400'}`}>{match.player1_name}</p>
                                                     <div className="flex items-center gap-2">
-                                                        {isP1User && <span className="text-xs px-2 py-0.5 bg-blue-600 text-white rounded shadow-lg shadow-blue-600/20">You</span>}
                                                         <span className="text-xs text-slate-500">{getModeLabel(match.mode)}</span>
                                                     </div>
                                                 </div>
@@ -196,7 +187,6 @@ export default function RecentMatchesList({ userId, limit = 5 }: Props) {
                                             <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
                                                 <div className="min-w-0 text-right">
                                                     <p className={`text-sm font-medium truncate ${p2Win ? 'text-white' : 'text-slate-400'}`}>{match.player2_name}</p>
-                                                    {isP2User && <span className="text-xs px-2 py-0.5 bg-blue-600 text-white rounded shadow-lg shadow-blue-600/20">You</span>}
                                                 </div>
                                                 <img
                                                     src={getAvatar(match.player2_avatar, match.player2_name)}

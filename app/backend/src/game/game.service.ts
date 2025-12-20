@@ -458,11 +458,7 @@ async function notifyTournamentMatchReady(
     console.log(`✅ Tournament match ${match.matchId} ready`);
 }
 
-async function joinTournamentMatch(
-    player: Player,
-    tournamentId: number,
-    matchId: number
-): Promise<void> {
+async function joinTournamentMatch(player: Player, tournamentId: number, matchId: number): Promise<void> {
     console.log(`🏆 ${player.username} joining tournament ${tournamentId} match ${matchId}...`);
 
     try {

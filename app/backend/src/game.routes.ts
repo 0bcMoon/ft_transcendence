@@ -7,9 +7,13 @@ const gameRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.get('/users/:userId/stats', { onRequest: [fastify.authenticate] }, Game.getPlayerStatsSummary);
     fastify.get('/users/:userId/elo-progression', { onRequest: [fastify.authenticate] }, Game.getUserEloProgression);
 
+
     fastify.get('/users/:id/score-progression', { onRequest: [fastify.authenticate] }, Game.getUserScoreProgression);
     fastify.get("/users/:user_id/games", { onRequest: [fastify.authenticate] }, Game.getUserGames);
     fastify.get("/users/:user_id/match-history", { onRequest: [fastify.authenticate] }, Game.getMatchHistory);
+
+    fastify.get("/games/:gameId/detail", { onRequest: [fastify.authenticate] }, Game.getGameDetail);
+    fastify.get("/games/:gameId/players", { onRequest: [fastify.authenticate] }, Game.getGamePlayers);
 
     fastify.get("/games/recent", { onRequest: [fastify.authenticate] }, Game.getRecentGlobalMatches);
     fastify.get('/games/user/:userId/recent', { onRequest: [fastify.authenticate] }, Game.getRecentMatches);
