@@ -469,7 +469,6 @@ const User = {
             code: code
         });
 
-
         return reply.status(200).send({
             message: "Email confirmation sent",
         });

@@ -58,6 +58,9 @@ export default async function(fastify: FastifyInstance) {
             const receiver_string = JSON.stringify(result);
 
             chatConnections.get(req.user.id)?.send(sender_string);
+            if (chatConnections.has(req.user.id)) {
+                console.log(`Sending message to user ${req.user.id}`);
+            }
             chatConnections.get(payload.receiver_id)?.send(receiver_string);
             NotifyOnlineUser(payload.receiver_id, req.user.id, payload.content);
 

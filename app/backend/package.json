@@ -4,7 +4,7 @@
     "main": "index.js",
     "scripts": {
         "exec": "tsx -r dotenv/config index.ts",
-        "dev": "tsx watch index.ts",           
+        "dev": "nodemon",           
         "seed": "tsx db/seed.ts",             
         "migrate": "rm ping.db && tsx db/seed.ts",
         "test": "sh test.sh",

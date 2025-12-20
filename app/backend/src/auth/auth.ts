@@ -50,6 +50,15 @@ const Auth = {
         }
         return reply.status(200).send({ message: 'Username is available' });
     },
+    confirm_email: async ( email: string, confirmation_code: string) => {
+        const session_key = crypto.randomBytes(24).toString('hex')
+        const code = crypto.randomBytes(4).toString('hex');
+
+        // await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
+
+        //
+    },
+
     SendConfirmationCode: async (req: FastifyRequest, reply: FastifyReply) => {
 
         const { email } = req.body as { email: string };
@@ -67,6 +76,14 @@ const Auth = {
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
 
+        // const _ = await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
+
+        // email is expensive operation, so we will just log it
+        console.log(`-------------------------------`);
+        console.log(`Sending email2 to ${email} with code: ${code}`);
+        console.log(`-------------------------------`);
+
+        
 
         reply
             .setCookie('session_key', session_key, {
@@ -206,11 +223,14 @@ const Auth = {
         const { username, display_name, password, email, confirmation_code } = req.body as IRegisterBody;
 
         const session_key = req.cookies.session_key;
+
         if (!session_key) {
             return reply.status(401).send({ message: 'Unauthorized: No session key provided' });
         }
+
         const session_data = register.get(session_key);
         register.delete(session_key);
+
         if (!session_data) {
             return reply.status(401).send({ message: 'Unauthorized: Invalid session key' });
         }
@@ -229,13 +249,17 @@ const Auth = {
             return reply.status(409).send({ message: 'Email already exists' });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
+        let backend_url = process.env.BACKEND_URL || 'http://localhost:3000';
+
+        backend_url += "/public/"
+        
         await userRepository.createUser({
             username,
             display_name,
             password: hashedPassword,
             email,
-            image_src: process.env.BACKEND_URL!,
-            profile_picture: process.env.DEFAULT_PROFILE_PICTURE!,
+            image_src: backend_url,
+            profile_picture: 'default.jpg',
             oauth_type: 'local'
         });
 

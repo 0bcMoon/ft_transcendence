@@ -391,9 +391,9 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                                     id="confirmation_code"
                                     name="confirmation_code"
                                     className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none placeholder:text-slate-500 text-white text-center text-2xl tracking-widest"
-                                    placeholder="000000"
+                                    placeholder="00000000"
                                     required
-                                    maxLength={6}
+                                    maxLength={8}
                                 />
                             </div>
                         </div>
