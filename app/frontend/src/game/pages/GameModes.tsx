@@ -44,27 +44,21 @@ export default function GameModesPage() {
                             colorClass="blue"
                         />
                         <GameModeCard
-                            to="/game/ai/play"
-                            icon={<X size={24} />}
-                            title="TIC-TAC-TOE"
-                            description="Test your skills against our advanced AI with multiple difficulty levels and training modes."
-                            colorClass="purple"
-                        />
-                        <GameModeCard
                             to="/game/tournaments"
                             icon={<Trophy size={24} />}
                             title="Tournaments"
                             description="Automated daily and weekly elimination brackets with prize pools and global rankings."
                             colorClass="cyan"
                         />
+                        <GameModeCard
+                            to="/game/seconde-game"
+                            icon={<X size={24} />}
+                            title="TIC-TAC-TOE"
+                            description="TODO: zakaria 9adlina l game asa7bi"
+                            colorClass="purple"
+                        />
                     </div>
 
-                    {/* Footer CTA */}
-                    <div className="mt-16 sm:mt-20 text-center">
-                        <p className="text-slate-500 text-sm">
-                            Not sure where to start? Try Local Games to get a feel for the mechanics.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

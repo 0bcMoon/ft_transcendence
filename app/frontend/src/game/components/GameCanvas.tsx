@@ -144,7 +144,8 @@ export default function GameCanvas({
         };
 
         const drawGameResult = (userSide?: "left" | "right", winner?: "left" | "right" | null) => {
-            if (!winner || !userSide) return;
+            if (!winner || !userSide)
+                return;
 
             const isWinner = winner === userSide;
             const text = isWinner ? "You Win" : "You Lose";

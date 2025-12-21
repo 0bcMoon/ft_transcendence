@@ -30,7 +30,6 @@ export function useRemoteGame() {
 
     const setCountdownState = (value: number | null) => {
         countdownRef.current = value;
-        console.log("Countdown set to:", value);
         setCountdown(value);
     };
 
@@ -53,15 +52,8 @@ export function useRemoteGame() {
         setWaiting(true);
     }, []);
 
-    const handleGoHome = useCallback(() => {
-        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-        wsRef.current?.close();
-        navigate("/");
-    }, [navigate]);
-
     useEffect(() => {
         if (!userId || !username) {
-            console.log("User not loaded, WebSocket connection aborted.");
             return;
         }
 
@@ -69,16 +61,15 @@ export function useRemoteGame() {
         wsRef.current = websocket;
 
         websocket.onopen = () => {
-            console.log("WebSocket connected. Joining game...");
             websocket.send(
-                JSON.stringify({ type: "joinGame", mode: "remote", username: username, avatar: avatar, })
+                JSON.stringify({
+                    type: "joinGame", 
+                    mode: "remote", username: username, avatar: avatar, })
             );
         };
 
         websocket.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
-            if (msg.type === "matchFound")
-                console.log('available message', msg.playerAvatars);
 
             switch (msg.type) {
                 case "matchFound":
@@ -172,12 +163,15 @@ export function useRemoteGame() {
             }
             if (pressed && e.key === "Enter" && isGameOverRef.current) {
                 e.preventDefault();
-                handlePlayAgain();
+                wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "remote" }));
+                resetGameState();
             }
 
             if (pressed && e.key === "Escape") {
                 e.preventDefault();
-                handleGoHome();
+                wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
+                wsRef.current?.close();
+                navigate("/game");
             }
 
         };
@@ -191,13 +185,7 @@ export function useRemoteGame() {
             window.removeEventListener("keydown", down);
             window.removeEventListener("keyup", up);
         };
-    }, [handleGoHome]);
-
-    const handlePlayAgain = useCallback(() => {
-        wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "remote" }));
-        resetGameState();
-    }, [resetGameState]);
-
+    });
     return {
         gameStateRef,
         side,
@@ -209,7 +197,5 @@ export function useRemoteGame() {
         finalScore,
         score,
         waiting,
-        handlePlayAgain,
-        handleGoHome,
     };
 }

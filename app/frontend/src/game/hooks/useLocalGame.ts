@@ -51,10 +51,6 @@ export function useLocalGame() {
         setScore({ left: 0, right: 0 });
     }, []);
 
-    const handleGoHome = useCallback(() => {
-        navigate("/");
-    }, [navigate]);
-
 
     const persistFinishedGame = useCallback(async (score: Scores, sideWinner: Side | null) => {
         const id = gameIdRef.current;
@@ -179,7 +175,7 @@ export function useLocalGame() {
 
             if (pressed && e.key === "Escape") {
                 e.preventDefault();
-                handleGoHome();
+                navigate("/game");
             }
 
         };
@@ -204,6 +200,5 @@ export function useLocalGame() {
         score,
         playerNames,
         setPlayerNames,
-        handlePlayAgain: setupGame,
     };
 }

@@ -1,5 +1,3 @@
-// game/game.server.ts
-
 import { WebSocket } from 'ws';
 import { ClientMessage, GameMode, Player, Side, GameState } from './game.types';
 import { initState, moveBall, checkGameOver, resetBall } from './game.physics';
@@ -299,6 +297,7 @@ async function createRemoteGame(player1: Player, player2: Player): Promise<numbe
 }
 
 function createRemoteMatch(gameId: number, player1: Player, player2: Player): RemoteMatch {
+    console.log('Creating remote match:', { gameId, player1, player2 });
     return {
         gameId,
         mode: 'remote',
@@ -316,6 +315,7 @@ function createRemoteMatch(gameId: number, player1: Player, player2: Player): Re
 function notifyRemoteMatchFound(match: RemoteMatch): void {
     const { left, right } = match.players;
 
+    console.log('playerAvatar', left.avatar);
     const baseMessage = {
         type: 'matchFound',
         id: match.gameId.toString(),
@@ -332,6 +332,7 @@ async function matchRemotePlayers(player1: Player, player2: Player): Promise<voi
     try {
         const gameId = await createRemoteGame(player1, player2);
         const match = createRemoteMatch(gameId, player1, player2);
+        console.log('match created', match);
 
         matches.set(gameId, match);
         player1.gameId = gameId;
@@ -345,7 +346,7 @@ async function matchRemotePlayers(player1: Player, player2: Player): Promise<voi
 }
 
 function addToRemoteQueue(player: Player): void {
-    console.log(`🎮 ${player.username} joining remote queue...`);
+    console.log(`🎮 /////////////////${player} joining remote queue...`);
     remoteQueue.push(player);
 
     if (remoteQueue.length >= 2) {

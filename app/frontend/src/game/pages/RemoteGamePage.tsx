@@ -6,7 +6,6 @@ import GameInstructions from "../components/GameInstructions"
 
 export default function RemoteGame() {
     const game = useRemoteGame()
-    console.log("RemoteGame - playerAvatars:", game.playerAvatars)
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">

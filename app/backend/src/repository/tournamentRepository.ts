@@ -1,23 +1,17 @@
-// src/repository/tournamentRepository.ts
 
 import db from "../../db/db";
 import { notifyUsers, IEvent } from '../notifications';
 import gameRepository from './gameRepository';
 import {
     Tournament,
-    TournamentStatus,
     TournamentPlayer,
     TournamentMatch,
     TournamentDetails,
     CreateTournamentData,
     BracketRound,
-    BracketMatch,
     TournamentMatchWithPlayers,
 } from "../types/tournament.types";
 
-/**
- * Get round name based on position
- */
 function getRoundName(round: number, totalRounds: number): string {
     const roundsFromEnd = totalRounds - round;
 
@@ -31,6 +25,7 @@ function getRoundName(round: number, totalRounds: number): string {
 }
 
 const tournamentRepository = {
+
     async create(data: CreateTournamentData): Promise<number> {
         const result = await db.run(
             `INSERT INTO tournaments (name, max_players, created_by, status, current_round, created_at) 
@@ -433,7 +428,6 @@ const tournamentRepository = {
                  WHERE id = ?`,
                 [winnerPlayer.user_id, tournamentId]
             );
-
 
             const players = await this.getPlayers(tournamentId);
             const playerUserIds = players.map(p => p.user_id);

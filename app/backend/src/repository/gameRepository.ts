@@ -244,10 +244,7 @@ const gameRepository = {
     /**
      * Create game and add players
      */
-    async createGameAndAddPlayers(
-        mode: GameMode,
-        players: PlayerData[]
-    ): Promise<number> {
+    async createGameAndAddPlayers(mode: GameMode, players: PlayerData[]): Promise<number> {
         const gameResult = await db.run(
             `INSERT INTO games (mode, status, created_at) VALUES (?, 'waiting', CURRENT_TIMESTAMP)`,
             [mode]

@@ -39,7 +39,7 @@ const gameRoutes: FastifyPluginAsync = async (fastify) => {
 
     fastify.post('/tournaments/:id/register', { onRequest: [fastify.authenticate] }, Tournament.registerPlayer);
 
-    fastify.get('/tournaments/:id/players', { onRequest: [fastify.authenticate] }, Tournament.listPlayers);
+    fastify.get('/tournaments/:id/players', { onRequest: [fastify.authenticate] }, Tournament.getPlayer);
 
     fastify.post('/tournaments/:id/start', { onRequest: [fastify.authenticate] }, Tournament.startTournament);
     fastify.get('/tournaments/:id/bracket', { onRequest: [fastify.authenticate] }, Tournament.getBracket);

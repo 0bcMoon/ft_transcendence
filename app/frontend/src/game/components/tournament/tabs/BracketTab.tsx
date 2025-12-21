@@ -9,7 +9,6 @@ interface BracketTabProps {
 export function BracketTab({ tournamentId }: BracketTabProps) {
     const { data: bracket, isLoading, error } = useTournamentBracket(tournamentId);
 
-    // --- 1. Loading State ---
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -19,7 +18,6 @@ export function BracketTab({ tournamentId }: BracketTabProps) {
         );
     }
 
-    // --- 2. "Bracket Not Ready" State ---
     if (error || !bracket) {
         return (
             <div className="text-center bg-slate-900 border border-slate-800 rounded-2xl p-12">
@@ -36,10 +34,8 @@ export function BracketTab({ tournamentId }: BracketTabProps) {
         );
     }
 
-    // --- 3. Main Bracket Display ---
     return (
         <div className="space-y-12">
-            {/* Champion Banner */}
             {bracket.champion && (
                 <div className="bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl p-8 text-center shadow-2xl shadow-yellow-500/10">
                     <div className="flex justify-center items-center gap-4">
@@ -53,10 +49,8 @@ export function BracketTab({ tournamentId }: BracketTabProps) {
                 </div>
             )}
 
-            {/* Bracket Rounds */}
             {bracket.rounds.map((round: any) => (
                 <div key={round.round}>
-                    {/* Round Header */}
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-1.5 h-10 bg-blue-500 rounded-full"></div>
                         <div>
@@ -69,7 +63,6 @@ export function BracketTab({ tournamentId }: BracketTabProps) {
                         </div>
                     </div>
 
-                    {/* Matches Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {round.matches.map((match: any) => (
                             <MatchCard key={match.id} match={match} />

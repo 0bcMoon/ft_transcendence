@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
     status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished', 'cancelled')),
     created_by INTEGER NOT NULL,
     winner_id INTEGER,
-    max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16, 32, 64)),
+    max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 14)),
     current_round INTEGER DEFAULT 1,
     started_at TIMESTAMP,
     ended_at TIMESTAMP,

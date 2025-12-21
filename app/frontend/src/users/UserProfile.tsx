@@ -51,8 +51,7 @@ function UserProfile() {
                     <p className="text-slate-400 mb-6">Could not load user profile data.</p>
                     <button
                         onClick={handleGoBack}
-                        className={`${primaryButtonClasses} bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500`}
-                    >
+                        className={`${primaryButtonClasses} bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500`} >
                         <ArrowLeft className="w-5 h-5" />
                         <span>Go Back</span>
                     </button>
@@ -67,8 +66,7 @@ function UserProfile() {
                 {/* Back Button */}
                 <button
                     onClick={handleGoBack}
-                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all font-medium border border-transparent hover:border-slate-800"
-                >
+                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all font-medium border border-transparent hover:border-slate-800" >
                     <ArrowLeft className="w-5 h-5" />
                     <span>Back</span>
                 </button>
