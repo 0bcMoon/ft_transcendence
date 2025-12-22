@@ -187,3 +187,38 @@ CREATE INDEX IF NOT EXISTS idx_game_players_game ON game_players(game_id);
 CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
 CREATE INDEX IF NOT EXISTS idx_tournament_players_tournament ON tournament_players(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_matches_tournament ON tournament_matches(tournament_id);
+
+
+
+-- =========================
+-- ARENA GAME (independent)
+-- =========================
+
+CREATE TABLE IF NOT EXISTS arena_games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mode TEXT NOT NULL CHECK(mode IN ('remote', 'ai')),
+    status TEXT NOT NULL DEFAULT 'waiting' CHECK(status IN ('waiting', 'playing', 'finished', 'cancelled')),
+    winner_user_id INTEGER,
+    started_at TIMESTAMP,
+    ended_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (winner_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS arena_game_players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    arena_game_id INTEGER NOT NULL,
+    user_id INTEGER,
+    position INTEGER NOT NULL CHECK(position IN (1, 2)),
+    score INTEGER DEFAULT 0,
+    is_ai INTEGER DEFAULT 0 NOT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (arena_game_id) REFERENCES arena_games(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE(arena_game_id, position)
+);
+
+CREATE INDEX IF NOT EXISTS idx_arena_games_status ON arena_games(status);
+CREATE INDEX IF NOT EXISTS idx_arena_games_mode ON arena_games(mode);
+CREATE INDEX IF NOT EXISTS idx_arena_players_user ON arena_game_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_arena_players_game ON arena_game_players(arena_game_id);
