@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
-import { handleMessage, removePlayer } from "./game/game.service";
+import { handleMessage, removePlayer } from "./game/game.server";
+
 
 const gameRoute: FastifyPluginAsync = async (fastify) => {
     fastify.get("/game", { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {

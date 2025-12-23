@@ -1,4 +1,3 @@
-// src/game/api/gameApi.ts
 
 import api from '@/api/api';
 import type {
@@ -13,6 +12,32 @@ import type {
 
 export type GameStatus = 'waiting' | 'playing' | 'finished' | 'cancelled';
 export type TournamentStatus = 'registration' | 'active' | 'finished' | 'cancelled';
+
+export interface GameDetail {
+    id: number;
+    mode: string;
+    status: string;
+    winner_id: number | null;
+    started_at: string | null;
+    ended_at: string | null;
+    created_at: string;
+}
+
+export interface GamePlayerDetail {
+    position: number;
+    user_id: number | null;
+    username: string | null;
+    avatar_url: string | null;
+    score: number | null;
+    is_ai: boolean;
+    joined_at: string;
+    elo_change: number | null;
+    new_elo: number | null;
+    result: string | null;
+    display_name?: string;
+    image_src?: string;
+    profile_picture?: string;
+}
 
 export interface RecentMatch {
     id: number;                    // game id
@@ -171,34 +196,43 @@ export type TopPlayer = {
     losses: number;
 };
 
-// Export all types
+export type EloProgressPoint = {
+    new_elo: number;
+    created_at: string; // ISO date
+};
+
 
 
 // ==================== GAME API ====================
 
 export const gameApi = {
-    /**
-     * Get recent global matches
-     * GET /api/games/recent?limit=10
-     */
+    async getGameDetail(gameId: number): Promise<GameDetail> {
+        const { data } = await api.get<GameDetail>(`/api/games/${gameId}/detail`);
+        return data;
+    },
+
+    async getGamePlayers(gameId: number): Promise<GamePlayerDetail[]> {
+        const { data } = await api.get<GamePlayerDetail[]>(`/api/games/${gameId}/players`);
+        return Array.isArray(data) ? data : [];
+    },
     async getRecentGlobalMatches(limit: number = 10): Promise<GlobalMatchData[]> {
         const { data } = await api.get<GlobalMatchData[]>(`/api/games/recent?limit=${limit}`);
         return Array.isArray(data) ? data : [];
     },
 
-    /**
-     * Get user statistics
-     * GET /api/users/: id/stats
-     */
+    async getUserEloProgression(userId: number, limit: number = 30): Promise<EloProgressPoint[]> {
+        console.log("Fetching ELO progression for userId:", userId, "with limit:", limit);
+        const { data } = await api.get<EloProgressPoint[]>(
+            `/api/users/${userId}/elo-progression?limit=${limit}`
+        );
+        return Array.isArray(data) ? data : [];
+    },
+
     async getUserStats(userId: number): Promise<UserStats> {
         const { data } = await api.get<UserStats>(`/api/users/${userId}/stats`);
         return data;
     },
 
-    /**
-     * Get user score progression
-     * GET /api/users/:id/score-progression?limit=10
-     */
     async getUserScoreProgression(userId: number, limit: number = 10): Promise<ScoreProgressionPoint[]> {
         const { data } = await api.get<ScoreProgressionPoint[]>(
             `/api/users/${userId}/score-progression?limit=${limit}`
@@ -206,19 +240,11 @@ export const gameApi = {
         return Array.isArray(data) ? data : [];
     },
 
-    /**
-     * Get user match history
-     * GET /api/users/:id/match-history
-     */
     async getMatchHistory(userId: number): Promise<MatchHistoryItem[]> {
         const { data } = await api.get<MatchHistoryItem[]>(`/api/users/${userId}/match-history`);
         return Array.isArray(data) ? data : [];
     },
 
-    /**
-     * Create a new game
-     * POST /api/games
-     */
     async createGame(mode: GameMode, players: PlayerInput[]): Promise<{ game: Game; players: GamePlayer[] }> {
         const { data } = await api.post<{ game: Game; players: GamePlayer[] }>('/api/games', {
             mode,
@@ -227,10 +253,6 @@ export const gameApi = {
         return data;
     },
 
-    /**
-     * Start a game
-     * POST /api/games/start
-     */
     async startGame(gameId: number): Promise<{ game: Game }> {
         const { data } = await api.post<{ game: Game }>('/api/games/start', {
             game_id: gameId
@@ -238,10 +260,6 @@ export const gameApi = {
         return data;
     },
 
-    /**
-     * Update player score
-     * POST /api/games/score
-     */
     async updateScore(payload: UpdateScoreInput): Promise<{ success: boolean }> {
         const { data } = await api.post<{ success: boolean }>('/api/games/score', {
             game_id: payload.gameId,
@@ -251,10 +269,6 @@ export const gameApi = {
         return data;
     },
 
-    /**
-     * Finish a game
-     * PATCH /api/games/:id/finish
-     */
     async finishGame(gameId: number, winnerId: number | null): Promise<{ game: Game }> {
         const { data } = await api.patch<{ game: Game }>(`/api/games/${gameId}/finish`, {
             winner_id: winnerId,
@@ -262,10 +276,6 @@ export const gameApi = {
         return data;
     },
 
-    /**
-     * Cancel a game
-     * POST /api/games/cancel
-     */
     async cancelGame(gameId: number): Promise<{ game: Game }> {
         const { data } = await api.post<{ game: Game }>('/api/games/cancel', {
             game_id: gameId
@@ -273,19 +283,11 @@ export const gameApi = {
         return data;
     },
 
-    /**
-     * Get game details with players
-     * GET /api/games/:id
-     */
     async getGameDetails(gameId: number): Promise<GameWithPlayers> {
         const { data } = await api.get<GameWithPlayers>(`/api/games/${gameId}`);
         return data;
     },
 
-    /**
-     * Get games by status
-     * GET /api/games? status=waiting&mode=remote
-     */
     async getGamesByStatus(status: GameStatus, mode?: GameMode): Promise<{ games: Game[] }> {
         const params = new URLSearchParams({ status });
         if (mode) params.append('mode', mode);
@@ -309,10 +311,6 @@ export const gameApi = {
 // ==================== TOURNAMENT API ====================
 
 export const tournamentApi = {
-    /**
-     * Create a tournament
-     * POST /api/tournaments
-     */
     async createTournament(name: string, maxPlayers: number = 8): Promise<Tournament> {
         const { data } = await api.post<{ success: boolean; tournament: Tournament }>('/api/tournaments', {
             name,
@@ -321,10 +319,6 @@ export const tournamentApi = {
         return data.tournament;
     },
 
-    /**
-     * Get tournament details
-     * GET /api/tournaments/:id
-     */
     async getTournament(tournamentId: number): Promise<TournamentDetails> {
         const { data } = await api.get<{ success: boolean; tournament: TournamentDetails }>(
             `/api/tournaments/${tournamentId}`
@@ -332,19 +326,11 @@ export const tournamentApi = {
         return data.tournament;
     },
 
-    /**
-     * List all tournaments
-     * GET /api/tournaments
-     */
     async listTournaments(): Promise<Tournament[]> {
         const { data } = await api.get<{ success: boolean; tournaments: Tournament[] }>('/api/tournaments');
         return data.tournaments;
     },
 
-    /**
-     * Register player for tournament
-     * POST /api/tournaments/:id/register
-     */
     async registerPlayer(tournamentId: number): Promise<{ success: boolean; message: string }> {
         const { data } = await api.post<{ success: boolean; message: string }>(
             `/api/tournaments/${tournamentId}/register`,
@@ -353,21 +339,12 @@ export const tournamentApi = {
         return data;
     },
 
-    /**
-     * List tournament players
-     * GET /api/tournaments/:id/players
-     */
     async listPlayers(tournamentId: number): Promise<TournamentPlayer[]> {
         const { data } = await api.get<{ success: boolean; players: TournamentPlayer[] }>(
             `/api/tournaments/${tournamentId}/players`
         );
         return data.players;
     },
-
-    /**
-     * Start tournament
-     * POST /api/tournaments/:id/start
-     */
     async startTournament(tournamentId: number): Promise<{ success: boolean; message: string }> {
         const { data } = await api.post<{ success: boolean; message: string }>(
             `/api/tournaments/${tournamentId}/start`,
@@ -376,10 +353,6 @@ export const tournamentApi = {
         return data;
     },
 
-    /**
-     * Get tournament bracket
-     * GET /api/tournaments/:id/bracket
-     */
     async getBracket(tournamentId: number): Promise<BracketData> {
         const { data } = await api.get<{ success: boolean; bracket: BracketData }>(
             `/api/tournaments/${tournamentId}/bracket`
@@ -387,10 +360,6 @@ export const tournamentApi = {
         return data.bracket;
     },
 
-    /**
-     * Get all tournament games
-     * GET /api/tournaments/:id/games
-     */
     async getTournamentGames(tournamentId: number): Promise<any[]> {
         const { data } = await api.get<{ success: boolean; games: any[] }>(
             `/api/tournaments/${tournamentId}/games`
@@ -398,10 +367,6 @@ export const tournamentApi = {
         return data.games;
     },
 
-    /**
-     * Get games for specific round
-     * GET /api/tournaments/:id/rounds/:round/games
-     */
     async getRoundGames(tournamentId: number, round: number): Promise<any[]> {
         const { data } = await api.get<{ success: boolean; round: number; round_name: string; games: any[] }>(
             `/api/tournaments/${tournamentId}/rounds/${round}/games`
@@ -409,20 +374,12 @@ export const tournamentApi = {
         return data.games;
     },
 
-    /**
-     * Cancel tournament
-     * POST /api/tournaments/:id/cancel
-     */
     async cancelTournament(tournamentId: number): Promise<{ success: boolean; message: string }> {
         const { data } = await api.post<{ success: boolean; message: string }>(
             `/api/tournaments/${tournamentId}/cancel`,
             {}
         );
         return data;
-    },
-    async getUserMatch(tournamentId: number): Promise<UserMatchResponse> {
-        const { data } = await api.get(`/api/tournaments/${tournamentId}/my-match`);
-        return data.match; // Returns null if no match found
     },
 };
 

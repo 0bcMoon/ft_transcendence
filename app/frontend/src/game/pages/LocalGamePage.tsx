@@ -1,14 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useLocalGame } from "../hooks/useLocalGame";
 
 import GameCanvas from "../components/GameCanvas";
-import GameOver from "../components/GameOver";
-import PlayersHeader from "../components/PlayersHeader"; // Your clean header
+import PlayersHeader from "../components/PlayersHeader";
 import LocalGameSetupForm from "../components/LocalGameSetupForm";
+import GameInstructions from "../components/GameInstructions";
 
 export default function LocalGame() {
-    const navigate = useNavigate();
     const game = useLocalGame();
     const [isSetupComplete, setIsSetupComplete] = useState(false);
 
@@ -25,20 +23,13 @@ export default function LocalGame() {
                     <LocalGameSetupForm onStart={handleStart} />
                 )}
 
-                {isSetupComplete && game.isGameOver && game.finalScore && (
-                    <GameOver
-                        winner={game.winner}
-                        finalScore={game.finalScore}
-                        playerNames={game.playerNames}
-                        handlePlayAgain={game.handlePlayAgain}
-                        navigate={navigate}
-                        userSide="left"
-                    />
-                )}
 
-                {isSetupComplete && !game.isGameOver && (
+                {isSetupComplete && (
                     <div className="relative">
-                        <PlayersHeader playerNames={game.playerNames} />
+                        <PlayersHeader
+                            playerNames={game.playerNames}
+                            playerAvatars={null}
+                        />
 
                         <div className="relative">
                             <div className="absolute -inset-1 bg-blue-600/20 rounded-2xl blur-xl opacity-80"></div>
@@ -48,9 +39,15 @@ export default function LocalGame() {
                                     gameStateRef={game.gameStateRef}
                                     isGameOver={game.isGameOver}
                                     countdown={game.countdown}
+                                    userSide={"left"}
+                                    winner={game.winner}
                                 />
                             </div>
                         </div>
+                        <GameInstructions
+                            userSide={"right"}
+                            mode="local"
+                        />
                     </div>
                 )}
             </div>

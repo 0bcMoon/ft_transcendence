@@ -3,48 +3,49 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 interface ProfileMenuProps {
-    onClose: () => void;
+    onClose: () => void
 }
 
 export default function ProfileMenu({ onClose }: ProfileMenuProps) {
-    const { logout } = useAuth();
-    const navigate = useNavigate();
+    const { logout } = useAuth()
+    const navigate = useNavigate()
 
     const handleNavigation = (path: string) => {
-        navigate(path);
-        onClose();
-    };
+        navigate(path)
+        onClose()
+    }
 
     return (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 dark:bg-slate-900 dark:border-slate-700">
+        <div className="absolute right-0 mt-2 w-48 bg-slate-900 rounded-lg shadow-lg border border-slate-700 py-2 z-50">
             <button
-                onClick={() => handleNavigation('/')}
-                className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 flex items-center space-x-3 transition-colors dark:text-gray-300 dark:hover:bg-slate-800"
+                onClick={() => handleNavigation("/")}
+                className="w-full px-4 py-2 text-left text-gray-300 hover:bg-slate-800 flex items-center space-x-3 transition-colors"
             >
                 <Home size={18} />
                 <span>Go Home</span>
             </button>
 
             <button
-                onClick={() => handleNavigation('/settings')}
-                className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 flex items-center space-x-3 transition-colors dark:text-gray-300 dark:hover:bg-slate-800"
+                onClick={() => handleNavigation("/settings")}
+                className="w-full px-4 py-2 text-left text-gray-300 hover:bg-slate-800 flex items-center space-x-3 transition-colors"
             >
                 <Settings size={18} />
                 <span>Settings</span>
             </button>
 
-            <div className="border-t border-gray-200 my-2 dark:border-slate-700"></div>
+            <div className="border-t border-slate-700 my-2"></div>
 
             <button
                 onClick={() => {
-                    logout();
-                    onClose();
+                    logout()
+                    onClose()
                 }}
-                className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-3 transition-colors dark:text-red-500 dark:hover:bg-red-950"
+                className="w-full px-4 py-2 text-left text-red-500 hover:bg-red-950 flex items-center space-x-3 transition-colors"
             >
                 <LogOut size={18} />
                 <span>Logout</span>
             </button>
         </div>
-    );
+    )
 }
+

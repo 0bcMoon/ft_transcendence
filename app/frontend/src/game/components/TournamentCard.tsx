@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Trophy, Users, Calendar, ChevronRight } from "lucide-react";
+import { Trophy, Calendar, ChevronRight } from "lucide-react";
 
 // Assuming 'Tournament' type is defined elsewhere
 import { Tournament } from "../api/gameApi";
@@ -57,10 +57,6 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
                             {tournament.name}
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-slate-400">
-                            <div className="flex items-center gap-1.5">
-                                <Users size={14} />
-                                <span>{tournament.current_players ?? 0} / {tournament.max_players} players</span>
-                            </div>
                             {tournament.started_at && (
                                 <>
                                     <span className="text-slate-700">•</span>

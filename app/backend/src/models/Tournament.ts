@@ -133,7 +133,7 @@ export const Tournament = {
     /**
      * List all players in a tournament
      */
-    listPlayers: async (req: FastifyRequest, reply: FastifyReply) => {
+    getPlayer: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
             const tournamentId = parseInt((req.params as any).id, 10);
 

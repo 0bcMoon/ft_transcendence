@@ -1,4 +1,4 @@
-import {  useState } from 'react';
+import { useState } from 'react';
 import { Check, Shield, X } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -9,13 +9,13 @@ interface IUpdateState {
     message: string;
 }
 
-function TwoFactorAuth({setCurrentStep}: {setCurrentStep: (step: 'two_factor_auth' | 'login') => void}) {
+function TwoFactorAuth({ setCurrentStep }: { setCurrentStep: (step: 'two_factor_auth' | 'login') => void }) {
     const [code, setCode] = useState('');
     const [updateState, setUpdateState] = useState<IUpdateState | null>(null);
 
-    const {  setAuth } = useAuth();
+    const { setAuth } = useAuth();
 
-    const { mutate,  isPending } = useMutation({
+    const { mutate, isPending } = useMutation({
 
         mutationFn: async (confirmation_code: string) => {
             const response = await login_api.get('/api/auth/login/2fa', {
@@ -77,7 +77,7 @@ function TwoFactorAuth({setCurrentStep}: {setCurrentStep: (step: 'two_factor_aut
                 {/* Subtitle */}
                 <p className="text-gray-600 text-center mb-8">
                     Enter the 8-character code sent to your email.
-                    <br/>
+                    <br />
                     Session expires in 15 minutes.
                 </p>
 

@@ -1,23 +1,17 @@
-// src/repository/tournamentRepository.ts
 
 import db from "../../db/db";
 import { notifyUsers, IEvent } from '../notifications';
 import gameRepository from './gameRepository';
 import {
     Tournament,
-    TournamentStatus,
     TournamentPlayer,
     TournamentMatch,
     TournamentDetails,
     CreateTournamentData,
     BracketRound,
-    BracketMatch,
     TournamentMatchWithPlayers,
 } from "../types/tournament.types";
 
-/**
- * Get round name based on position
- */
 function getRoundName(round: number, totalRounds: number): string {
     const roundsFromEnd = totalRounds - round;
 
@@ -31,9 +25,7 @@ function getRoundName(round: number, totalRounds: number): string {
 }
 
 const tournamentRepository = {
-    /**
-     * Create a new tournament
-     */
+
     async create(data: CreateTournamentData): Promise<number> {
         const result = await db.run(
             `INSERT INTO tournaments (name, max_players, created_by, status, current_round, created_at) 
@@ -45,13 +37,9 @@ const tournamentRepository = {
             throw new Error("Failed to create tournament");
         }
 
-        console.log(`✅ Tournament ${result.lastID} created: "${data.name}"`);
         return result.lastID;
     },
 
-    /**
-     * Find tournament by ID
-     */
     async findById(id: number): Promise<Tournament | null> {
         const tournament = await db.get(
             `SELECT * FROM tournaments WHERE id = ?`,
@@ -60,9 +48,6 @@ const tournamentRepository = {
         return (tournament as Tournament) || null;
     },
 
-    /**
-     * Find all tournaments
-     */
     async findAll(): Promise<Tournament[]> {
         const tournaments = await db.all(
             `SELECT * FROM tournaments ORDER BY created_at DESC`
@@ -70,9 +55,6 @@ const tournamentRepository = {
         return tournaments as Tournament[];
     },
 
-    /**
-     * Get tournament details with creator and player info
-     */
     async getDetails(tournamentId: number, currentUserId?: number): Promise<TournamentDetails | null> {
         const tournament = await db.get(
             `SELECT 
@@ -120,9 +102,6 @@ const tournamentRepository = {
         };
     },
 
-    /**
-     * Get all players in a tournament
-     */
     async getPlayers(tournamentId: number): Promise<TournamentPlayer[]> {
         const players = await db.all(
             `SELECT 
@@ -144,22 +123,17 @@ const tournamentRepository = {
         return players as TournamentPlayer[];
     },
 
-    /**
-     * Register a player for a tournament
-     */
     async registerPlayer(tournamentId: number, userId: number): Promise<void> {
         const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
         if (tournament.status !== 'registration') throw new Error("Registration is closed");
 
-        // Check if already registered
         const existing = await db.get(
             `SELECT 1 FROM tournament_players WHERE tournament_id = ? AND user_id = ?`,
             [tournamentId, userId]
         );
         if (existing) throw new Error("Already registered for this tournament");
 
-        // Get current player count
         const count = await db.get(
             `SELECT COUNT(*) as count FROM tournament_players WHERE tournament_id = ?`,
             [tournamentId]
@@ -180,11 +154,8 @@ const tournamentRepository = {
             [tournamentId, userId, seed]
         );
 
-        console.log(`✅ Player ${userId} registered for tournament ${tournamentId} (seed ${seed})`);
 
-        // Check if tournament is now full
         if (seed === tournament.max_players) {
-            console.log(`🎯 Tournament ${tournamentId} is FULL`);
 
             const players = await this.getPlayers(tournamentId);
             const playerUserIds = players.map(p => p.user_id);
@@ -204,19 +175,14 @@ const tournamentRepository = {
                 try {
                     const tournamentCheck = await this.findById(tournamentId);
                     if (tournamentCheck && tournamentCheck.status === 'registration') {
-                        console.log(`🚀 Auto-starting tournament ${tournamentId}`);
                         await this.start(tournamentId);
                     }
                 } catch (error: any) {
-                    console.error(`❌ Failed to auto-start tournament ${tournamentId}:`, error.message);
                 }
             }, 5000);
         }
     },
 
-    /**
-     * Start a tournament
-     */
     async start(tournamentId: number): Promise<void> {
         const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
@@ -232,9 +198,7 @@ const tournamentRepository = {
             throw new Error("Number of players must be 4, 8, 16, 32, or 64");
         }
 
-        console.log(`\n⚙️ Starting tournament ${tournamentId} with ${players.length} players`);
 
-        // Create first round matches
         const numMatches = players.length / 2;
         const firstRoundMatches: Array<{
             matchId: number;
@@ -247,13 +211,11 @@ const tournamentRepository = {
             const player1 = players[i];
             const player2 = players[players.length - 1 - i];
 
-            // Create game for this match
             const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
                 { user_id: player1.user_id, position: 1 },
                 { user_id: player2.user_id, position: 2 }
             ]);
 
-            // Create tournament match
             const matchResult = await db.run(
                 `INSERT INTO tournament_matches 
                  (tournament_id, round, match_number, player1_id, player2_id, game_id, status, created_at) 
@@ -275,7 +237,6 @@ const tournamentRepository = {
             });
         }
 
-        // Update tournament status
         await db.run(
             `UPDATE tournaments 
              SET status = 'active', started_at = CURRENT_TIMESTAMP, current_round = 1 
@@ -283,9 +244,7 @@ const tournamentRepository = {
             [tournamentId]
         );
 
-        console.log(`✅ Tournament ${tournamentId} started\n`);
 
-        // Notify all players tournament started
         const playerUserIds = players.map(p => p.user_id);
         const startEvent: IEvent = {
             type: 'tournament_started',
@@ -313,16 +272,12 @@ const tournamentRepository = {
                 }
             };
 
-            // Notify both players in the match
             notifyUsers([match.player1.user_id, match.player2.user_id], matchReadyEvent);
 
             console.log(`📢 Notified players for match ${match.matchId}:  ${match.player1.username} & ${match.player2.username}`);
         }
     },
 
-    /**
-     * Get tournament bracket
-     */
     async getBracket(tournamentId: number): Promise<{ rounds: BracketRound[]; champion?: any } | null> {
         const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
@@ -411,9 +366,6 @@ const tournamentRepository = {
         return { rounds, champion };
     },
 
-    /**
-     * Cancel a tournament
-     */
     async cancel(tournamentId: number): Promise<void> {
         const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
@@ -436,9 +388,6 @@ const tournamentRepository = {
         console.log(`❌ Tournament ${tournamentId} cancelled`);
     },
 
-    /**
-     * Advance tournament round (when current round matches are complete)
-     */
     async advanceRound(tournamentId: number): Promise<void> {
         const tournament = await this.findById(tournamentId);
         if (!tournament) throw new Error("Tournament not found");
@@ -446,26 +395,21 @@ const tournamentRepository = {
 
         const currentRound = tournament.current_round;
 
-        // Get current round matches
         const currentMatches = await db.all(
             `SELECT * FROM tournament_matches 
              WHERE tournament_id = ? AND round = ?`,
             [tournamentId, currentRound]
         ) as TournamentMatch[];
 
-        // Check if all matches are completed
         const allCompleted = currentMatches.every(m => m.status === 'completed' && m.winner_id);
 
         if (!allCompleted) {
             throw new Error("Not all matches in current round are completed");
         }
 
-        // Check if this was the final
         if (currentMatches.length === 1) {
-            // Tournament is over
             const finalMatch = currentMatches[0];
 
-            // Get winner with both ID and username
             const winnerPlayer = await db.get(
                 `SELECT tp.user_id, u.username
                  FROM tournament_players tp
@@ -485,9 +429,6 @@ const tournamentRepository = {
                 [winnerPlayer.user_id, tournamentId]
             );
 
-            console.log(`🏆 Tournament ${tournamentId} finished!  Winner: ${winnerPlayer.username} (ID: ${winnerPlayer.user_id})`);
-
-            // Notify all players tournament finished
             const players = await this.getPlayers(tournamentId);
             const playerUserIds = players.map(p => p.user_id);
 
@@ -505,12 +446,10 @@ const tournamentRepository = {
 
             notifyUsers(playerUserIds, finishedEvent);
 
-            console.log(`📢 Notified ${playerUserIds.length} players about tournament finish`);
 
             return;
         }
 
-        // Create next round matches
         const nextRound = currentRound + 1;
         const winners = currentMatches.map(m => m.winner_id).filter(Boolean); // ✅ Filter out null/undefined
         const nextRoundMatches: Array<{
@@ -524,7 +463,6 @@ const tournamentRepository = {
             const player2_id = winners[i + 1];
 
             if (!player1_id || !player2_id) {
-                console.error(`❌ Missing winner for next round (match ${i / 2 + 1})`);
                 continue;
             }
 
@@ -539,17 +477,14 @@ const tournamentRepository = {
             ) as any;
 
             if (!p1 || !p2) {
-                console.error(`❌ Missing player data for next round match ${i / 2 + 1}`);
                 continue;
             }
 
-            // Create game
             const gameId = await gameRepository.createGameAndAddPlayers('tournament', [
                 { user_id: p1.user_id, position: 1 },
                 { user_id: p2.user_id, position: 2 }
             ]);
 
-            // Create match
             const matchResult = await db.run(
                 `INSERT INTO tournament_matches 
                  (tournament_id, round, match_number, player1_id, player2_id, game_id, status, created_at) 
@@ -578,7 +513,6 @@ const tournamentRepository = {
 
         console.log(`➡️ Tournament ${tournamentId} advanced to round ${nextRound}`);
 
-        // Notify players about their next round matches
         for (let i = 0; i < nextRoundMatches.length; i++) {
             const match = nextRoundMatches[i];
 
@@ -597,15 +531,10 @@ const tournamentRepository = {
 
             // Notify both players
             notifyUsers([match.player1UserId, match.player2UserId], matchReadyEvent);
-            console.log(`📢 Notified players ${match.player1UserId} & ${match.player2UserId} for round ${nextRound} match ${match.matchId}`);
         }
     },
 
-    /**
-     * Get user's current match in a tournament
-     */
     async getUserMatch(tournamentId: number, userId: number): Promise<TournamentMatchWithPlayers | null> {
-        // Get user's tournament player ID
         const player = await db.get(
             `SELECT id FROM tournament_players 
          WHERE tournament_id = ? AND user_id = ?`,
@@ -659,9 +588,6 @@ const tournamentRepository = {
         return matchData;
     },
 
-    /**
-     * ✅ Verify if a user is a participant in a tournament match
-     */
     async isPlayerInMatch(tournamentId: number, matchId: number, userId: number): Promise<boolean> {
         const matchData = await this.getTournamentMatchDetails(tournamentId, matchId);
 
@@ -670,21 +596,14 @@ const tournamentRepository = {
         return matchData.player1_user_id === userId || matchData.player2_user_id === userId;
     },
 
-    /**
-     * ✅ Update tournament match status
-     */
     async updateMatchStatus(matchId: number, status: 'pending' | 'playing' | 'completed'): Promise<void> {
         await db.run(
             `UPDATE tournament_matches SET status = ?  WHERE id = ?`,
             [status, matchId]
         );
 
-        console.log(`✅ Tournament match ${matchId} status updated to:  ${status}`);
     },
 
-    /**
-     * ✅ Update tournament match winner
-   */
 
     async updateMatchWinner(tournamentId: number, matchId: number, winnerPlayerId: number): Promise<void> {
         await db.run(
@@ -694,7 +613,6 @@ const tournamentRepository = {
             [winnerPlayerId, matchId]
         );
 
-        console.log(`✅ Tournament match ${matchId} completed. Winner: ${winnerPlayerId}`);
     },
 };
 

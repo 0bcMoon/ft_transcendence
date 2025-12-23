@@ -1,19 +1,17 @@
-// src/components/tournament/TournamentHeader.tsx
-
 interface TournamentHeaderProps {
     tournament: {
         name: string;
         status: 'registration' | 'active' | 'finished' | 'cancelled';
-        // Add necessary props back for functionality
         player_count: number;
         max_players: number;
         is_registered: boolean;
     };
     onRegister: () => void;
+    onStart: () => void;
     isRegistering: boolean;
+    isStarting: boolean;
 }
 
-// --- A clean sub-component for the status badge ---
 const StatusBadge = ({ status }: { status: TournamentHeaderProps['tournament']['status'] }) => {
     switch (status) {
         case 'registration':
@@ -49,35 +47,29 @@ const StatusBadge = ({ status }: { status: TournamentHeaderProps['tournament']['
     }
 };
 
-export function TournamentHeader({ tournament, onRegister, isRegistering }: TournamentHeaderProps) {
+export function TournamentHeader({ tournament, onRegister, isRegistering, }: TournamentHeaderProps) {
     const isTournamentFull = tournament.player_count >= tournament.max_players;
 
     return (
-        // The main container for the beautiful, centered header
         <div className="relative bg-slate-900 rounded-2xl p-12 text-center border border-slate-800 shadow-xl shadow-black/20 overflow-hidden">
 
-            {/* Status badge remains elegantly at the top */}
             <div className="flex justify-center mb-4">
                 <StatusBadge status={tournament.status} />
             </div>
 
-            {/* The centered, attractive tournament title */}
             <h1 className="text-5xl md:text-6xl font-black text-white">
                 {tournament.name}
             </h1>
 
-            {/* --- THE CORRECTLY INTEGRATED ACTION AREA --- */}
             <div className="mt-8 flex justify-center">
                 {tournament.status === 'registration' && (
                     <>
                         {tournament.is_registered ? (
-                            // "You're Registered" message
                             <div className="flex items-center gap-3 text-lg font-bold px-8 py-4 rounded-xl bg-green-500/20 text-green-400">
                                 <span className="text-2xl">✓</span>
                                 <span>You're Registered!</span>
                             </div>
                         ) : (
-                            // "Join Tournament" button with logic for being full or registering
                             <button
                                 onClick={onRegister}
                                 disabled={isTournamentFull || isRegistering}

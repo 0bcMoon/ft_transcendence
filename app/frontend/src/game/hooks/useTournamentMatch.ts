@@ -1,5 +1,3 @@
-// src/game/hooks/useTournamentMatch.ts
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
@@ -62,26 +60,19 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
             return;
         }
 
-        if (!tournamentId || !matchId) {
-            console.log("Tournament ID or Match ID missing.");
-            return;
-        }
-
         const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/game`);
         wsRef.current = websocket;
 
         websocket.onopen = () => {
             console.log(`WebSocket connected. Joining tournament match...`);
-
-            // ✅ Send tournamentId and matchId
             websocket.send(
                 JSON.stringify({
                     type: "joinGame",
-                    username,
-                    avatar: avatar || "",
                     mode: "tournament",
-                    tournamentId,    // ✅ Add this
-                    matchId,         // ✅ Add this
+                    username: username,
+                    avatar: avatar,
+                    tournamentId,
+                    matchId,
                 })
             );
         };
@@ -90,17 +81,16 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
-                case "matchFound":
-                    console.log("Tournament match found:", msg);
-                    setWaiting(false);
+                case "tournamentInfo":
+                    setRound(msg.round);
+                    setMatchNumber(msg.matchNumber);
                     setSide(msg.side);
+                    break;
+
+                case "matchFound":
+                    setWaiting(false);
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
-
-                    // ✅ Extract tournament data
-                    if (msg.round) setRound(msg.round);
-                    if (msg.matchNumber) setMatchNumber(msg.matchNumber);
-
                     setCountdownState(3);
                     setIsGameOverState(false);
                     setWinner(null);
@@ -122,21 +112,17 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
                     break;
 
                 case "gameOver":
-                    console.log("Tournament match over:", msg);
                     setIsGameOverState(true);
                     setWinner(msg.winner);
                     setFinalScore(msg.score);
                     setCountdownState(null);
                     break;
 
-                case "opponentLeft":
                 case "leaveGame":
-                    console.log("Opponent left tournament match");
                     resetGameState();
                     break;
 
                 case "error":
-                    console.error("Tournament match error:", msg.message);
                     setTimeout(() => {
                         navigate(`/game/tournaments/${tournamentId}`);
                     }, 2000);
@@ -205,6 +191,12 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
                 e.preventDefault();
                 keysPressed.current.down = pressed;
             }
+            if (pressed && e.key === "Escape") {
+                e.preventDefault();
+                wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
+                wsRef.current?.close();
+                navigate(`/game/tournament/${tournamentId}`);
+            }
         };
 
         const down = (e: KeyboardEvent) => handleKey(e, true);
@@ -217,19 +209,7 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
             window.removeEventListener("keydown", down);
             window.removeEventListener("keyup", up);
         };
-    }, []);
-
-    const handlePlayAgain = useCallback(() => {
-        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-        wsRef.current?.close();
-        navigate(`/game/tournaments/${tournamentId}`);
-    }, [navigate, tournamentId]);
-
-    const handleGoHome = useCallback(() => {
-        wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-        wsRef.current?.close();
-        navigate(`/game/tournaments/${tournamentId}`);
-    }, [navigate, tournamentId]);
+    }, [tournamentId, navigate]);
 
     return {
         gameStateRef,
@@ -244,7 +224,5 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
         waiting,
         round,
         matchNumber,
-        handlePlayAgain,
-        handleGoHome,
     };
 }

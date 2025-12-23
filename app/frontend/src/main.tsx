@@ -39,21 +39,20 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <HomePage /> },
             { path: "game", element: <GameModes /> },
-            { path: "users/:user_id", element: <UserProfile /> },
             { path: "users", element: <FriendsPage /> },
+            { path: "users/:user_id", element: <UserProfile /> },
             { path: "chat", element: <Chat /> },
-            // { path: "dashboard", element: <DashboardPage /> },
             { path: "leaderboard", element: <LeaderboardPage /> },
             { path: "history", element: <HistoryPage /> },
             { path: "settings", element: <Settings /> },
             { path: "history/:matchId", element: <MatchDetailsPage /> },
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
-            { path: "game/tournament/:tournamentId/match/:matchId", element: <TournamentMatch /> },
             { path: "*", element: <NotFound /> },
         ],
     },
 
+    { path: "game/tournament/:tournamentId/match/:matchId", element: <TournamentMatch /> },
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "game/quick/play", element: <RemoteGame /> },
@@ -77,3 +76,4 @@ createRoot(document.getElementById("root")!).render(
         />
     </QueryClientProvider>
 );
+

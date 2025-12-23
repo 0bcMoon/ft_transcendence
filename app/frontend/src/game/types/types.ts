@@ -13,6 +13,17 @@ export interface BracketPlayer {
     name: string;
 }
 
+export interface LeaderboardPlayer {
+    user_id: number
+    username: string
+    display_name: string | null
+    avatar: string | null
+    elo_rating: number
+    rank: "Bronze" | "Silver" | "Gold" | "Platinum" | "Master"
+    wins: number
+    losses: number
+}
+
 export interface BracketMatch {
     id: string;
     gameId: number;
@@ -139,17 +150,25 @@ export type ServerMessage =
         playerNames: PlayerNames;
         playerAvatars: PlayerAvatars;
         id: string;
-        round?: number;           // ✅ For tournaments
-        matchNumber?: number;     // ✅ For tournaments
-        tournamentId?: number;    // ✅ For tournaments
-        matchId?: number;         // ✅ For tournaments
+        round?: number;          
+        matchNumber?: number;    
+        tournamentId?: number;   
+        matchId?: number;        
     }
-    | { type: "countdown"; count: number }  // ✅ Add countdown
+    | {
+        type: "tournamentInfo";
+        round: number;
+        matchNumber: number;
+        tournamentId: number;
+        matchId: number;
+        side: Side;
+    }
+    | { type: "countdown"; count: number }
     | { type: "state"; state: GameState }
     | { type: "gameOver"; winner: Side; score: Scores }
-    | { type: "opponentLeft" }              // ✅ Add opponent left
+    | { type: "opponentLeft" }            
     | { type: "leaveGame" }
-    | { type: "error"; message: string };   // ✅ Add err
+    | { type: "error"; message: string };
 
 // src/types/game.types.ts
 

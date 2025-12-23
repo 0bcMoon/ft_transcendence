@@ -1,63 +1,79 @@
-import { useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/state/authStore';
-import {
-    Home, Settings, Gamepad2, ContactRound,
-    MessageCircle, User2, History
-} from 'lucide-react';
-import NavBarItem from './components/NavBarItem';
+import { useLocation, Link } from "react-router-dom"
+import { useAuthStore } from "@/state/authStore"
+import { Home, Settings, Gamepad2, ContactRound, MessageCircle, User2 } from "lucide-react"
 
 interface SideBarProps {
-    isSidebarOpen: boolean;
-    onClose: () => void;
+    isSidebarOpen: boolean
+    onClose: () => void
 }
 
-
 export default function SideBar({ isSidebarOpen, onClose }: SideBarProps) {
-    const currentUser = useAuthStore((s) => s.user);
-    const location = useLocation();
+    const currentUser = useAuthStore((s) => s.user)
+    const location = useLocation()
 
     const navItems = [
         { link: "/", label: "Home", icon: Home },
         { link: "/game", label: "Game", icon: Gamepad2 },
         { link: "/chat", label: "Chat", icon: MessageCircle },
         { link: "/users", label: "Friends", icon: ContactRound },
-        { link: "/history", label: "History", icon: History },
-        { link: currentUser ? `/users/${currentUser.id}` : "/users", label: "Profile", icon: User2 },
+        { link: currentUser ? `/users/${currentUser.id}` : "/profile", label: "Profile", icon: User2 },
         { link: "/settings", label: "Settings", icon: Settings },
-    ];
+    ]
 
     return (
         <>
             {/* Backdrop - Mobile only */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={onClose}
-                />
-            )}
+            {isSidebarOpen && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={onClose} />}
 
-            {/* Sidebar - Floating, centered vertically */}
+            {/* Sidebar */}
             <aside
-                className={`fixed left-0 top-1/2 -translate-y-1/2 z-50
-                            w-20 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-2xl
+                className={`fixed left-0 top-0 h-screen z-50
+                            w-20 bg-slate-950/95 backdrop-blur-xl border-r border-slate-800/50
                             transform transition-all duration-300 ease-in-out
-                            dark:bg-slate-900/90 dark:border-slate-700/50
-                            ${isSidebarOpen ? 'translate-x-0 scale-100' : '-translate-x-full scale-95 lg:translate-x-0 lg:scale-100'}`} >
+                            ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+            >
+                {/* Logo/Brand */}
+                <div className="flex items-center justify-center h-20 border-b border-slate-800/50">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <Gamepad2 className="w-6 h-6 text-white" />
+                    </div>
+                </div>
 
                 {/* Navigation */}
-                <nav className="flex flex-col items-center py-8 space-y-4">
-                    {navItems.map((item) => (
-                        <NavBarItem
-                            key={item.link}
-                            link={item.link}
-                            label={item.label}
-                            active={location.pathname === item.link}
-                            icon={item.icon}
-                            onItemClick={onClose}
-                        />
-                    ))}
+                <nav className="flex flex-col items-center py-6 space-y-2 px-3">
+                    {navItems.map((item) => {
+                        const Icon = item.icon
+                        const isActive = location.pathname === item.link
+
+                        return (
+                            <Link
+                                key={item.link}
+                                to={item.link}
+                                onClick={onClose}
+                                className={`group relative w-14 h-14 rounded-xl flex items-center justify-center
+                                          transition-all duration-200
+                                          ${isActive ? "bg-slate-800" : "hover:bg-slate-800/50"}`}
+                                title={item.label}
+                            >
+                                <Icon
+                                    className={`w-6 h-6 transition-colors duration-200
+                                              ${isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white"}`}
+                                />
+
+                                {/* Tooltip */}
+                                <div
+                                    className="absolute left-full ml-4 px-3 py-2 bg-slate-900 border border-slate-700 
+                                              rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                              transition-all duration-200 whitespace-nowrap z-50 pointer-events-none"
+                                >
+                                    <span className="text-sm font-medium text-white">{item.label}</span>
+                                </div>
+                            </Link>
+                        )
+                    })}
                 </nav>
             </aside>
         </>
-    );
+    )
 }
+

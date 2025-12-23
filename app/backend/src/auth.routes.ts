@@ -1,5 +1,4 @@
 
-
 import { FastifyPluginAsync } from 'fastify';
 import Auth from './auth/auth';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';

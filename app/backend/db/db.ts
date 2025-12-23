@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import sqlite3 from 'sqlite3'
 import fs from 'fs'
 
@@ -28,33 +29,42 @@ const db = {
     all: <T = any>(sql: string, params: any[] = []): Promise<T[]> => {
         return new Promise((resolve, reject) => {
             sqliteDB.all(sql, params, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows as T[]);
+                if (err)
+                    reject(err);
+                else
+                    resolve(rows as T[]);
             });
         });
     },
 
-    exec: <T = any>(sql: string, params: any[] = []): Promise<T[]> => {
+    exec: (sql: string): Promise<void> => {
         return new Promise((resolve, reject) => {
-            sqliteDB.exec(sql, (err) => {
-                if (err) reject(err);
-                else resolve([]);
-            });
-        });
+            sqliteDB.exec(sql, err => {
+                if (err) 
+                    reject(err)
+                else
+                    resolve()
+            })
+        })
     },
+
     run: (sql: string, params: any[] = []): Promise<RunResult> => {
         return new Promise((resolve, reject) => {
             sqliteDB.run(sql, params, function(err) {
-                if (err) reject(err);
-                else resolve({ lastID: this.lastID, changes: this.changes });
+                if (err) 
+                    reject(err);
+                else 
+                    resolve({ lastID: this.lastID, changes: this.changes });
             });
         });
     },
     get: <T = any>(sql: string, params: any[] = []): Promise<T | undefined> => {
         return new Promise((resolve, reject) => {
             sqliteDB.get(sql, params, (err, row) => {
-                if (err) reject(err);
-                else resolve(row as T | undefined);
+                if (err) 
+                    reject(err);
+                else 
+                    resolve(row as T | undefined);
             });
         });
     }

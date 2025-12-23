@@ -17,6 +17,36 @@ export interface RecentMatch {
     player2_avatar: string | null;
 }
 
+
+export interface GameDetail {
+    id: number;
+    mode: string;
+    status: string;
+    winner_id: number | null;
+    started_at: string | null;
+    ended_at: string | null;
+    created_at: string;
+}
+
+export interface GamePlayerDetail {
+    position: number;
+    user_id: number | null;
+    username: string | null;
+    display_name: string | null;
+    profile_picture: string | null;
+    image_src: string | null;
+    score: number | null;
+    is_ai: boolean;
+    joined_at: string;
+    elo_change: number | null;
+    new_elo: number | null;
+    result: string | null;
+}
+
+export type EloProgressPoint = {
+    new_elo: number;
+    created_at: string;
+};
 export interface Game {
     id: number;
     mode: GameMode;

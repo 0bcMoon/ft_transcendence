@@ -1,42 +1,50 @@
-import { PlayerNames, PlayerAvatars } from "../../types/types";
+import { PlayerNames, PlayerAvatars } from "@/game/types/types";
 
 type PlayersHeaderProps = {
-    playerNames: PlayerNames;
-    playerAvatars?: PlayerAvatars | null;
+    playerNames: PlayerNames | null;
+    playerAvatars: PlayerAvatars | null;
 };
 
-const PlayerInfo = ({ name, avatar }: { name: string; avatar?: string | null }) => (
-    <div className="flex items-center gap-4">
-        {avatar ? (
-            <img src={avatar} alt={name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-700" />
-        ) : (
-            <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-xl text-white">
-                {name.charAt(0).toUpperCase()}
-            </div>
-        )}
-        <p className="font-bold text-lg text-white truncate max-w-[150px]">{name}</p>
-    </div>
-);
-
 export default function PlayersHeader({ playerNames, playerAvatars }: PlayersHeaderProps) {
-    const leftName = playerNames.left ?? "Player 1";
-    const rightName = playerNames.right ?? "Player 2";
+    if (!playerNames) return null;
 
     return (
-        <div className="relative w-full max-w-4xl mx-auto px-6 py-4 bg-slate-900/70 backdrop-blur-md border border-slate-800 rounded-2xl flex items-center justify-between overflow-hidden">
-
-            <PlayerInfo name={leftName} avatar={playerAvatars?.left} />
-
-            <div className="font-mono text-4xl font-bold text-slate-600">
-                VS
+        <div className="relative w-full max-w-5xl mx-auto flex items-center justify-between px-4 py-3 pointer-events-none">
+            {/* Left Player */}
+            <div className="flex flex-col items-center gap-2">
+                {playerAvatars?.left ? (
+                    <img
+                        src={playerAvatars.left}
+                        alt={playerNames.left ?? "Player 1"}
+                        className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full border-4 border-blue-500 object-cover shadow-lg"
+                    />
+                ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-slate-700 border-4 border-blue-500 flex items-center justify-center font-bold text-white shadow-lg">
+                        {(playerNames.left ?? "P")[0].toUpperCase()}
+                    </div>
+                )}
+                <span className="text-white font-semibold truncate max-w-[140px] text-center text-sm sm:text-base lg:text-lg">
+                    {playerNames.left ?? "Player 1"}
+                </span>
             </div>
 
-            <div className="flex items-center gap-4 flex-row-reverse">
-                <PlayerInfo name={rightName} avatar={playerAvatars?.right} />
+            {/* Right Player */}
+            <div className="flex flex-col items-center gap-2">
+                {playerAvatars?.right ? (
+                    <img
+                        src={playerAvatars.right}
+                        alt={playerNames.right ?? "Player 2"}
+                        className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full border-4 border-red-500 object-cover shadow-lg"
+                    />
+                ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full bg-slate-700 border-4 border-red-500 flex items-center justify-center font-bold text-white shadow-lg">
+                        {(playerNames.right ?? "P")[0].toUpperCase()}
+                    </div>
+                )}
+                <span className="text-white font-semibold truncate max-w-[140px] text-center text-sm sm:text-base lg:text-lg">
+                    {playerNames.right ?? "Player 2"}
+                </span>
             </div>
-
-            <div className="absolute bottom-0 left-0 w-1/3 h-1 bg-blue-500 rounded-r-full blur-sm opacity-80"></div>
-            <div className="absolute bottom-0 right-0 w-1/3 h-1 bg-red-500 rounded-l-full blur-sm opacity-80"></div>
         </div>
     );
 }

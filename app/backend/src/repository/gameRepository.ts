@@ -8,18 +8,93 @@ import {
     GamePlayerWithUser,
     GameWithPlayers,
     PlayerData,
-    UserStats,
     ScoreProgressionPoint,
     RecentMatch,
     MatchHistoryItem,
     GameMode,
     GameStatus,
+    EloProgressPoint,
+    GameDetail,
+    GamePlayerDetail
 } from "../types/game.types";
 
 const gameRepository = {
-    /**
-     * Get user score progression
-     */
+
+    async getGameDetail(gameId: number): Promise<GameDetail | undefined> {
+        return await db.get<GameDetail>(
+            `SELECT id, mode, status, winner_id, started_at, ended_at, created_at
+       FROM games
+       WHERE id = ?`,
+            [gameId]
+        );
+    },
+
+    async getGamePlayers(gameId: number): Promise<GamePlayerDetail[]> {
+        const players = await db.all<{
+            position: number;
+            user_id: number | null;
+            username: string | null;
+            display_name: string | null;
+            profile_picture: string | null;
+            image_src: string | null;
+            score: number | null;
+            is_ai: number;
+            joined_at: string;
+            elo_change: number | null;
+            new_elo: number | null;
+            result: string | null;
+        }>(
+            `SELECT
+                gp.position,
+                gp.user_id,
+                u.username,
+                u.display_name,
+                u.profile_picture,
+                u.image_src,
+                gp.score,
+                gp.is_ai,
+                gp.joined_at,
+                eh.elo_change,
+                eh.new_elo,
+                eh.result
+            FROM game_players gp
+            LEFT JOIN users u ON gp.user_id = u.id
+            LEFT JOIN elo_history eh ON eh.game_id = gp.game_id AND eh.user_id = gp.user_id
+            WHERE gp.game_id = ?
+            ORDER BY gp.position ASC`,
+            [gameId]
+        );
+
+        return players.map(p => ({
+            position: p.position,
+            user_id: p.user_id,
+            username: p.username,
+            display_name: p.display_name,
+            profile_picture: p.profile_picture,
+            image_src: p.image_src,
+            score: p.score,
+            is_ai: !!p.is_ai,
+            joined_at: p.joined_at,
+            elo_change: p.elo_change ?? null,
+            new_elo: p.new_elo ?? null,
+            result: p.result ?? null,
+        }));
+    },
+
+    async getUserEloProgression(userId: number, limit = 30): Promise<EloProgressPoint[]> {
+        const rows = await db.all<EloProgressPoint>(
+            `
+        SELECT new_elo, created_at
+        FROM elo_history
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        `,
+            [userId, limit]
+        );
+        return rows.reverse();
+    },
+
     async getPlayerStatsSummary(userId: number) {
         // 1. Get user stats including elo_rating
         const row = await db.get<{
@@ -133,80 +208,6 @@ const gameRepository = {
         return (rows as ScoreProgressionPoint[]).reverse();
     },
 
-    /**
-     * Get user statistics
-     */
-    async getUserStats(userId: number): Promise<UserStats | null> {
-        if (!userId || Number.isNaN(userId)) return null;
-
-        const statsSql = `
-            SELECT
-                u.id AS user_id,
-                COALESCE(SUM(CASE WHEN g.status = 'finished' AND g.winner_id = u.id THEN 1 ELSE 0 END), 0) AS wins,
-                COALESCE(SUM(CASE 
-                    WHEN g.status = 'finished' 
-                    AND gp.user_id = u. id 
-                    AND (g.winner_id IS NULL OR g.winner_id != u.id) 
-                    THEN 1 ELSE 0 
-                END), 0) AS losses
-            FROM users u
-            LEFT JOIN game_players gp ON gp.user_id = u. id
-            LEFT JOIN games g ON g.id = gp.game_id
-            WHERE u.id = ?
-            GROUP BY u. id
-        `;
-
-        const rows = await db.all(statsSql, [userId]);
-
-        if (!rows || rows.length === 0) {
-            return {
-                wins: 0,
-                losses: 0,
-                winRate: 0,
-                score: 0,
-                rank: null,
-            };
-        }
-
-        const row = rows[0] as any;
-        const wins = Number(row.wins ?? 0);
-        const losses = Number(row.losses ?? 0);
-        const totalGames = wins + losses;
-        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100 * 100) / 100 : 0;
-        const score = wins * 3 - losses;
-
-        const rankSql = `
-            WITH user_scores AS (
-                SELECT
-                    u.id AS user_id,
-                    (COALESCE(SUM(CASE WHEN g.status = 'finished' AND g.winner_id = u.id THEN 1 ELSE 0 END), 0) * 3 
-                    - COALESCE(SUM(CASE 
-                        WHEN g.status = 'finished' 
-                        AND gp.user_id = u.id 
-                        AND (g.winner_id IS NULL OR g.winner_id != u.id) 
-                        THEN 1 ELSE 0 
-                    END), 0)) AS score
-                FROM users u
-                LEFT JOIN game_players gp ON gp.user_id = u.id
-                LEFT JOIN games g ON g.id = gp.game_id
-                GROUP BY u.id
-            )
-            SELECT COUNT(*) + 1 AS rank
-            FROM user_scores
-            WHERE score > ? 
-        `;
-
-        const rankRows = await db.all(rankSql, [score]);
-        const rank = rankRows && rankRows.length > 0 ? Number((rankRows[0] as any).rank) : null;
-
-        return {
-            wins,
-            losses,
-            winRate,
-            score,
-            rank,
-        };
-    },
 
     /**
      * Get recent global matches
@@ -243,10 +244,7 @@ const gameRepository = {
     /**
      * Create game and add players
      */
-    async createGameAndAddPlayers(
-        mode: GameMode,
-        players: PlayerData[]
-    ): Promise<number> {
+    async createGameAndAddPlayers(mode: GameMode, players: PlayerData[]): Promise<number> {
         const gameResult = await db.run(
             `INSERT INTO games (mode, status, created_at) VALUES (?, 'waiting', CURRENT_TIMESTAMP)`,
             [mode]
