@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTournamentMatch } from '@/game/hooks/useTournamentMatch';
 import GameCanvas from '@/game/components/GameCanvas';
 import PlayersHeader from '@/game/components/PlayersHeader';
@@ -8,7 +8,6 @@ import GameInstructions from '@/game/components/GameInstructions';
 
 export default function TournamentMatch() {
     const { tournamentId, matchId } = useParams<{ tournamentId: string; matchId: string }>();
-    const navigate = useNavigate();
 
     if (!tournamentId || !matchId) {
         return (

@@ -45,6 +45,7 @@ export default function LoginPage() {
         const data = Object.fromEntries(formData.entries())
         const result = loginSchema.safeParse(data)
 
+
         if (result.success) {
             setErrors({})
             loginMutation.mutate(result.data, {
@@ -55,7 +56,7 @@ export default function LoginPage() {
                         setAuth(true)
                         navigate(from, { replace: true })
                     }
-                },
+                }
             })
             return
         }

@@ -11,6 +11,7 @@ function Chat() {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const WebSocketConnect = () => {
+
         const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/chat`);
 
         websocket.onopen = () => {

@@ -1,9 +1,8 @@
-import { useGetTopPlayers } from "@/game/api/queries"
+import { useGetTopPlayers, TopPlayer } from "@/game/api/queries"
 import { Trophy, Medal, Crown } from "lucide-react"
-import type { LeaderboardPlayer } from "@/game/types/types"
 import { Link } from "react-router-dom"
 
-const getPlayerAvatar = (player: LeaderboardPlayer): string => {
+const getPlayerAvatar = (player: TopPlayer): string => {
     if (player.avatar) {
         return `${import.meta.env.VITE_API_URL}/public/${player.avatar}`
     }
@@ -11,7 +10,7 @@ const getPlayerAvatar = (player: LeaderboardPlayer): string => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&size=200`
 }
 
-const calculateWinRate = (player: LeaderboardPlayer) => {
+const calculateWinRate = (player: TopPlayer) => {
     const total = player.wins + player.losses
     return total > 0 ? Math.round((player.wins / total) * 100) : 0
 }
