@@ -21,6 +21,9 @@ import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 import chatRoute from "./chat.routes";
 import notifications from "./notifications";
 
+import arenaRoutes from "./arena/arenaRoutes";
+import arenaSocket from "./arena/arenaSocket";
+
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 declare module "@fastify/jwt" {
@@ -122,8 +125,10 @@ fastify.register(chatRoute, { prefix: "/api" });
 fastify.register(routes, { prefix: "/api" });
 fastify.register(auth, { prefix: "/api" });
 fastify.register(game, { prefix: "/api" });
+fastify.register(arenaRoutes, { prefix: "/api" });
 
 fastify.register(gameSocket, { prefix: "/ws" });
+fastify.register(arenaSocket, { prefix: "/ws" });
 fastify.register(chatSocket, { prefix: "/ws" });
 fastify.register(notifications, { prefix: "/ws" });
 

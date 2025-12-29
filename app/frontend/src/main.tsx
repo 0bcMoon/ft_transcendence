@@ -30,7 +30,8 @@ import FriendsPage from './users/FriendsPage';
 import { WebSocketProvider } from './context/WebSocketContext';
 import MatchDetailsPage from './game/pages/MatchDetailsPage';
 
-
+import ArenaPlayPage from "./game/arena/pages/ArenaPlayPage";
+import ArenaGamePage from "./game/arena/pages/ArenaGamePage"
 
 const router = createBrowserRouter([
     {
@@ -48,6 +49,8 @@ const router = createBrowserRouter([
             { path: "history/:matchId", element: <MatchDetailsPage /> },
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
+            { path: "arena/:gameId", element: <ArenaPlayPage /> },
+            { path: "game/arena/play", element: <ArenaGamePage /> },
             { path: "*", element: <NotFound /> },
         ],
     },
