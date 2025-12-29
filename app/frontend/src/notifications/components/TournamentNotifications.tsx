@@ -13,7 +13,7 @@ export function TournamentFullToast({ tournament, onClose }: TournamentToastProp
             </div>
             <div className="flex-1">
                 <p className="font-bold text-base">Tournament Full</p>
-                <p className="text-sm text-gray-300">{"TEST"}</p>
+                <p className="text-sm text-gray-300">{tournament.name}</p>
                 <p className="text-xs text-green-400 mt-1">Starting in 5 seconds</p>
             </div>
             <button

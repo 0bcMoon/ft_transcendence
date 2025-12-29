@@ -249,16 +249,12 @@ const Auth = {
             return reply.status(409).send({ message: 'Email already exists' });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        let backend_url = process.env.BACKEND_URL || 'http://localhost:3000';
 
-        backend_url += "/public/"
-        
         await userRepository.createUser({
             username,
             display_name,
             password: hashedPassword,
             email,
-            image_src: backend_url,
             profile_picture: 'default.jpg',
             oauth_type: 'local'
         });

@@ -159,7 +159,7 @@ export const useGetRoundGames = (tournamentId: number, round: number) => {
 export const useGetMatchHistory = (userId: number) => {
     return useQuery<MatchHistoryItem[], Error>({
         queryKey: ['matchHistory', userId],
-        queryFn: () => gameApi.getMatchHistory(userId) as Promise<MatchHistoryItemData[]>,
+        queryFn: () => gameApi.getMatchHistory(userId) as Promise<MatchHistoryItem[]>,
         enabled: !!userId,
     });
 

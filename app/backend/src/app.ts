@@ -22,7 +22,12 @@ import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 import chatRoute from "./chat.routes";
 import notifications from "./notifications";
 
-export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+export const FRONTEND_URL: string = process.env.FRONTEND_URL!;
+export const BACKEND_URL: string = process.env.BACKEND_URL!;
+
+if (!FRONTEND_URL || !BACKEND_URL) {
+    throw new Error("FRONTEND_URL and BACKEND_URL must be defined in environment variables");
+}
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -47,20 +52,16 @@ declare module "fastify" {
 
 const fastify = Fastify({
     logger:
-        process.env.NODE_ENV === "test"
-            ? false
-            : {
-                level: "debug",
-                transport: {
-                    target: "pino-pretty",
-                    options: {
-                        colorize: true,
-                        translateTime: "SYS:standard",
-                        // ignore: "pid,hostname,remoteAddress,remotePort",
-                        ignore: "pid,hostname,remoteAddress,remotePort,req,res,responseTime",
-                    },
-                },
+    {
+        level: "debug",
+        transport: {
+            target: "pino-pretty",
+            options: {
+                colorize: true,
+                translateTime: "SYS:standard",
             },
+        },
+    },
 }).withTypeProvider<ZodTypeProvider>();
 
 fastify.setValidatorCompiler(validatorCompiler);
@@ -131,7 +132,7 @@ fastify.register(chatSocket, { prefix: "/ws" });
 fastify.register(notifications, { prefix: "/ws" });
 
 fastify.register(staticPlugin, {
-    root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
+    root: path.join(process.cwd(), "/public/uploads"),
     prefix: "/public/",
 });
 
@@ -145,7 +146,7 @@ fastify.register(cors, {
     preflightContinue: true, // Important for WebSocket connections
 });
 
-const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+const uploadDir = path.join(process.cwd(), "/public/uploads");
 
 mkdir(uploadDir, { recursive: true }, (err) => {
     if (err) throw err;

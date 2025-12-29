@@ -2,7 +2,9 @@ import 'dotenv/config';
 import sqlite3 from 'sqlite3'
 import fs from 'fs'
 
-const sqliteDB = new sqlite3.Database(process.env.DB_PATH!, (err) => {
+const db_path = "./sqliteDB/pingo.db"
+
+const sqliteDB = new sqlite3.Database(db_path, (err) => {
     if (err) {
         console.error(err.message);
     }

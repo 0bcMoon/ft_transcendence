@@ -280,12 +280,8 @@ export const userRepository = {
     updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
 
         const user = await userRepository.getCurrentUserById(user_id);
-        let backend_url  = process.env.BACKEND_URL || "http://localhost:3000";
-
-        
-        backend_url += "/public/"
-
-        console.log("Backend URL:", backend_url);
+        // updare the image_src to point to the backend public folder
+        const backend_url = "/public/";
 
         const query: string = `UPDATE users SET profile_picture = $1, image_src = '${backend_url}' WHERE id = $2`;
         await db.run(query, [picture_url, user_id]);

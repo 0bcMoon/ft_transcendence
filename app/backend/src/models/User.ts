@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 import { sendEmail } from "../email-service";
 import { isOnline } from "../notifications";
 import { subscribe } from "../notifications";
+import fastify from "../app";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -338,7 +339,7 @@ const User = {
         const uniqueFilename = `${randomUUID()}${extension}`;
 
         // Define the path where the file will be saved
-        const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+        const uploadDir = path.join(process.cwd(), "/public/uploads");
         const filePath = path.join(uploadDir, uniqueFilename);
 
         await pipeline(data.file, createWriteStream(filePath));
@@ -351,9 +352,9 @@ const User = {
 
         if (result && result !== "default.jpg") {
             try {
-                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result));
+                await fs.unlink(path.join(process.cwd(), "/public/uploaded", result));
             } catch (error) {
-                console.error('Error deleting old profile image:', error);
+                fastify.log.error(`Failed to delete old profile image: ${error}`);
             }
         }
         reply.send({ message: 'Profile image Updated successfully' });
