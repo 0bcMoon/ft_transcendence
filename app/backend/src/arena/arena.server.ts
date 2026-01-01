@@ -5,15 +5,24 @@ import { ArenaState } from "./arena.state";
 
 type InputState = { up: boolean; down: boolean; left: boolean; right: boolean };
 
+
+
 type ArenaRoom = {
   state: ArenaState;
   sockets: Map<number, WebSocket>;        // userId -> socket
   inputs: Map<number, InputState>;        // userId -> last input
   tick?: NodeJS.Timeout;
   lastPersistAt: number;
+
+  roundLockUntil?: number;
 };
 
+
+
+
 const arenaRooms = new Map<number, ArenaRoom>();
+
+
 
 // --- Arena bounds (match your frontend canvas later)
 const ARENA_W = 800;
@@ -46,10 +55,32 @@ function randomInt(min: number, max: number) {
 
 function spawnTarget() {
   return {
+    x: randomInt(90, ARENA_W - 90),
+    y: randomInt(90, ARENA_H - 90),
+  };
+}
+
+function spawnTargetSafe(players: { x: number; y: number }[]) {
+  const reach = PLAYER_RADIUS + TARGET_RADIUS + 10; // +10px safety margin
+  const reach2 = reach * reach;
+
+  for (let i = 0; i < 50; i++) {
+    const t = {
+      x: randomInt(40, ARENA_W - 40),
+      y: randomInt(40, ARENA_H - 40),
+    };
+
+    const tooClose = players.some((p) => dist2(p.x, p.y, t.x, t.y) <= reach2);
+    if (!tooClose) return t;
+  }
+
+  // fallback if we fail many tries
+  return {
     x: randomInt(40, ARENA_W - 40),
     y: randomInt(40, ARENA_H - 40),
   };
 }
+
 
 function broadcastState(room: ArenaRoom) {
   const payload = JSON.stringify({ type: "arena:state", state: room.state });
@@ -63,6 +94,7 @@ function stopTick(room: ArenaRoom) {
 
 function ensureTick(room: ArenaRoom) {
   if (room.tick) return;
+  console.log("[ARENA] start tick for game", room.state.gameId);
 
   room.tick = setInterval(async () => {
     // do nothing if no one connected
@@ -83,7 +115,7 @@ function ensureTick(room: ArenaRoom) {
 
     // spawn target if missing
     if (!room.state.target) {
-      room.state.target = spawnTarget();
+      room.state.target = spawnTargetSafe(room.state.players);
       await arenaRepository.addEvent(room.state.gameId, "target_spawned", room.state.target);
     }
 
@@ -103,6 +135,15 @@ function ensureTick(room: ArenaRoom) {
       p.y = clamp(p.y + dy, 0, ARENA_H);
     }
 
+    // ✅ cooldown: prevent instant double-win across consecutive ticks
+    const nowRound = Date.now();
+    if (room.roundLockUntil && nowRound < room.roundLockUntil) {
+      // still persist position throttled + broadcast (optional)
+      broadcastState(room);
+      return;
+    }
+    
+    
     // check reach target
     if (room.state.target) {
       const t = room.state.target;
@@ -114,34 +155,38 @@ function ensureTick(room: ArenaRoom) {
       );
 
       if (winner) {
-        // memory update
+        room.roundLockUntil = Date.now() + 250;
+      
         winner.roundsWon += 1;
-
-        // DB update (round win)
         await arenaRepository.incrementRoundWin(room.state.gameId, winner.position as 1 | 2);
-
+      
         await arenaRepository.addEvent(room.state.gameId, "round_won", {
           userId: winner.userId,
           position: winner.position,
           roundsWon: winner.roundsWon,
         });
-
-        // win match?
+      
         if (winner.roundsWon >= room.state.targetRoundWins) {
           room.state.status = "finished";
           room.state.target = null;
-
+      
           await arenaRepository.finish(room.state.gameId, winner.userId);
           await arenaRepository.addEvent(room.state.gameId, "finished", { winnerUserId: winner.userId });
-
+      
           broadcastState(room);
           stopTick(room);
           return;
         }
-
-        // next round: players stay where they are, new target spawns next tick
-        room.state.target = null;
+      
+        // next round: new target (safe)
+        room.state.target = spawnTargetSafe(room.state.players);
+        await arenaRepository.addEvent(room.state.gameId, "target_spawned", room.state.target);
+      
+        broadcastState(room);
+        return; // ✅ prevents second win on next tick from same position
       }
+      
+
     }
 
     // persist positions throttled
@@ -210,8 +255,9 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
               const defaultY = 300;
 
               // ✅ important: if DB defaults 0, treat as "not set yet"
-              const x = (p.last_x && p.last_x !== 0) ? p.last_x : defaultX;
-              const y = (p.last_y && p.last_y !== 0) ? p.last_y : defaultY;
+              const x = (typeof p.last_x === "number" && p.last_x !== 0) ? p.last_x : defaultX;
+              const y = (typeof p.last_y === "number" && p.last_y !== 0) ? p.last_y : defaultY;
+
 
               return {
                 userId: p.user_id!,
@@ -244,7 +290,8 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
       await arenaRepository.addEvent(gameId, "started", { by: "auto" });
 
       // spawn first target immediately (optional, but nicer)
-      room.state.target = spawnTarget();
+      room.state.target = spawnTargetSafe(room.state.players);
+
       await arenaRepository.addEvent(gameId, "target_spawned", room.state.target);
 
       ensureTick(room);
@@ -282,15 +329,32 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
 
 export function removeArenaPlayer(userId: number) {
   for (const [gameId, room] of arenaRooms.entries()) {
-    if (room.sockets.has(userId)) {
-      room.sockets.delete(userId);
-      room.inputs.delete(userId);
+    if (!room.sockets.has(userId)) continue;
 
-      // if room empty, stop tick + delete
-      if (room.sockets.size === 0) {
-        stopTick(room);
-        arenaRooms.delete(gameId);
-      }
+    room.sockets.delete(userId);
+    room.inputs.delete(userId);
+
+    // if someone leaves during an active match -> cancel
+    if (room.state.status === "playing") {
+      room.state.status = "cancelled";
+      room.state.target = null;
+
+      // fire-and-forget (don’t block close handler)
+      arenaRepository.cancel(gameId)
+        .then(() => arenaRepository.addEvent(gameId, "player_left", { userId }))
+        .catch(() => {});
+
+      broadcastState(room);
+      stopTick(room);
     }
+
+    // if room empty, stop tick + delete
+    if (room.sockets.size === 0) {
+      stopTick(room);
+      arenaRooms.delete(gameId);
+    }
+
+    return; // user only belongs to one room
   }
 }
+
