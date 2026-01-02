@@ -4,6 +4,61 @@ import { ArenaGameDetail, ArenaGamePlayerDetail, ArenaGameStatus } from "../type
 type PlayerInput = { user_id: number | null; position: 1 | 2; is_ai?: boolean };
 
 const arenaRepository = {
+  async getUserStats(userId: number) {
+    const row = await db.get<any>(
+      `
+      SELECT
+        COUNT(*) AS games_played,
+  
+        -- wins: winner_user_id matches me
+        SUM(CASE WHEN ag.winner_user_id = ? THEN 1 ELSE 0 END) AS wins,
+  
+        -- losses:
+        -- 1) someone else won (winner_user_id != me)
+        -- 2) OR winner_user_id is NULL BUT opponent is AI (AI won)
+        SUM(
+          CASE
+            WHEN ag.winner_user_id IS NOT NULL AND ag.winner_user_id != ? THEN 1
+            WHEN ag.winner_user_id IS NULL AND ap_op.is_ai = 1 THEN 1
+            ELSE 0
+          END
+        ) AS losses,
+  
+        AVG(ap_user.round_wins) AS avg_user_rounds,
+        AVG(ap_op.round_wins) AS avg_opponent_rounds,
+  
+        SUM(CASE WHEN ap_op.is_ai = 1 THEN 1 ELSE 0 END) AS games_vs_ai,
+        SUM(CASE WHEN ap_op.is_ai = 0 THEN 1 ELSE 0 END) AS games_vs_human
+      FROM arena_players ap_user
+      JOIN arena_games ag
+        ON ag.id = ap_user.arena_game_id
+       AND ag.status = 'finished'
+      LEFT JOIN arena_players ap_op
+        ON ap_op.arena_game_id = ap_user.arena_game_id
+       AND ap_op.id != ap_user.id
+      WHERE ap_user.user_id = ?
+      `,
+      [userId, userId, userId]
+    );
+  
+    const gamesPlayed = Number(row?.games_played ?? 0);
+    const wins = Number(row?.wins ?? 0);
+    const losses = Number(row?.losses ?? 0);
+  
+    return {
+      userId,
+      gamesPlayed,
+      wins,
+      losses,
+      winRate: gamesPlayed > 0 ? wins / gamesPlayed : 0,
+      avgUserRoundsWon: Number(row?.avg_user_rounds ?? 0),
+      avgOpponentRoundsWon: Number(row?.avg_opponent_rounds ?? 0),
+      vsAI: Number(row?.games_vs_ai ?? 0),
+      vsHuman: Number(row?.games_vs_human ?? 0),
+    };
+  },
+  
+  
   async createGameAndAddPlayers(players: PlayerInput[], win_target = 5): Promise<number> {
     const res = await db.run(
       `INSERT INTO arena_games (status, target_round_wins, created_at)
@@ -205,7 +260,7 @@ const arenaRepository = {
     if (res.changes === 0) throw new Error("Player not found for that position");
   },
   
-
+  
   async setPlayerLastPosition(gameId: number, position: 1 | 2, x: number, y: number) {
     const res = await db.run(
       `UPDATE arena_players
@@ -224,5 +279,7 @@ const arenaRepository = {
     );
   },
 };
+
+
 
 export default arenaRepository;

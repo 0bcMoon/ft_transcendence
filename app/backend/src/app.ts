@@ -24,6 +24,8 @@ import notifications from "./notifications";
 import arenaRoutes from "./arena/arenaRoutes";
 import arenaSocket from "./arena/arenaSocket";
 import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
+import arenaStatsRoutes from "./arena/stats/arenaStats.routes";
+
 
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
@@ -129,6 +131,7 @@ fastify.register(game, { prefix: "/api" });
 
 fastify.register(arenaRoutes, { prefix: "/api" });
 fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });
+fastify.register(arenaStatsRoutes, { prefix: "/api" });
 
 fastify.register(gameSocket, { prefix: "/ws" });
 fastify.register(arenaSocket, { prefix: "/ws" });

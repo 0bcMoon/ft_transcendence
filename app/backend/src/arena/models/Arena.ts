@@ -164,4 +164,33 @@ export const Arena = {
       return reply.status(400).send({ error: "Failed to get arena games", details: (err as Error).message });
     }
   },
+
+  createAIGame: async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = req.user.id;
+  
+      const target_round_wins =
+        (req.body as any)?.target_round_wins ??
+        (req.body as any)?.win_target ??
+        5;
+  
+      const gameId = await arenaRepository.createGameAndAddPlayers(
+        [
+          { user_id: userId, position: 1 },
+          { user_id: null, position: 2, is_ai: true },
+        ],
+        target_round_wins
+      );
+  
+      await arenaRepository.addEvent(gameId, "created", { via: "ai", p1: userId, aiPos: 2 });
+  
+      return reply.status(201).send({ gameId });
+    } catch (err) {
+      return reply.status(500).send({
+        error: "Failed to create AI arena game",
+        details: (err as Error).message,
+      });
+    }
+  },
+  
 };

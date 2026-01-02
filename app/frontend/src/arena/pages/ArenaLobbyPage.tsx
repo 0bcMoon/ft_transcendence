@@ -1,12 +1,7 @@
+// frontend/src/arena/pages/ArenaLobbyPage.tsx
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { arenaApi } from "../api/arenaApi";
-
-type JoinResult =
-  | { status: "idle" }
-  | { status: "queued" }
-  | { status: "matched"; gameId: number };
-
 
 export default function ArenaLobbyPage() {
   const [state, setState] = useState<"idle" | "queued" | "matched">("idle");
@@ -22,52 +17,30 @@ export default function ArenaLobbyPage() {
     }
   };
 
-  const api = async <T,>(path: string, init?: RequestInit): Promise<T> => {
-    const hasBody = init?.body != null; // string/Blob/FormData/etc.
-
-    const res = await fetch(`http://localhost:3000${path}`, {
-      credentials: "include",
-      ...init,
-      headers: {
-        ...(hasBody ? { "Content-Type": "application/json" } : {}),
-        ...(init?.headers || {}),
-      },
-    });
-
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(txt || `Request failed: ${res.status}`);
-    }
-
-    // status endpoint returns JSON, join/leave return JSON too
-    return res.json();
-  };
-
   const joinQueue = async () => {
     stopPolling();
-  
+
     const r = await arenaApi.joinMatchmaking();
-  
+
     if (r.status === "matched") {
       setState("matched");
       setGameId(r.gameId);
       navigate(`/game/arena/${r.gameId}/play`);
       return;
     }
-  
+
     setState("queued");
-  
+
     pollRef.current = window.setInterval(async () => {
       try {
         const s = await arenaApi.getMatchmakingStatus();
-  
+
         if (s.status === "matched") {
           stopPolling();
           setState("matched");
           setGameId(s.gameId);
           navigate(`/game/arena/${s.gameId}/play`);
         } else if (s.status === "idle") {
-          // server says you're not queued anymore
           stopPolling();
           setState("idle");
           setGameId(null);
@@ -77,7 +50,6 @@ export default function ArenaLobbyPage() {
       }
     }, 800);
   };
-  
 
   const leaveQueue = async () => {
     stopPolling();
@@ -89,26 +61,34 @@ export default function ArenaLobbyPage() {
     }
   };
 
+  const location = useLocation();
+  const autoQueue = !!(location.state as any)?.autoQueue;
+
+  // Restore matchmaking status on mount, but avoid racing when autoQueue is requested.
   useEffect(() => {
     let alive = true;
-  
+
     (async () => {
+      if (autoQueue) return;
+
       try {
         const s = await arenaApi.getMatchmakingStatus();
         if (!alive) return;
-  
+
         if (s.status === "matched") {
           setState("matched");
           setGameId(s.gameId);
           navigate(`/game/arena/${s.gameId}/play`);
           return;
         }
-  
+
         if (s.status === "queued") {
           setState("queued");
+
           pollRef.current = window.setInterval(async () => {
             try {
               const st = await arenaApi.getMatchmakingStatus();
+
               if (st.status === "matched") {
                 stopPolling();
                 setState("matched");
@@ -119,11 +99,14 @@ export default function ArenaLobbyPage() {
                 setState("idle");
                 setGameId(null);
               }
-            } catch {}
+            } catch {
+              // ignore transient polling errors
+            }
           }, 800);
+
           return;
         }
-  
+
         // idle
         setState("idle");
         setGameId(null);
@@ -133,16 +116,19 @@ export default function ArenaLobbyPage() {
         setGameId(null);
       }
     })();
-  
+
     return () => {
       alive = false;
       stopPolling();
     };
-  }, [navigate]);
-  
+  }, [navigate, autoQueue]);
 
+  // Auto start matchmaking when coming back with state.autoQueue
   useEffect(() => {
-    return () => stopPolling();
+    if (autoQueue) {
+      joinQueue().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -162,6 +148,7 @@ export default function ArenaLobbyPage() {
           </div>
         </div>
 
+        {/* Matchmaking */}
         {state !== "queued" ? (
           <button
             onClick={joinQueue}
@@ -177,6 +164,32 @@ export default function ArenaLobbyPage() {
             Cancel Search
           </button>
         )}
+
+        {/* History */}
+        <button
+          onClick={() => navigate("/arena/history")}
+          className="w-full mt-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-3"
+        >
+          View History
+        </button>
+
+        {/* Play vs AI */}
+        <button
+          onClick={async () => {
+            if (state === "queued") return;
+            const r = await arenaApi.createAIGame();
+            navigate(`/game/arena/${r.gameId}/play`);
+          }}
+          disabled={state === "queued"}
+          className={
+            "w-full mt-3 rounded-xl font-semibold py-3 transition " +
+            (state === "queued"
+              ? "bg-slate-900/40 text-slate-500 border border-slate-800 cursor-not-allowed"
+              : "bg-slate-800 hover:bg-slate-700 text-slate-100")
+          }
+        >
+          Play vs AI
+        </button>
       </div>
     </div>
   );

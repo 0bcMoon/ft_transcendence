@@ -33,6 +33,8 @@ import MatchDetailsPage from './game/pages/MatchDetailsPage';
 import ArenaStartPage from "./arena/pages/ArenaStartPage";
 import ArenaPlayPage from "./arena/pages/ArenaPlayPage";
 import ArenaLobbyPage from "./arena/pages/ArenaLobbyPage";
+import ArenaHistoryPage from "./arena/pages/ArenaHistoryPage";
+
 
 const router = createBrowserRouter([
     {
@@ -50,9 +52,12 @@ const router = createBrowserRouter([
             { path: "history/:matchId", element: <MatchDetailsPage /> },
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
+
             { path: "game/arena/start", element: <ArenaStartPage /> },
             { path: "arena", element: <ArenaLobbyPage /> },
+            { path: "arena/history", element: <ArenaHistoryPage /> },
             { path: "/game/arena/:gameId/play", element: <ArenaPlayPage /> },
+
             { path: "*", element: <NotFound /> },
         ],
     },

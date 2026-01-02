@@ -77,6 +77,53 @@ export const arenaApi = {
     }
     return data;
   },
+
+  // --------------------
+  // Arena: MY HISTORY
+  // --------------------
+  async getMyHistory() {
+    const res = await fetch(`${API_BASE}/arena/me/history`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.details || data?.error || "Failed to get arena history");
+    }
+    return data;
+  },
+
+   // --------------------
+  // Arena: MY STATS
+  // --------------------
+  async getMyStats() {
+    const res = await fetch(`${API_BASE}/arena/me/stats`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.details || data?.error || "Failed to get arena stats");
+    }
+    return data;
+  },
+
+  async createAIGame() {
+    const res = await fetch(`${API_BASE}/arena/games/ai`, {
+      method: "POST",
+      credentials: "include",
+      // no body, no Content-Type (avoids empty JSON body issue)
+    });
+  
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.details || data?.error || "Failed to create AI game");
+    }
+    return data as { gameId: number };
+  },
+  
 };
 
 

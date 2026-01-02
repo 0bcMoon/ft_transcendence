@@ -19,6 +19,9 @@ const arenaRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Optional: list by status
   fastify.get("/arena/games", { onRequest: [fastify.authenticate] }, Arena.getGamesByStatus);
+
+  //Ai:
+  fastify.post("/arena/games/ai", { onRequest: [fastify.authenticate] }, Arena.createAIGame);
 };
 
 export default arenaRoutes;
