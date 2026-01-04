@@ -7,55 +7,57 @@ type InputState = { up: boolean; down: boolean; left: boolean; right: boolean };
 
 type ArenaRoom = {
   state: ArenaState;
-  sockets: Map<number, WebSocket>; // userId -> socket
-  inputs: Map<number, InputState>; // userId -> last input
+
+  sockets: Map<number, WebSocket>;         // players only
+  spectators: Map<number, WebSocket>;      // ✅ spectators
+
+  inputs: Map<number, InputState>;
   tick?: NodeJS.Timeout;
   lastPersistAt: number;
+
   roundLockUntil?: number;
   startLockUntil?: number;
+
   aiPositions?: Set<1 | 2>;
 
   aiBrain?: {
-    // per AI userId
     [aiUserId: number]: {
       nextThinkAt: number;
       committedUntil: number;
       input: InputState;
-  
-      // human-ness parameters
+
       aimOffsetX: number;
       aimOffsetY: number;
       nextOffsetAt: number;
-  
-      // speed feel (optional)
+
       speedMul: number;
       nextSpeedAt: number;
     };
   };
-  
 };
 
 const arenaRooms = new Map<number, ArenaRoom>();
 
-// --- Arena bounds (match your frontend canvas)
 const ARENA_W = 800;
 const ARENA_H = 600;
 
-// --- Tick + movement
-const TICK_MS = 1000 / 30; // 30fps
-const SPEED = 6; // px per tick
-const PERSIST_EVERY_MS = 700; // throttle DB writes
+const TICK_MS = 1000 / 30;
+const SPEED = 6;
+const PERSIST_EVERY_MS = 700;
 
-// --- Reach detection
 const PLAYER_RADIUS = 18;
 const TARGET_RADIUS = 16;
-const START_LOCK_MS = 2850;// matches 3-2-1-GO timing (800*3 + 450)
+
+const START_LOCK_MS = 2850; // 3..2..1 + GO display (~800*3 + 450)
 
 const zeroInput = (): InputState => ({ up: false, down: false, left: false, right: false });
 
 function aiVirtualUserId(position: number) {
-  // negative ids won’t collide with real user ids
-  return -position; // P2 => -2
+  return -position;
+}
+
+function rand(min: number, max: number) {
+  return Math.random() * (max - min) + min;
 }
 
 function clamp(v: number, min: number, max: number) {
@@ -72,15 +74,6 @@ function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function rand(min: number, max: number) {
-  return Math.random() * (max - min) + min;
-}
-
-function clampInt(v: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, v));
-}
-
-
 function spawnTargetSafe(players: { x: number; y: number }[]) {
   const reach = PLAYER_RADIUS + TARGET_RADIUS + 10;
   const reach2 = reach * reach;
@@ -90,7 +83,6 @@ function spawnTargetSafe(players: { x: number; y: number }[]) {
       x: randomInt(40, ARENA_W - 40),
       y: randomInt(40, ARENA_H - 40),
     };
-
     const tooClose = players.some((p) => dist2(p.x, p.y, t.x, t.y) <= reach2);
     if (!tooClose) return t;
   }
@@ -103,7 +95,11 @@ function spawnTargetSafe(players: { x: number; y: number }[]) {
 
 function broadcastState(room: ArenaRoom) {
   const payload = JSON.stringify({ type: "arena:state", state: room.state });
+
+  // players
   for (const socket of room.sockets.values()) socket.send(payload);
+  // ✅ spectators
+  for (const socket of room.spectators.values()) socket.send(payload);
 }
 
 function stopTick(room: ArenaRoom) {
@@ -113,70 +109,65 @@ function stopTick(room: ArenaRoom) {
 
 function ensureTick(room: ArenaRoom) {
   if (room.tick) return;
-  console.log("[ARENA] start tick for game", room.state.gameId);
 
   room.tick = setInterval(async () => {
-    // do nothing if no one connected (AI has no socket, so this is "no humans")
-    if (room.sockets.size === 0) return;
+    // If no humans watching/playing, don't waste CPU.
+    if (room.sockets.size === 0 && room.spectators.size === 0) return;
 
-    // stop sim when finished/cancelled
     if (room.state.status === "finished" || room.state.status === "cancelled") {
       broadcastState(room);
       stopTick(room);
       return;
     }
 
-    // only simulate in playing
     if (room.state.status !== "playing") {
       broadcastState(room);
       return;
     }
-    // ✅ Freeze movement during countdown lock
+
+    // ✅ server-side freeze during countdown
     if (room.startLockUntil && Date.now() < room.startLockUntil) {
       broadcastState(room);
       return;
     }
-    
 
-    // spawn target if missing
     if (!room.state.target) {
       room.state.target = spawnTargetSafe(room.state.players);
       await arenaRepository.addEvent(room.state.gameId, "target_spawned", room.state.target);
     }
 
-    // ✅ Human-like AI controller (reaction time + aim error + commitment)
+    // ✅ Casual-human AI controller
     const aiPos = room.aiPositions ?? new Set<1 | 2>();
     if (!room.aiBrain) room.aiBrain = {};
-    
+
     if (room.state.target) {
       const t = room.state.target;
       const now = Date.now();
-    
-      // "casual human" constants (easy + beatable)
-      const REACTION_MIN = 160;     // ms (slower)
+
+      // casual human tuning
+      const REACTION_MIN = 160;
       const REACTION_MAX = 260;
-      
-      const COMMIT_MIN = 180;       // ms (holds direction longer)
+
+      const COMMIT_MIN = 180;
       const COMMIT_MAX = 340;
-      
-      const OFFSET_REFRESH_MIN = 450;  // ms
+
+      const OFFSET_REFRESH_MIN = 450;
       const OFFSET_REFRESH_MAX = 1100;
-      const OFFSET_MAX = 46;           // px (bigger aim error)
-      
-      const SPEED_REFRESH_MIN = 900;   // ms
+      const OFFSET_MAX = 46;
+
+      const SPEED_REFRESH_MIN = 900;
       const SPEED_REFRESH_MAX = 1800;
-      const SPEED_MIN = 0.78;          // generally slower than human
+      const SPEED_MIN = 0.78;
       const SPEED_MAX = 0.98;
-      
-      const DEADZONE = 14;             // larger deadzone => less twitchy
-      
-    
+
+      const DEADZONE = 14;
+
       for (const p of room.state.players) {
         if (!aiPos.has(p.position as 1 | 2)) continue;
-    
+
         const aiId = p.userId;
         let brain = room.aiBrain[aiId];
-    
+
         if (!brain) {
           brain = room.aiBrain[aiId] = {
             nextThinkAt: now + rand(REACTION_MIN, REACTION_MAX),
@@ -189,154 +180,155 @@ function ensureTick(room: ArenaRoom) {
             nextSpeedAt: now + rand(SPEED_REFRESH_MIN, SPEED_REFRESH_MAX),
           };
         }
-    
-        // occasionally change "aim error" (like slight misread / imperfect control)
+
         if (now >= brain.nextOffsetAt) {
           brain.aimOffsetX = rand(-OFFSET_MAX, OFFSET_MAX);
           brain.aimOffsetY = rand(-OFFSET_MAX, OFFSET_MAX);
           brain.nextOffsetAt = now + rand(OFFSET_REFRESH_MIN, OFFSET_REFRESH_MAX);
         }
-    
-        // occasionally change speed "mood"
+
         if (now >= brain.nextSpeedAt) {
           brain.speedMul = rand(SPEED_MIN, SPEED_MAX);
           brain.nextSpeedAt = now + rand(SPEED_REFRESH_MIN, SPEED_REFRESH_MAX);
         }
-    
-        // only "think" on reaction intervals
+
         if (now < brain.nextThinkAt) {
-          // keep last input
           room.inputs.set(aiId, brain.input);
           continue;
         }
-    
-        // if still committed, don't change direction yet
+
         if (now < brain.committedUntil) {
           room.inputs.set(aiId, brain.input);
           brain.nextThinkAt = now + rand(REACTION_MIN, REACTION_MAX);
           continue;
         }
-    
-        // compute target with aim offset
+
         const aimX = t.x + brain.aimOffsetX;
         const aimY = t.y + brain.aimOffsetY;
-    
+
         const dx = aimX - p.x;
         const dy = aimY - p.y;
-    
+
         const next: InputState = { up: false, down: false, left: false, right: false };
-    
+
         if (dx < -DEADZONE) next.left = true;
         else if (dx > DEADZONE) next.right = true;
-    
+
         if (dy < -DEADZONE) next.up = true;
         else if (dy > DEADZONE) next.down = true;
-    
-        // tiny chance to "hesitate" for a moment (human pause)
-        if (Math.random() < 0.04) {
+
+        // hesitation
+        if (Math.random() < 0.09) {
           next.up = next.down = next.left = next.right = false;
         }
-    
+
+        // mistake
+        if (Math.random() < 0.06) {
+          if (next.left || next.right) {
+            const wasLeft = next.left;
+            next.left = next.right;
+            next.right = wasLeft;
+          } else if (next.up || next.down) {
+            const wasUp = next.up;
+            next.up = next.down;
+            next.down = wasUp;
+          }
+        }
+
         brain.input = next;
         brain.committedUntil = now + rand(COMMIT_MIN, COMMIT_MAX);
         brain.nextThinkAt = now + rand(REACTION_MIN, REACTION_MAX);
-    
+
         room.inputs.set(aiId, brain.input);
       }
     }
-    
-    
-        // apply inputs -> movement
-        for (const p of room.state.players) {
-          const input = room.inputs.get(p.userId) ?? zeroInput();
-    
-          let dx = 0;
-          let dy = 0;
-          let speed = SPEED;
 
-          // If AI, apply its speedMul
-          const aiPos = room.aiPositions ?? new Set<1 | 2>();
-          if (aiPos.has(p.position as 1 | 2) && room.aiBrain?.[p.userId]) {
-            speed = SPEED * room.aiBrain[p.userId].speedMul;
-          }
-          
-          if (input.left) dx -= speed;
-          if (input.right) dx += speed;
-          if (input.up) dy -= speed;
-          if (input.down) dy += speed;
-          
-          p.x = clamp(p.x + dx, PLAYER_RADIUS, ARENA_W - PLAYER_RADIUS);
-          p.y = clamp(p.y + dy, PLAYER_RADIUS, ARENA_H - PLAYER_RADIUS);
-          
-        }
-    
-        // cooldown: prevent instant double-win across consecutive ticks
-        const nowRound = Date.now();
-        if (room.roundLockUntil && nowRound < room.roundLockUntil) {
+    // movement
+    for (const p of room.state.players) {
+      const input = room.inputs.get(p.userId) ?? zeroInput();
+
+      let speed = SPEED;
+      const aiPos2 = room.aiPositions ?? new Set<1 | 2>();
+      if (aiPos2.has(p.position as 1 | 2) && room.aiBrain?.[p.userId]) {
+        speed = SPEED * room.aiBrain[p.userId].speedMul;
+      }
+
+      let dx = 0;
+      let dy = 0;
+
+      if (input.left) dx -= speed;
+      if (input.right) dx += speed;
+      if (input.up) dy -= speed;
+      if (input.down) dy += speed;
+
+      p.x = clamp(p.x + dx, PLAYER_RADIUS, ARENA_W - PLAYER_RADIUS);
+      p.y = clamp(p.y + dy, PLAYER_RADIUS, ARENA_H - PLAYER_RADIUS);
+    }
+
+    // prevent double wins
+    const nowRound = Date.now();
+    if (room.roundLockUntil && nowRound < room.roundLockUntil) {
+      broadcastState(room);
+      return;
+    }
+
+    // reach target
+    if (room.state.target) {
+      const t = room.state.target;
+      const reach = PLAYER_RADIUS + TARGET_RADIUS;
+      const reach2 = reach * reach;
+
+      const winner = room.state.players.find((p) => dist2(p.x, p.y, t.x, t.y) <= reach2);
+
+      if (winner) {
+        room.roundLockUntil = Date.now() + 250;
+
+        winner.roundsWon += 1;
+        await arenaRepository.incrementRoundWin(room.state.gameId, winner.position as 1 | 2);
+
+        await arenaRepository.addEvent(room.state.gameId, "round_won", {
+          userId: winner.userId,
+          position: winner.position,
+          roundsWon: winner.roundsWon,
+        });
+
+        if (winner.roundsWon >= room.state.targetRoundWins) {
+          room.state.status = "finished";
+          room.state.target = null;
+
+          const winnerUserIdForDb = winner.userId > 0 ? winner.userId : null; // AI => NULL
+          await arenaRepository.finish(room.state.gameId, winnerUserIdForDb);
+          await arenaRepository.addEvent(room.state.gameId, "finished", {
+            winnerUserId: winnerUserIdForDb,
+            winnerPosition: winner.position,
+          });
+
           broadcastState(room);
+          stopTick(room);
           return;
         }
-    
-        // check reach target
-        if (room.state.target) {
-          const t = room.state.target;
-          const reach = PLAYER_RADIUS + TARGET_RADIUS;
-          const reach2 = reach * reach;
-    
-          const winner = room.state.players.find((p) => dist2(p.x, p.y, t.x, t.y) <= reach2);
-    
-          if (winner) {
-            room.roundLockUntil = Date.now() + 250;
-    
-            winner.roundsWon += 1;
-            await arenaRepository.incrementRoundWin(room.state.gameId, winner.position as 1 | 2);
-    
-            await arenaRepository.addEvent(room.state.gameId, "round_won", {
-              userId: winner.userId, // AI will be negative here (fine for events)
-              position: winner.position,
-              roundsWon: winner.roundsWon,
-            });
-    
-            if (winner.roundsWon >= room.state.targetRoundWins) {
-              room.state.status = "finished";
-              room.state.target = null;
-    
-              // ✅ AI winner => NULL in DB
-              const winnerUserIdForDb = winner.userId > 0 ? winner.userId : null;
-    
-              await arenaRepository.finish(room.state.gameId, winnerUserIdForDb);
-              await arenaRepository.addEvent(room.state.gameId, "finished", {
-                winnerUserId: winnerUserIdForDb,
-                winnerPosition: winner.position,
-              });
-    
-              broadcastState(room);
-              stopTick(room);
-              return;
-            }
-    
-            // next round: new target (safe)
-            room.state.target = spawnTargetSafe(room.state.players);
-            await arenaRepository.addEvent(room.state.gameId, "target_spawned", room.state.target);
-    
-            broadcastState(room);
-            return;
-          }
-        }
-    
-        // persist positions throttled
-        const now = Date.now();
-        if (now - room.lastPersistAt >= PERSIST_EVERY_MS) {
-          room.lastPersistAt = now;
-          for (const p of room.state.players) {
-            const pos = p.position as 1 | 2;
-            await arenaRepository.setPlayerLastPosition(room.state.gameId, pos, p.x, p.y);
-          }
-        }
-    
+
+        room.state.target = spawnTargetSafe(room.state.players);
+        await arenaRepository.addEvent(room.state.gameId, "target_spawned", room.state.target);
+
         broadcastState(room);
-      }, TICK_MS);
+        return;
+      }
     }
+
+    // persist positions throttled
+    const now = Date.now();
+    if (now - room.lastPersistAt >= PERSIST_EVERY_MS) {
+      room.lastPersistAt = now;
+      for (const p of room.state.players) {
+        const pos = p.position as 1 | 2;
+        await arenaRepository.setPlayerLastPosition(room.state.gameId, pos, p.x, p.y);
+      }
+    }
+
+    broadcastState(room);
+  }, TICK_MS);
+}
 
 export async function handleArenaMessage(userId: number, msg: any, socket: WebSocket) {
   // ---------------- join ----------------
@@ -347,15 +339,7 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
       return;
     }
 
-    // prevent same user connected to multiple rooms
-    for (const [otherGameId, room] of arenaRooms.entries()) {
-      if (room.sockets.has(userId) && otherGameId !== gameId) {
-        socket.send(
-          JSON.stringify({ type: "arena:error", message: "Already connected to another arena game" })
-        );
-        return;
-      }
-    }
+    const spectate = !!msg.spectate; // ✅ spectator join flag
 
     const detail = await arenaRepository.getGameDetail(gameId);
     if (!detail) {
@@ -366,19 +350,21 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
     const players = await arenaRepository.getGamePlayers(gameId);
     const me = players.find((p) => p.user_id === userId);
 
-    if (!me) {
+    // ✅ spectators don't need to be a player
+    if (!spectate && !me) {
       socket.send(JSON.stringify({ type: "arena:error", message: "You are not part of this arena game" }));
       return;
     }
 
     let room = arenaRooms.get(gameId);
 
-    // Create room on first join
+    // create room if missing (for spectators too)
     if (!room) {
       const aiPositions = new Set(players.filter((p) => p.is_ai).map((p) => p.position as 1 | 2));
 
       room = {
         sockets: new Map(),
+        spectators: new Map(),
         inputs: new Map(),
         lastPersistAt: Date.now(),
         aiPositions,
@@ -387,7 +373,6 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
           status: detail.status,
           target: null,
           targetRoundWins: detail.target_round_wins ?? 5,
-          // ✅ include humans + AI in simulation
           players: players.map((p) => {
             const defaultX = p.position === 1 ? 100 : 700;
             const defaultY = 300;
@@ -411,20 +396,29 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
       arenaRooms.set(gameId, room);
     }
 
-    // attach socket + init input (human)
+    if (spectate) {
+      // ✅ register as spectator (no input, no player position)
+      room.spectators.set(userId, socket);
+
+      socket.send(JSON.stringify({ type: "arena:joined", role: "spectator", playerPosition: null }));
+      broadcastState(room);
+
+      // If game already playing and no tick (e.g. server restarted), start tick when someone spectates
+      if (room.state.status === "playing") ensureTick(room);
+      return;
+    }
+
+    // player join
     room.sockets.set(userId, socket);
     room.inputs.set(userId, zeroInput());
 
-    // ✅ ensure inputs exist for everyone (including AI)
+    // ensure inputs for everyone (including AI)
     for (const p of room.state.players) {
       if (!room.inputs.has(p.userId)) room.inputs.set(p.userId, zeroInput());
     }
 
-    socket.send(JSON.stringify({ type: "arena:joined", playerPosition: me.position }));
+    socket.send(JSON.stringify({ type: "arena:joined", role: "player", playerPosition: me!.position }));
 
-    // Auto-start:
-    // - PvP: both humans must have sockets
-    // - PvAI: only the human(s) must have sockets; AI doesn't need one
     const aiPos = room.aiPositions ?? new Set<1 | 2>();
 
     const allHumansConnected = room.state.players
@@ -435,17 +429,18 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
 
     if (canStart && room.state.status === "waiting") {
       room.state.status = "playing";
-      room.startLockUntil = Date.now() + START_LOCK_MS; // ✅ NEW
-    
+      room.startLockUntil = Date.now() + START_LOCK_MS;
+
       await arenaRepository.start(gameId);
       await arenaRepository.addEvent(gameId, "started", { by: "auto" });
-    
+
       room.state.target = spawnTargetSafe(room.state.players);
       await arenaRepository.addEvent(gameId, "target_spawned", room.state.target);
-    
+
       ensureTick(room);
     } else {
       broadcastState(room);
+      if (room.state.status === "playing") ensureTick(room);
     }
 
     return;
@@ -459,6 +454,7 @@ export async function handleArenaMessage(userId: number, msg: any, socket: WebSo
     const room = arenaRooms.get(gameId);
     if (!room) return;
 
+    // ✅ only allow input from actual players
     if (!room.sockets.has(userId)) return;
 
     const input = msg.input as Partial<InputState> | undefined;
@@ -482,9 +478,7 @@ export function removeArenaPlayer(userId: number) {
     room.sockets.delete(userId);
     room.inputs.delete(userId);
 
-    // if someone leaves during an active match -> cancel
     if (room.state.status === "playing") {
-
       room.state.status = "cancelled";
       room.state.target = null;
 
@@ -497,8 +491,23 @@ export function removeArenaPlayer(userId: number) {
       stopTick(room);
     }
 
-    // if room empty, stop tick + delete
-    if (room.sockets.size === 0) {
+    if (room.sockets.size === 0 && room.spectators.size === 0) {
+      stopTick(room);
+      arenaRooms.delete(gameId);
+    }
+
+    return;
+  }
+}
+
+// ✅ NEW: remove spectator socket(s) safely
+export function removeArenaSpectator(userId: number) {
+  for (const [gameId, room] of arenaRooms.entries()) {
+    if (!room.spectators.has(userId)) continue;
+
+    room.spectators.delete(userId);
+
+    if (room.sockets.size === 0 && room.spectators.size === 0) {
       stopTick(room);
       arenaRooms.delete(gameId);
     }

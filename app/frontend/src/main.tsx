@@ -34,6 +34,8 @@ import ArenaStartPage from "./arena/pages/ArenaStartPage";
 import ArenaPlayPage from "./arena/pages/ArenaPlayPage";
 import ArenaLobbyPage from "./arena/pages/ArenaLobbyPage";
 import ArenaHistoryPage from "./arena/pages/ArenaHistoryPage";
+import ArenaSpectatePage from "./arena/pages/ArenaSpectatePage";
+import ArenaMatchesPage from "./arena/pages/ArenaMatchesPage";
 
 
 const router = createBrowserRouter([
@@ -57,6 +59,9 @@ const router = createBrowserRouter([
             { path: "arena", element: <ArenaLobbyPage /> },
             { path: "arena/history", element: <ArenaHistoryPage /> },
             { path: "/game/arena/:gameId/play", element: <ArenaPlayPage /> },
+            { path: "/game/arena/:gameId/watch", element: <ArenaSpectatePage /> },
+            { path: "arena/matches", element: <ArenaMatchesPage /> },
+
 
             { path: "*", element: <NotFound /> },
         ],

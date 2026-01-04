@@ -124,6 +124,51 @@ export const arenaApi = {
     return data as { gameId: number };
   },
   
+  // ✅ list games by status (waiting/playing/finished/cancelled)
+  async getGamesByStatus(status: "waiting" | "playing" | "finished" | "cancelled") {
+    const res = await fetch(`${API_BASE}/arena/games?status=${status}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.details || data?.error || "Failed to load arena games");
+    // backend returns { games }
+    return data as {
+      games: Array<{
+        id: number;
+        status: string;
+        winner_user_id: number | null;
+        target_round_wins: number;
+        created_at: string;
+        started_at: string | null;
+        ended_at: string | null;
+      }>;
+    };
+  },
+
+  // ✅ fetch players for a game (for names/avatars)
+  async getGamePlayers(gameId: number) {
+    const res = await fetch(`${API_BASE}/arena/games/${gameId}/players`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    const data = await res.json().catch(() => ([]));
+    if (!res.ok) throw new Error("Failed to load arena players");
+
+    return data as Array<{
+      position: number;
+      user_id: number | null;
+      username: string | null;
+      display_name: string | null;
+      profile_picture: string | null;
+      image_src: string | null;
+      round_wins: number;
+      is_ai: boolean;
+      last_x: number;
+      last_y: number;
+      joined_at: string;
+    }>;
+  },
 };
-
-

@@ -190,6 +190,13 @@ export default function ArenaLobbyPage() {
         >
           Play vs AI
         </button>
+        <button
+          onClick={() => navigate("/arena/matches")}
+          className="w-full mt-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-3"
+        >
+          Watch Live Matches
+        </button>
+        
       </div>
     </div>
   );
