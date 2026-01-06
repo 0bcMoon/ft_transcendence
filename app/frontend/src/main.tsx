@@ -1,5 +1,7 @@
-import { createRoot } from 'react-dom/client'
+// @ts-ignore
 import './index.css'
+
+import { createRoot } from 'react-dom/client'
 import Chat from '@/chat/Chat.tsx'
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
@@ -29,6 +31,7 @@ import HistoryPage from './game/pages/HistoryPage';
 import FriendsPage from './users/FriendsPage';
 import { WebSocketProvider } from './context/WebSocketContext';
 import MatchDetailsPage from './game/pages/MatchDetailsPage';
+import PasswordReset from './auth/components/PasswordReset';
 
 
 
@@ -55,6 +58,7 @@ const router = createBrowserRouter([
     { path: "game/tournament/:tournamentId/match/:matchId", element: <TournamentMatch /> },
     { path: "/login", element: <Login /> },
     { path: "/register", element: <Register /> },
+    { path: "/reset-password", element: <PasswordReset /> },
     { path: "game/quick/play", element: <RemoteGame /> },
     { path: "game/local/play", element: <LocalGame /> },
     { path: "game/ai/play", element: <AIGame /> },
