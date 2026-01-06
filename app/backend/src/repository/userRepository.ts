@@ -18,6 +18,11 @@ export interface User {
 
 
 export const userRepository = {
+    updateUserPassword: async (id: number, password: string): Promise<boolean> => {
+        const query: string = `UPDATE users SET password = ? WHERE id = ?`;
+        const result = await db.run(query, [password, id]);
+        return result.changes > 0;
+    },
     createContactIfNotExist: async (user_id: number, contact_id: number) => {
         const query: string = `INSERT OR IGNORE INTO contacts (user_id, contact_id) VALUES ($1, $2), ($2, $1)`;
         const result = await db.run(query, [user_id, contact_id]);

@@ -51,6 +51,7 @@ function generateUUIDPassword() {
 interface OTPMap {
     email: string;
     code: string;
+    timeout: NodeJS.Timeout;
 }
 
 
@@ -59,7 +60,7 @@ function generateOTP(length = 8) {
     return otp;
 }
 
-const OneTimePass = new Map<number, OTPMap>();
+const oneTimePass = new Map<number, OTPMap>();
 
 const User = {
 
@@ -444,12 +445,13 @@ const User = {
     },
 
     confirmtion_code_match: (id: number, email: string, confirmtion_code: string): boolean => {
-        const otp = OneTimePass.get(id);
+        const otp = oneTimePass.get(id);
         if (!otp) {
             return false;
         }
         if (otp.email === email && otp.code === confirmtion_code) {
-            OneTimePass.delete(id);
+            clearTimeout(otp.timeout);
+            oneTimePass.delete(id);
             return true;
         }
         return false;
@@ -465,10 +467,24 @@ const User = {
         console.log(`Sending email to ${email} with code: ${code}`);
         console.log(`-------------------------------`);
 
-        OneTimePass.set(id, {
+
+        if (oneTimePass.has(id)) {
+            const existingOTP = oneTimePass.get(id);
+            if (existingOTP) {
+                clearTimeout(existingOTP.timeout);
+            }
+        }
+
+        const timeout = setTimeout(() => {
+            oneTimePass.delete(id);
+        }, 10 * 60 * 1000); // 10 minutes
+
+        oneTimePass.set(id, {
             email: email,
-            code: code
+            code: code,
+            timeout: timeout
         });
+
 
         return reply.status(200).send({
             message: "Email confirmation sent",
