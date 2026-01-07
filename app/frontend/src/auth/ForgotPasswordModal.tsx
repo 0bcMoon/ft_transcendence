@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { X, Mail, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { login_api } from '@/api/api';
-import { error } from 'console';
 
 const forgotPasswordSchema = z.object({
     email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
