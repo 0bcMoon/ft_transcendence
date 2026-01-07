@@ -29,6 +29,9 @@ services:
       - images:/var/www/uploads
     ports:
       - 8080:80 # change it to 443
+    environment:
+      - VITE_API_URL=''
+      - VITE_WS_URL=''
 
   # es-init:
   #   image: curlimages/curl:latest
