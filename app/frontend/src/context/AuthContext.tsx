@@ -19,8 +19,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        const access_token = document.cookie.includes("access_token")
-        setAuth(access_token)
         setLoading(false)
     }, []);
 
@@ -30,12 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuth(false);
     };
 
-    const { data, isLoading: isLoadingUser, isError } = useQuery({
+    const { data, isLoading: isLoadingUser, isError, isSuccess } = useQuery({
         queryKey: ['user'],
         queryFn: async () => (await api.get('/api/user')).data,
-        enabled: isAuthenticated && !isLoading,
+        enabled: !isAuthenticated && !isLoading,
         refetchOnWindowFocus: false,
     })
+
     useEffect(() => {
         if (isError) {
             setAuth(false);
@@ -46,7 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
     useEffect(() => {
-        useAuthStore.getState().login(data as any);
+        if (isSuccess) {
+            useAuthStore.getState().login(data as any);
+            setAuth(true);
+        }
     }, [data]);
 
     if (isLoadingUser) {
