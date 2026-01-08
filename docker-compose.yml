@@ -19,7 +19,11 @@ services:
     #     condition: service_healthy
 
   nginx:
-    build: ./app/frontend/
+    build:
+      context: ./app/frontend/
+      args:
+        - VITE_API_URL=
+        - VITE_WS_URL=
     container_name: nginx
     networks:
       - pingpong
@@ -29,9 +33,6 @@ services:
       - images:/var/www/uploads
     ports:
       - 8080:80 # change it to 443
-    environment:
-      - VITE_API_URL=''
-      - VITE_WS_URL=''
 
   # es-init:
   #   image: curlimages/curl:latest
@@ -81,7 +82,7 @@ services:
   #     image: elasticsearch:8.11.1
   #     container_name: elasticsearch
   #     environment:
-  #       - discovery.type=single-node 
+  #       - discovery.type=single-node
   #       - ES_JAVA_OPTS=-Xms512m -Xmx1024m # Smallest recommended for testing
   #       - ELASTIC_PASSWORD=password
   #       - xpack.security.enabled=true
@@ -115,7 +116,6 @@ services:
   #   depends_on:
   #       es-init:
   #         condition: service_completed_successfully
-
 
 volumes:
   elasticsearch-data: # Define the named volume for persistence
