@@ -14,3 +14,6 @@ images:
 
 # Your existing Service Account configuration
 serviceAccount: 'projects/pingping-469010/serviceAccounts/860653229229-compute@developer.gserviceaccount.com'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
