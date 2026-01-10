@@ -11,3 +11,6 @@ steps:
 images:
     - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:latest'
     - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:$SHORT_SHA'
+
+# Your existing Service Account configuration
+serviceAccount: 'projects/pingping-469010/serviceAccounts/860653229229-compute@developer.gserviceaccount.com'
