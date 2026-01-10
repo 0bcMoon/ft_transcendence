@@ -4,6 +4,7 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import chatSocket from "./websocket";
 import gameSocket from "./gameSocket";
+import metricsPlugin from 'fastify-metrics';
 
 import routes from "./routes";
 import auth from "./auth.routes";
@@ -26,8 +27,13 @@ import arenaSocket from "./arena/arenaSocket";
 import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
 import arenaStatsRoutes from "./arena/stats/arenaStats.routes";
 
+export const FRONTEND_URL: string = process.env.FRONTEND_URL!;
+export const BACKEND_URL: string = process.env.BACKEND_URL!;
 
-export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+if (!FRONTEND_URL || !BACKEND_URL) {
+    
+    throw new Error("FRONTEND_URL and BACKEND_URL must be defined in environment variables");
+}
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -52,24 +58,22 @@ declare module "fastify" {
 
 const fastify = Fastify({
     logger:
-        process.env.NODE_ENV === "test"
-            ? false
-            : {
-                level: "debug",
-                transport: {
-                    target: "pino-pretty",
-                    options: {
-                        colorize: true,
-                        translateTime: "SYS:standard",
-                        // ignore: "pid,hostname,remoteAddress,remotePort",
-                        ignore: "pid,hostname,remoteAddress,remotePort,req,res,responseTime",
-                    },
-                },
+    {
+        level: "debug",
+        transport: {
+            target: "pino-pretty",
+            options: {
+                colorize: true,
+                translateTime: "SYS:standard",
             },
+        },
+    },
 }).withTypeProvider<ZodTypeProvider>();
 
 fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
+
+fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 fastify.register(cookie, {
     secret: process.env.JWT_SECRET!,
@@ -98,8 +102,8 @@ fastify.register(oauthPlugin, {
             tokenPath: "/oauth/token",
         },
     },
-    startRedirectPath: "/auth/oauth/42",
-    callbackUri: "http://localhost:3000/auth/oauth/42/callback",
+    startRedirectPath: "/api/auth/oauth/42",
+    callbackUri: "http://localhost:3000/api/auth/oauth/42/callback",
     scope: ["public"],
 });
 
@@ -112,8 +116,8 @@ fastify.register(oauthPlugin, {
         },
         auth: oauthPlugin.GOOGLE_CONFIGURATION,
     },
-    startRedirectPath: "/auth/oauth/google",
-    callbackUri: "http://localhost:3000/auth/oauth/google/callback",
+    startRedirectPath: "/api/auth/oauth/google",
+    callbackUri: "http://localhost:3000/api/auth/oauth/google/callback",
     scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
@@ -139,7 +143,7 @@ fastify.register(chatSocket, { prefix: "/ws" });
 fastify.register(notifications, { prefix: "/ws" });
 
 fastify.register(staticPlugin, {
-    root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
+    root: path.join(process.cwd(), "/public/uploads"),
     prefix: "/public/",
 });
 
@@ -153,7 +157,7 @@ fastify.register(cors, {
     preflightContinue: true, // Important for WebSocket connections
 });
 
-const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+const uploadDir = path.join(process.cwd(), "/public/uploads");
 
 mkdir(uploadDir, { recursive: true }, (err) => {
     if (err) throw err;

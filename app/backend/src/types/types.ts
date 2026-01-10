@@ -1,7 +1,7 @@
 export interface CreateUser {
     email: string;
     display_name: string;
-    image_src: string;
+    image_src?: string;
     username: string;
     password: string;
     profile_picture?: string;

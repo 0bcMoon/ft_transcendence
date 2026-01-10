@@ -18,6 +18,11 @@ export interface User {
 
 
 export const userRepository = {
+    updateUserPassword: async (id: number, password: string): Promise<boolean> => {
+        const query: string = `UPDATE users SET password = ? WHERE id = ?`;
+        const result = await db.run(query, [password, id]);
+        return result.changes > 0;
+    },
     createContactIfNotExist: async (user_id: number, contact_id: number) => {
         const query: string = `INSERT OR IGNORE INTO contacts (user_id, contact_id) VALUES ($1, $2), ($2, $1)`;
         const result = await db.run(query, [user_id, contact_id]);
@@ -280,10 +285,12 @@ export const userRepository = {
     updateProfilePicture: async (user_id: number, picture_url: string): Promise<string | undefined | null> => {
 
         const user = await userRepository.getCurrentUserById(user_id);
+        // updare the image_src to point to the backend public folder
+        const backend_url = "/public/";
 
-        const backend_url = process.env.BACKEND_URL || "http://localhost:3000/public/uploads/";
         const query: string = `UPDATE users SET profile_picture = $1, image_src = '${backend_url}' WHERE id = $2`;
         await db.run(query, [picture_url, user_id]);
+
         return user?.profile_picture;
     },
 

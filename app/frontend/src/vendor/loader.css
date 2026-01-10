@@ -1,38 +1,187 @@
-.loader {
-  font-size: 10px;
-  width: 1em;
-  height: 1em;
-  border-radius: 50%;
-  position: relative;
-  text-indent: -9999em;
-  animation: mulShdSpin 1.1s infinite ease;
-  transform: translateZ(0);
+/* Pong Loader Variables */
+:root {
+  --paddle-color: #3b82f6;
+  --ball-color: #ffffff;
+  --bg-color: #020617;
+  --board-bg: #0f172a;
+  /* Slightly lighter than main bg */
+  --line-color: rgba(255, 255, 255, 0.1);
 }
-@keyframes mulShdSpin {
-  0%,
+
+.pong-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-color);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Game Board */
+.pong-board {
+  position: relative;
+  width: 300px;
+  height: 160px;
+  background-color: var(--board-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2rem;
+}
+
+/* Center Line */
+.pong-board::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: repeating-linear-gradient(to bottom,
+      var(--line-color),
+      var(--line-color) 8px,
+      transparent 8px,
+      transparent 16px);
+}
+
+/* Paddles */
+.paddle {
+  position: absolute;
+  width: 8px;
+  height: 40px;
+  background-color: var(--paddle-color);
+  border-radius: 4px;
+  box-shadow: 0 0 10px var(--paddle-color);
+}
+
+.paddle.left {
+  left: 30px;
+  animation: paddleLeftMove 1s ease-in-out infinite alternate;
+}
+
+.paddle.right {
+  right: 30px;
+  animation: paddleRightMove 2s ease-in-out infinite alternate-reverse;
+}
+
+/* Ball */
+.ball {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: var(--ball-color);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  animation: ballMove 2s linear infinite;
+}
+
+/* Loading Dots */
+.loading-dots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background-color: #94a3b8;
+  /* Slate-400 */
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(148, 163, 184, 0.5);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Loading Text */
+.loading-text {
+  color: #3b82f6;
+  /* Blue-500 */
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Tip Text */
+.tip-text {
+  margin-top: 4rem;
+  color: #475569;
+  /* Slate-600 */
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Animations */
+@keyframes paddleLeftMove {
+  0% {
+    top: 20px;
+  }
+
   100% {
-    box-shadow: 0em -2.6em 0em 0em #ffffff, 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.5), -1.8em -1.8em 0 0em rgba(255,255,255, 0.7);
-  }
-  12.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.7), 1.8em -1.8em 0 0em #ffffff, 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.5);
-  }
-  25% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.5), 1.8em -1.8em 0 0em rgba(255,255,255, 0.7), 2.5em 0em 0 0em #ffffff, 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
-  }
-  37.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.5), 2.5em 0em 0 0em rgba(255,255,255, 0.7), 1.75em 1.75em 0 0em #ffffff, 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
-  }
-  50% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.5), 1.75em 1.75em 0 0em rgba(255,255,255, 0.7), 0em 2.5em 0 0em #ffffff, -1.8em 1.8em 0 0em rgba(255,255,255, 0.2), -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
-  }
-  62.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.5), 0em 2.5em 0 0em rgba(255,255,255, 0.7), -1.8em 1.8em 0 0em #ffffff, -2.6em 0em 0 0em rgba(255,255,255, 0.2), -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
-  }
-  75% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.5), -1.8em 1.8em 0 0em rgba(255,255,255, 0.7), -2.6em 0em 0 0em #ffffff, -1.8em -1.8em 0 0em rgba(255,255,255, 0.2);
-  }
-  87.5% {
-    box-shadow: 0em -2.6em 0em 0em rgba(255,255,255, 0.2), 1.8em -1.8em 0 0em rgba(255,255,255, 0.2), 2.5em 0em 0 0em rgba(255,255,255, 0.2), 1.75em 1.75em 0 0em rgba(255,255,255, 0.2), 0em 2.5em 0 0em rgba(255,255,255, 0.2), -1.8em 1.8em 0 0em rgba(255,255,255, 0.5), -2.6em 0em 0 0em rgba(255,255,255, 0.7), -1.8em -1.8em 0 0em #ffffff;
+    top: 100px;
   }
 }
 
+@keyframes paddleRightMove {
+  0% {
+    top: 40px;
+  }
+
+  100% {
+    top: 80px;
+  }
+}
+
+@keyframes ballMove {
+  0% {
+    top: 40px;
+    left: 45px;
+  }
+
+  25% {
+    top: 100px;
+    left: 50%;
+  }
+
+  50% {
+    top: 80px;
+    left: 245px;
+    /* 300 - 30 - 8 - ball width (approx) */
+  }
+
+  75% {
+    top: 30px;
+    left: 50%;
+  }
+
+  100% {
+    top: 40px;
+    left: 45px;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+    box-shadow: 0 0 0 rgba(148, 163, 184, 0);
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(148, 163, 184, 0.8);
+  }
+}

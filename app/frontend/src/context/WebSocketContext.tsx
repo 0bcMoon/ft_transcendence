@@ -10,6 +10,8 @@ import {
     MatchReadyToast,
     TournamentFinishedToast,
 } from '@/notifications/components/TournamentNotifications';
+import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface WebSocketContextType {
     socket: WebSocket | null;
@@ -18,6 +20,41 @@ interface WebSocketContextType {
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
+interface IMessageNotification {
+    username?: string;
+    content?: string;
+    profile_picture?: string;
+    onClose: () => void;
+}
+
+const MessageNotification = ({ username, content, profile_picture, onClose }: IMessageNotification) => {
+
+    const navigate = useNavigate();
+
+    return (
+        <div onClick={() => navigate("/chat")}
+            className="flex items-center bg-gray-800 rounded-lg shadow-sm p-4 w-80">
+            {/* Profile Picture */}
+            <img
+                src={profile_picture}
+                alt={username}
+                className="w-12 h-12 rounded-full object-cover mr-4"
+            />
+
+            {/* Content */}
+            <div className="flex-1">
+                <h3 className="font-semibold text-white">{username}</h3>
+                <p className="text-white">{content}</p>
+            </div>
+
+            <button onClick={(e) => { e.stopPropagation(); onClose() }} className="ml-4 text-blue-600 font-medium hover:text-blue-800 focus:outline-none">
+                <X className="w-5 h-5" />
+            </button>
+        </div>
+    );
+};
+
+export default MessageNotification;
 export function WebSocketProvider({ children }: { children: ReactNode }) {
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const { isAuthenticated, isLoading } = useAuth();
@@ -60,14 +97,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         if (isLoading || !isAuthenticated) return;
         if (socket && socket.readyState === WebSocket.OPEN) return;
 
-        const ws = new WebSocket('ws://localhost:3000/ws/notify');
+        const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/notify`);
 
-        ws.onopen = () => {
-            console.log('[WebSocket] Connected');
-        };
+        // ws.onopen = () => {
+        //     toast.success('[WebSocket] Connected 🎉');
+        // };
 
         ws.onmessage = (event: MessageEvent) => {
             try {
+
                 const data = JSON.parse(event.data) as IEvent;
                 console.log('[WebSocket] 📨', data.type);
 
@@ -125,6 +163,18 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
                         }
                         break;
 
+                    case 'message':
+                        console.log('Message payload:', data.message_payload);
+                        toast.custom(
+                            (t) => (
+                                <MessageNotification
+                                    {...data.message_payload}
+                                    onClose={() => toast.dismiss(t.id)}
+                                />
+                            ),
+                            { duration: 5000, position: 'top-right' }
+                        );
+                        break;
                     default:
                         console.warn('[WebSocket] Unknown type:', data.type);
                 }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
-import { X, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { X, Mail, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
+import { login_api } from '@/api/api';
 
 const forgotPasswordSchema = z.object({
     email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
@@ -14,11 +15,9 @@ interface ForgotPasswordModalProps {
     onClose: () => void;
 }
 
-// Mock API function - replace with your actual API call
 const sendResetEmail = async (data: ForgotPasswordData) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log('Reset email sent to:', data.email);
-    return { success: true };
+    const response = await login_api.post('/api/auth/forget-password', data);
+    return response.data;
 };
 
 export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
@@ -31,6 +30,9 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
         onSuccess: () => {
             setIsSubmitted(true);
         },
+        onError: (error: any) => {
+            setErrors({ email: error.response?.data?.message || 'An error occurred. Please try again.' });
+        }
     });
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -101,20 +103,26 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
                         <p className="mb-4 text-sm text-center text-slate-400">
                             Enter your email and we'll send a link to reset your password.
                         </p>
+
+                    {errors.email &&
+                        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-red-400" />
+                            <p className="text-sm text-red-400">{errors.email}</p>
+                        </div>
+                    }
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <div className="relative">
                                     <input
                                         name="email"
                                         type="email"
-                                        className={`w-full h-12 px-4 py-3 pr-12 bg-slate-800 border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.email ? 'border-red-500/50' : 'border-slate-700'}`}
+                                        className={`w-full h-12 px-4 py-3 pr-12 bg-slate-800 border rounded-lg text-white 
+                                                    placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                                    transition-all ${errors.email ? 'border-red-500/50' : 'border-slate-700'}`}
                                         placeholder="you@example.com"
                                     />
                                     <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
                                 </div>
-                                {errors.email && (
-                                    <p className="mt-2 text-sm text-red-400">{errors.email}</p>
-                                )}
                             </div>
 
                             <button

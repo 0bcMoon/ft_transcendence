@@ -196,7 +196,7 @@ export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoPro
                 <p className="text-slate-400">Choose a strong password to protect your account</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
                 <div className="space-y-4">
                     <div className="group">
                         <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
@@ -212,6 +212,7 @@ export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoPro
                                 placeholder="Enter a strong password"
                                 required
                                 minLength={8}
+                                autoComplete="new-password"
                             />
                             <button
                                 type="button"
@@ -238,6 +239,7 @@ export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoPro
                                 className="w-full px-4 py-3 pr-12 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none placeholder:text-slate-500 text-white"
                                 placeholder="Confirm your password"
                                 required
+                                autoComplete="new-password"
                             />
                             <button
                                 type="button"
@@ -280,6 +282,7 @@ interface StepThreeProps {
 }
 
 export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
+
     const [isCodeSent, setIsCodeSent] = useState(false)
     const [email, setEmail] = useState("")
     const [error, setError] = useState<string | null>("")
@@ -391,9 +394,9 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                                     id="confirmation_code"
                                     name="confirmation_code"
                                     className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none placeholder:text-slate-500 text-white text-center text-2xl tracking-widest"
-                                    placeholder="000000"
+                                    placeholder="00000000"
                                     required
-                                    maxLength={6}
+                                    maxLength={8}
                                 />
                             </div>
                         </div>
@@ -404,7 +407,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                     <button
                         type="button"
                         onClick={onBack}
-                        className="flex-1 bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-lg font-medium hover:bg-slate-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 flex items-center justify-center gap-2 group"
+                        className="w-1/3 bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-lg font-medium hover:bg-slate-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 flex items-center justify-center gap-2 group mb-0"
                     >
                         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
                         Back
@@ -412,7 +415,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                     <button
                         type="submit"
                         disabled={!isCodeSent || mutateRegister.isPending}
-                        className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group whitespace-nowrap"
                     >
                         {mutateRegister.isPending ? (
                             <>
@@ -422,7 +425,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                         ) : (
                             <>
                                 Complete Registration
-                                <CheckCircle className="w-5 h-5" />
+                                <CheckCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
                             </>
                         )}
                     </button>

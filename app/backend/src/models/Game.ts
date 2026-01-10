@@ -70,6 +70,7 @@ export const Game = {
     },
     getPlayerStatsSummary: async (req: FastifyRequest, reply: FastifyReply) => {
         try {
+
             const userId = Number((req.params as any).userId);
             if (!userId || Number.isNaN(userId)) {
                 return reply.status(400).send({ error: "Invalid user ID" });
@@ -80,6 +81,7 @@ export const Game = {
             return reply.status(200).send(stats);
         } catch (err) {
             const error = err as Error;
+            console.error("Error in getPlayerStatsSummary:", error);
             return reply.status(500).send({
                 error: "Failed to get player stats",
                 details: error.message,

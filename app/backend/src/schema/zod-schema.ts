@@ -22,7 +22,7 @@ export const registerSchema = z.object({
         .max(20),
     display_name: z
         .string({ required_error: "Display name is required" })
-        .min(3)
+        .min(1)
         .max(30),
     password: z
         .string({ required_error: "Password is required" })
@@ -72,7 +72,7 @@ export const createRequestBody = z.object({
 export const updateUserInfo = z.object({
     display_name: z
         .string()
-        .min(3)
+        .min(1)
         .max(32)
         .optional(),
     username: z

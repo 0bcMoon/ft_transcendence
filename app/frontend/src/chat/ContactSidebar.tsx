@@ -42,6 +42,7 @@ export function ContactSidebar({ isOpen, onClose }: ContactSidebarProps) {
             )}
 
             {/* Sidebar */}
+
             <div
                 className={`fixed lg:relative top-16 lg:top-auto bottom-0 lg:bottom-auto left-0 z-50 
                             h-[calc(100vh-4rem)] lg:h-full w-full lg:w-96 bg-slate-950 border-r 

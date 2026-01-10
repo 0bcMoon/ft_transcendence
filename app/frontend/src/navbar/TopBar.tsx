@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react"
-import { Bell, User, Menu } from "lucide-react"
+import { Bell, Menu } from "lucide-react"
 import Notification from "./components/Notification"
 import ProfileMenu from "./components/ProfileMenu"
+import { useAuthStore } from "@/state/authStore"
 
 interface TopBarProps {
     onMenuClick: () => void
@@ -12,6 +13,8 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
     const [isNotificationOpen, setIsNotificationOpen] = useState(false)
     const profileRef = useRef<HTMLDivElement>(null)
     const notificationRef = useRef<HTMLDivElement>(null)
+
+    const user = useAuthStore((state) => state.user);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -25,6 +28,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
+
 
     return (
         <header className="fixed top-0 left-0 lg:left-20 right-0 h-16 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 flex items-center justify-between px-6 z-30">
@@ -65,7 +69,11 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-all"
                     >
-                        <User size={18} />
+                        <img
+                            src={user?.profile_picture || '/default-avatar.png'}
+                            className="w-12 h-10 rounded-lg object-cover"
+                            alt="Profile"
+                        />
                     </button>
                     {isProfileOpen && <ProfileMenu onClose={() => setIsProfileOpen(false)} />}
                 </div>

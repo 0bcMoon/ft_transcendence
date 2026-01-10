@@ -5,10 +5,10 @@ describe('Auth API', () => {
     beforeAll(async () => {
         await app.ready();
     });
-    describe('POST /auth/login', () => {
+    describe('POST /api/auth/login', () => {
         it('should login with valid credentials', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     username: 'hicham',
                     password: 'password'
@@ -34,7 +34,7 @@ describe('Auth API', () => {
 
         it('should reject invalid credentials', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     username: 'hicham',
                     password: 'wrongpassword'
@@ -46,7 +46,7 @@ describe('Auth API', () => {
 
         it('should reject missing username', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     password: 'password'
                 });
@@ -57,7 +57,7 @@ describe('Auth API', () => {
 
         it('should reject missing password', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     username: 'hicham'
                 });
@@ -68,7 +68,7 @@ describe('Auth API', () => {
 
         it('should reject non-existent user', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     username: 'nonexistent',
                     password: 'password'
@@ -80,7 +80,7 @@ describe('Auth API', () => {
 
         it('should reject on empty body', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send();
 
             expect(response.status).toBe(400);
@@ -88,10 +88,10 @@ describe('Auth API', () => {
         });
     });
 
-    describe('GET /auth/logout', () => {
+    describe('GET /api/auth/logout', () => {
         it('should logout successfully', async () => {
             const response = await supertest(app.server)
-                .get('/auth/logout');
+                .get('/api/auth/logout');
 
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Logout successful');
@@ -107,7 +107,7 @@ describe('Auth API', () => {
     describe('Token Generation', () => {
         it('should generate valid JWT tokens', async () => {
             const response = await supertest(app.server)
-                .post('/auth/login')
+                .post('/api/auth/login')
                 .send({
                     username: 'hicham',
                     password: 'password'

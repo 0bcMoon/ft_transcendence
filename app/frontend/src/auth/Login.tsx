@@ -45,6 +45,7 @@ export default function LoginPage() {
         const data = Object.fromEntries(formData.entries())
         const result = loginSchema.safeParse(data)
 
+
         if (result.success) {
             setErrors({})
             loginMutation.mutate(result.data, {
@@ -55,7 +56,7 @@ export default function LoginPage() {
                         setAuth(true)
                         navigate(from, { replace: true })
                     }
-                },
+                }
             })
             return
         }
@@ -69,7 +70,7 @@ export default function LoginPage() {
 
     const handleOAuthLogin = (provider: "google" | "42") => {
         const backendUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
-        window.location.href = `${backendUrl}/auth/oauth/${provider}`
+        window.location.href = `${backendUrl}/api/auth/oauth/${provider}`
     }
 
     if (step === "two_factor_auth") {

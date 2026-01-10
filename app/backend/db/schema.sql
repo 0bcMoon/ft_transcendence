@@ -1,10 +1,11 @@
+
 CREATE TABLE IF NOT EXISTS "users" (
     "id"	INTEGER,
     "username"	VARCHAR(64) UNIQUE NOT NULL,
     "display_name" VARCHAR(64) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
     "profile_picture" TEXT  DEFAULT '',
-    "image_src" TEXT NOT NULL,
+    "image_src" TEXT DEFAULT '/public/',
     "email" VARCHAR(255) UNIQUE NOT NULL,
     "oauth_type" TEXT NOT NULL DEFAULT 'local',
     "two_factor_enabled" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS "messages" (
     PRIMARY KEY("id" AUTOINCREMENT)
 );
 
-CREATE INDEX IF NOT EXISTS idx_messages_createdat ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 
 CREATE TABLE IF NOT EXISTS "contacts" (
     "id" INTEGER,

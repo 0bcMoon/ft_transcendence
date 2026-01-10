@@ -108,7 +108,17 @@ const gameRepository = {
     WHERE user_id = ?
   `, [userId]);
 
-        if (!row) throw new Error("Player stats not found");
+        if (!row) {
+            // If no stats found, return defaults 
+            return {
+                wins: 0,
+                losses: 0,
+                winRate: 0,
+                rank: 'Unranked',
+                leaderboardPosition: null
+            }
+        }
+
 
         const { wins, losses, rank, elo_rating } = row;
         const totalGames = wins + losses;

@@ -19,6 +19,13 @@ type NotificationType =
 export interface IEvent {
     type: NotificationType;
     status?: 'online' | 'offline';
+
+    message_payload? :{
+        username: string;
+        content: string;
+        profile_picture: string;
+    }
+
     id?: number;
     subscribers?: number[];
     tournament?: {
@@ -102,6 +109,15 @@ export function broadcastToAll(event: IEvent) {
         }
     });
     fastify.log.info(`Broadcast ${event.type} to ${sentCount} online users`);
+}
+export function sendPayload(userId: number, payload: IEvent) {
+    const connection = online.get(userId);
+    if (connection && connection.readyState === WebSocket.OPEN) {
+        connection.send(JSON.stringify(payload));
+        fastify.log.info(`Sent message to user ${userId}`);
+    } else {
+        fastify.log.warn(`User ${userId} is not online`);
+    }
 }
 
 export default async function(fastify: FastifyInstance) {

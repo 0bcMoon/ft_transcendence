@@ -10,7 +10,6 @@ import type { RemoteUser } from "@/types/types"
 import { useUnFriend } from "../hooks/useApi"
 import { unsubscribe } from "@/home/Notification"
 import { useWebSocket } from "@/context/WebSocketContext"
-import toast from "react-hot-toast"
 
 const FriendsList = () => {
     const [searchTerm, setSearchTerm] = useState("")
@@ -37,7 +36,6 @@ const FriendsList = () => {
     useEffect(() => {
         return () => {
             if (!socket || !isConnected || isLoading || friends_id.length === 0) return
-            toast.success(`Unsubscribed from friends' presence: ${friends_id.join(", ")}`)
             unsubscribe(socket, friends_id)
         }
     }, [isLoading, isConnected, socket, friends_id])

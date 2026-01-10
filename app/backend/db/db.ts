@@ -2,7 +2,11 @@ import 'dotenv/config';
 import sqlite3 from 'sqlite3'
 import fs from 'fs'
 
-const sqliteDB = new sqlite3.Database(process.env.DB_PATH!, (err) => {
+const db_path : string =  process.env.DB_PATH!;  // "./sqliteDB/pingo.db"
+if (!db_path)
+    throw new Error("can not open the Database")
+
+const sqliteDB = new sqlite3.Database(db_path, (err) => {
     if (err) {
         console.error(err.message);
     }

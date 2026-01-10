@@ -1,4 +1,4 @@
-import api from "@/api/api"
+import api, { login_api } from "@/api/api"
 import { useQuery } from "@tanstack/react-query"
 import type { Request } from "../types/User"
 import type { RemoteUser } from "@/types/types"
@@ -292,7 +292,7 @@ export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePictur
 export const useLogin = () => {
     return useMutation({
         mutationFn: async (data: { username: string; password: string }) => {
-            const response = await api.post("/api/auth/login", data)
+            const response = await login_api.post("/api/auth/login", data)
             return response.data
         },
     })

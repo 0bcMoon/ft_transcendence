@@ -15,7 +15,15 @@ export interface IEvent {
 
     type: NotificationType;
     status?: 'online' | 'offline';
+
+    message_payload? :{
+        username: string;
+        content: string;
+        profile_piccture: string;
+    }
+
     id?: number;
+
     subscribers?: number[];
 
     tournament?: {

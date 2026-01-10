@@ -58,3 +58,24 @@
 .animate-fade-in {
   animation: fade-in 0.5s ease-out;
 }
+
+.neon-shadow {
+  box-shadow: 0 0 10px #2b8cee, 0 0 20px #2b8cee;
+}
+.neon-text {
+  text-shadow: 0 0 5px #2b8cee;
+}
+.ball-glow {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+.scanlines {
+  background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0),
+      rgba(255,255,255,0) 50%,
+      rgba(0,0,0,0.1) 50%,
+      rgba(0,0,0,0.1)
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+}

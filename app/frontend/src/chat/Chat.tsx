@@ -6,19 +6,45 @@ import { ChatArea } from "./ChatArea"
 import toast from "react-hot-toast"
 
 function Chat() {
-    const [sidebarOpen, setSidebarOpen] = useState(false)
-    const ws = useRef<WebSocket | null>(null)
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const ws = useRef<WebSocket | null>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const WebSocketConnect = () => {
+
+        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/chat`);
+
+        websocket.onopen = () => {
+            if (timeoutRef.current) {
+                clearInterval(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+        }
+
+        websocket.onerror = () => {
+            toast.error('Connection error.  Please try again later.');
+        };
+
+        websocket.onclose = () => {
+            if (timeoutRef.current) return;
+            ws.current = null;
+            timeoutRef.current = setInterval(() => {
+                WebSocketConnect();
+            }, 5000);
+        }
+        ws.current = websocket;
+    }
 
     useEffect(() => {
-        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/chat`)
-        websocket.onerror = () => {
-            toast.error("Connection error. Please try again later.")
-        }
-        ws.current = websocket
+        WebSocketConnect();
         return () => {
-            websocket.close()
-        }
-    }, [])
+            if (ws.current) {
+                ws.current.onclose = null;
+            }
+            ws.current?.close();
+        };
+
+    }, [ws.current]);
 
     return (
         <div className="h-full flex overflow-hidden">

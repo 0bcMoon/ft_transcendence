@@ -1,4 +1,4 @@
-import api, { deleteCookie } from '@/api/api';
+import { deleteCookie, login_api } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import Loader from '@/vendor/loader';
 import { useQuery } from '@tanstack/react-query';
@@ -19,23 +19,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        const access_token = document.cookie.includes("access_token")
-        setAuth(access_token)
         setLoading(false)
     }, []);
 
     const logout = () => {
         deleteCookie('access_token');
-        api.get('/api/auth/logout')
+        login_api.get('/api/auth/logout')
         setAuth(false);
     };
 
-    const { data, isLoading: isLoadingUser, isError } = useQuery({
+    const { data, isLoading: isLoadingUser, isError, isSuccess } = useQuery({
         queryKey: ['user'],
-        queryFn: async () => (await api.get('/api/user')).data,
-        enabled: isAuthenticated && !isLoading,
+        queryFn: async () => (await login_api.get('/api/user')).data,
+        enabled: !isAuthenticated && !isLoading,
         refetchOnWindowFocus: false,
+        retry: false,
     })
+
     useEffect(() => {
         if (isError) {
             setAuth(false);
@@ -46,7 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
     useEffect(() => {
-        useAuthStore.getState().login(data as any);
+        if (isSuccess) {
+            useAuthStore.getState().login(data as any);
+            setAuth(true);
+        }
     }, [data]);
 
     if (isLoadingUser) {
