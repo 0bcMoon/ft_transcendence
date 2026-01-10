@@ -1,0 +1,135 @@
+services:
+  backend:
+    image: ${REPO}/backend:${TAG}
+    container_name: backend
+    env_file:
+      - .env
+    # logging:
+    #   driver: "gelf"
+    #   options:
+    #     gelf-address: "udp://localhost:12201"
+    #     tag: "backend"
+    networks:
+      - pingpong
+    volumes:
+      - database:/app/sqliteDB
+      - images:/app/public/uploads
+    # depends_on:
+    #   logstash:
+    #     condition: service_healthy
+
+  nginx:
+    image: ${REPO}/nginx:${TAG}
+    container_name: nginx
+    networks:
+      - pingpong
+    volumes:
+      # Mount nginx config as volume
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - images:/var/www/uploads
+    ports:
+      - 443:443 # change it to 443
+
+  # es-init:
+  #   image: curlimages/curl:latest
+  #   container_name: es-init
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   networks:
+  #     - pingpong
+  #   volumes:
+  #     - ./elk-stack/init-users.sh:/init-users.sh
+  #   entrypoint: ["/bin/sh", "/init-users.sh"]
+  #   restart: "no"
+  #
+  # logstash:
+  #   image: logstash:8.11.0
+  #   container_name: logstash
+  #   volumes:
+  #     - ./logstash.conf:/etc/logstash.conf
+  #   command: logstash -f /etc/logstash.conf
+  #   ports:
+  #     - "12201:12201/udp"
+  #     - "5044:5044"
+  #     - "9600:9600"
+  #   networks:
+  #     - pingpong
+  #   environment:
+  #     - ELASTIC_PASSWORD=password
+  #     - XPACK_MONITORING_ENABLED=true
+  #     - XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - XPACK_MONITORING_ELASTICSEARCH_USERNAME=elastic
+  #     - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=password
+  #
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -sf http://localhost:9600 || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
+  #
+  # elasticsearch:
+  #     image: elasticsearch:8.11.1
+  #     container_name: elasticsearch
+  #     environment:
+  #       - discovery.type=single-node
+  #       - ES_JAVA_OPTS=-Xms512m -Xmx1024m # Smallest recommended for testing
+  #       - ELASTIC_PASSWORD=password
+  #       - xpack.security.enabled=true
+  #     ports:
+  #       - "9200:9200" # Expose the API port
+  #     volumes:
+  #       # Persist data so it doesn't vanish on container stop
+  #       - elasticsearch-data:/usr/share/elasticsearch/data
+  #     networks:
+  #       - pingpong
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "curl -f -u elastic:password http://localhost:9200/_cluster/health || exit 1"]
+  #       interval: 10s
+  #       timeout: 10s
+  #       retries: 10
+  #       start_period: 5s
+  #
+  # kibana:
+  #   image: kibana:8.11.1
+  #   container_name: kibana
+  #   ports:
+  #     - "5601:5601" # Kibana web UI port
+  #   environment:
+  #     # Point Kibana to the Elasticsearch service
+  #     KIBANA_HOST: "0.0.0.0" # Listen on all interfaces
+  #     ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+  #     ELASTICSEARCH_USERNAME: kibana_system
+  #     ELASTICSEARCH_PASSWORD: password
+  #   networks:
+  #     - pingpong
+  #   depends_on:
+  #       es-init:
+  #         condition: service_completed_successfully
+
+volumes:
+  elasticsearch-data: # Define the named volume for persistence
+
+  images:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/images
+
+  database:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/database
+
+networks:
+  pingpong:
+    name: pingpong

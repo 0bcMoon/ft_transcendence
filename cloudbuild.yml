@@ -1,16 +1,45 @@
+# 1. Define the base repository URL (Note the underscore)
+substitutions:
+  _REPO_URL: 'europe-west8-docker.pkg.dev/pingping-469010/production'
+
+# steps:
+#   # Build the Docker image with the CORRECT europe-west8 tag
+#   - name: 'gcr.io/cloud-builders/docker'
+#     args: [
+#       'build', 
+#       '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/nginx:latest', 
+#       '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/nginx:$SHORT_SHA', 
+#       './app/frontend/'
+#     ]
+
 steps:
-  # Build the Docker image with the CORRECT europe-west8 tag
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    # waitFor: ['-'] means "Start immediately, don't wait for anything"
+    waitFor: ['-']  
     args: [
-      'build', 
-      '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:latest', 
-      '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:$SHORT_SHA', 
-      './app/frontend/'
+      'build',
+      '-t', '${_REPO_URL}/nginx:latest',
+      '-t', '${_REPO_URL}/nginx:$SHORT_SHA',
+      './app/frontend/' # <--- Path to your Frontend Dockerfile
+    ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    waitFor: ['-'] 
+    args: [
+      'build',
+      '-t', '${_REPO_URL}/backend:latest',
+      '-t', '${_REPO_URL}/backend:$SHORT_SHA',
+      './app/backend/'  # <--- Path to your Backend Dockerfile
     ]
 
 images:
-    - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:latest'
-    - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:$SHORT_SHA'
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/nginx:latest'
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/nginx:$SHORT_SHA'
+
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/backend:latest'
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/backend:$SHORT_SHA'
 
 # Your existing Service Account configuration
 serviceAccount: 'projects/pingping-469010/serviceAccounts/860653229229-compute@developer.gserviceaccount.com'
