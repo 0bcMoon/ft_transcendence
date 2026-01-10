@@ -1,7 +1,13 @@
 steps:
-  # Build the Docker image
+  # Build the Docker image with the CORRECT europe-west8 tag
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'front-nginx', './app/frontend/']
-options:
-  logging: NONE
-serviceAccount: 'projects/pingping-469010 /serviceAccounts/860653229229-compute@developer.gserviceaccount.com'
+    args: [
+      'build', 
+      '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:latest', 
+      '-t', 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:$SHORT_SHA', 
+      './app/frontend/'
+    ]
+
+images:
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:latest'
+    - 'europe-west8-docker.pkg.dev/pingping-469010/production/front-nginx:$SHORT_SHA'
