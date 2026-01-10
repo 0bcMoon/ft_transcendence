@@ -8,8 +8,8 @@ type InputState = { up: boolean; down: boolean; left: boolean; right: boolean };
 type ArenaRoom = {
   state: ArenaState;
 
-  sockets: Map<number, WebSocket>;         // players only
-  spectators: Map<number, WebSocket>;      // ✅ spectators
+  sockets: Map<number, WebSocket>;// for players
+  spectators: Map<number, WebSocket>;// for spectators
 
   inputs: Map<number, InputState>;
   tick?: NodeJS.Timeout;
@@ -96,9 +96,9 @@ function spawnTargetSafe(players: { x: number; y: number }[]) {
 function broadcastState(room: ArenaRoom) {
   const payload = JSON.stringify({ type: "arena:state", state: room.state });
 
-  // players
+  //for players
   for (const socket of room.sockets.values()) socket.send(payload);
-  // ✅ spectators
+  // for spectators
   for (const socket of room.spectators.values()) socket.send(payload);
 }
 
@@ -111,7 +111,7 @@ function ensureTick(room: ArenaRoom) {
   if (room.tick) return;
 
   room.tick = setInterval(async () => {
-    // If no humans watching/playing, don't waste CPU.
+    // If no humans watching or playing, don't waste CPU.
     if (room.sockets.size === 0 && room.spectators.size === 0) return;
 
     if (room.state.status === "finished" || room.state.status === "cancelled") {
