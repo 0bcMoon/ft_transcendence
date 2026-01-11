@@ -1,5 +1,6 @@
 import { userRepository } from '../repository/userRepository';
-import fastify, { BACKEND_URL, FRONTEND_URL } from '../app';
+import fastify from '../app';
+import env from '../env';
 
 import bcrypt from 'bcrypt';
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -61,7 +62,7 @@ function resetPasswordEmailTemplate(reset_code: string) {
         <body>
             <h1>Password Reset Request</h1>
             <p>You have requested to reset your password. Please use the following code to reset your password:</p>
-            <a href=${BACKEND_URL}/reset-password?rest_code=${reset_code}> Reset Password</a>
+            <a href=${env.BACKEND_URL}/reset-password?rest_code=${reset_code}> Reset Password</a>
             <p>This code will expires In 15 min.</p>
             <p>If you did not request this, please ignore this email.</p>
         </body>
@@ -131,14 +132,19 @@ const Auth = {
     },
 
     checkUsernameAvailability: async (req: FastifyRequest, reply: FastifyReply) => {
+
         const { username } = req.query as { username: string };
         if (!username) {
             return reply.status(400).send({ message: "username is require" });
+        }
+        if (username.length < 3 || username.length > 20) {
+            return reply.status(400).send({ message: "username must be between 3 and 20 characters" });
         }
         const existingUser = await userRepository.getUserByUsername(username);
         if (existingUser) {
             return reply.status(409).send({ message: 'Username already exists' });
         }
+
         return reply.status(200).send({ message: 'username is available' });
     },
 
@@ -172,7 +178,7 @@ const Auth = {
             .setCookie('session_key', session_key, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
+                domain: env.COOKIE_DOMAIN,
                 maxAge: 15 * 60, // 15 minutes
                 sameSite: true, // TODO: whats is CSRF alternative CSRF protection
             })
@@ -268,7 +274,7 @@ const Auth = {
             .setCookie('session_key', session_key, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
+                domain: env.COOKIE_DOMAIN,
                 maxAge: 15 * 60, // 15 minutes
                 sameSite: true, // TODO: whats is CSRF alternative CSRF protection
             })
@@ -326,13 +332,13 @@ const Auth = {
         if (!session_key) {
             return reply.status(401).send({ message: 'Unauthorized: No session key provided' });
         }
-
         const session_data = register.get(session_key);
-        register.delete(session_key);
 
         if (!session_data) {
             return reply.status(401).send({ message: 'Unauthorized: Invalid session key' });
         }
+
+
         if (session_data.email !== email) {
             return reply.status(400).send({ message: 'Email does not match the one used for confirmation code' });
         }
@@ -354,10 +360,13 @@ const Auth = {
             display_name,
             password: hashedPassword,
             email,
+            image_src: '/public/',
             profile_picture: 'default.jpg',
             oauth_type: 'local'
         });
 
+        register.delete(session_key);
+        reply.clearCookie('session_key');
         return reply.status(201).send({ message: 'User registered successfully' });
     },
 
@@ -382,18 +391,18 @@ const Auth = {
             });
 
             if (!response.ok) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=Unable to create or authenticate user`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=Unable to create or authenticate user`);
             }
             const user_data = await response.json() as GoogleOAuth2;
             const id = await User.googleLogin(user_data)
             if (!id) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=email already exists with another account`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=email already exists with another account`);
             }
             Auth.grantAccess(reply, id);
-            reply.redirect(FRONTEND_URL); // Redirect to the home page or any other page after successful login
+            reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
         } catch (error: any) {
-            return reply.redirect(`${FRONTEND_URL}/login?error=An error occurred during authentication`);
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },
 
@@ -410,20 +419,20 @@ const Auth = {
             })
 
             if (!response.ok) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=Unable to create or authenticate user`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=Unable to create or authenticate user`);
             }
 
             const user_data = await response.json() as Intra42OAuth2;
             const id = await User.intraLogin(user_data)
 
             if (!id) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=email already exists with another account`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=email already exists with another account`);
             }
             Auth.grantAccess(reply, id);
-            reply.redirect(FRONTEND_URL); // Redirect to the home page or any other page after successful login
+            reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
         } catch (error) {
-            return reply.redirect(`${FRONTEND_URL}/login?error=An error occurred during authentication`);
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },
 
@@ -432,34 +441,34 @@ const Auth = {
         const access_token = fastify.jwt.sign({
             id: user_id,
         }, {
-            expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
+            expiresIn: env.ACCESS_TOKEN_EXPR
         },
         )
 
         const refresh_token = fastify.jwt.sign({
             id: user_id,
         }, {
-            expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
+            expiresIn: env.REFRESH_TOEKN_EXPR
         },
         )
 
         reply
             .setCookie('access_token', access_token, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                maxAge: 30 * 24 * 60 * 60, // 30 days
-                sameSite: true, // alternative CSRF protection
+                secure: true,
+                domain: env.COOKIE_DOMAIN,
+                maxAge: 30 * 24 * 60 * 60,
+                sameSite: true,
             })
 
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
+                secure: true, 
                 httpOnly: true,
-                maxAge: 30 * 24 * 60 * 60, // 30 days
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                sameSite: true // alternative CSRF protection
+                maxAge: 30 * 24 * 60 * 60,
+                domain: env.COOKIE_DOMAIN,
+                sameSite: true
             })
         reply.clearCookie('session_key');
     },

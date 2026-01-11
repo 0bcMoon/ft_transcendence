@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Mail, CheckCircle, Send, ArrowLeft, X, User, ArrowRight, Lock, Eye, EyeOff, Shield } from "lucide-react"
 import { z } from "zod"
 import { useMutation } from "@tanstack/react-query"
-import api from "@/api/api"
+import { login_api } from "@/api/api"
 import type { IFormData } from "../Register"
 
 interface StepOneProps {
@@ -30,7 +30,7 @@ export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
 
     const usernameMutation = useMutation({
         mutationFn: async (username: string) => {
-            const response = await api.get("/api/auth/check-username", { params: { username } })
+            const response = await login_api.get("/api/auth/check-username", { params: { username } })
             return response.data
         },
         onError: () => {
@@ -163,6 +163,7 @@ const passwordSchema = z
     })
 
 export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoProps) {
+
     const [errors, setErrors] = useState<{ password?: string; confirm_password?: string }>({})
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -284,12 +285,12 @@ interface StepThreeProps {
 export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
 
     const [isCodeSent, setIsCodeSent] = useState(false)
-    const [email, setEmail] = useState("")
+    const [email, setEmail] = useState(formData.email)
     const [error, setError] = useState<string | null>("")
 
     const mutateSendCode = useMutation({
         mutationFn: async (email: string) => {
-            const response = await api.post("/api/auth/send-confirmation-code", { email })
+            const response = await login_api.post("/api/auth/send-confirmation-code", { email })
             return response.data
         },
         onSuccess: () => {
@@ -298,17 +299,20 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
         onError: (error: any) => {
             setError(error.response?.data?.message || "Failed to send confirmation code. Please try again.")
         },
+        retry: false,
     })
 
     const mutateRegister = useMutation({
         mutationFn: async (formData: IFormData) => {
-            const response = await api.post("/api/auth/register", formData)
+            const response = await login_api.post("/api/auth/register", formData)
             return response.data
         },
         onSuccess: () => {
+            console.log("registration successful")
             onComplete()
         },
         onError: (error: any) => {
+            console.log(error, "registration error")
             setError(error.response?.data?.message || "Registration failed. Please try again.")
         },
     })
@@ -317,6 +321,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        debugger
         const form = new FormData(e.currentTarget as HTMLFormElement)
         const confirmation_code = form.get("confirmation_code") as string
         formData.confirmation_code = confirmation_code
@@ -367,7 +372,9 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                                 type="button"
                                 onClick={() => mutateSendCode.mutate(email)}
                                 disabled={mutateSendCode.isPending}
-                                className="w-full bg-slate-700 text-blue-400 py-3 rounded-lg font-medium hover:bg-slate-600 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 flex items-center justify-center gap-2 border border-slate-600 disabled:opacity-50"
+                                className="w-full bg-slate-700 text-blue-400 py-3 rounded-lg font-medium hover:bg-slate-600 focus:ring-4 
+                                            focus:ring-blue-500/20 transition-all duration-200 flex items-center justify-center gap-2 
+                                            border border-slate-600 disabled:opacity-50"
                             >
                                 {mutateSendCode.isPending ? (
                                     <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
@@ -393,7 +400,9 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                                     type="text"
                                     id="confirmation_code"
                                     name="confirmation_code"
-                                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none placeholder:text-slate-500 text-white text-center text-2xl tracking-widest"
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 
+                                                    focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none 
+                                                    placeholder:text-slate-500 text-white text-center text-2xl tracking-widest"
                                     placeholder="00000000"
                                     required
                                     maxLength={8}
@@ -407,7 +416,10 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                     <button
                         type="button"
                         onClick={onBack}
-                        className="w-1/3 bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-lg font-medium hover:bg-slate-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 flex items-center justify-center gap-2 group mb-0"
+                        className="w-1/3 bg-slate-800 text-slate-300 border border-slate-700 py-3 rounded-lg font-medium 
+                                        hover:bg-slate-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 flex items-center 
+                                        justify-center gap-2 group mb-0"
+
                     >
                         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
                         Back
@@ -415,7 +427,10 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
                     <button
                         type="submit"
                         disabled={!isCodeSent || mutateRegister.isPending}
-                        className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group whitespace-nowrap"
+                        className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 
+                                    'focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 
+                                    disabled:cursor-not-allowed flex items-center justify-center gap-2 group whitespace-nowrap"
+
                     >
                         {mutateRegister.isPending ? (
                             <>

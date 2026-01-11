@@ -23,7 +23,7 @@ export const registerSchema = z.object({
     display_name: z
         .string({ required_error: "Display name is required" })
         .min(1)
-        .max(30),
+        .max(64),
     password: z
         .string({ required_error: "Password is required" })
         .min(8)

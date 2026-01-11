@@ -26,14 +26,7 @@ import arenaRoutes from "./arena/arenaRoutes";
 import arenaSocket from "./arena/arenaSocket";
 import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
 import arenaStatsRoutes from "./arena/stats/arenaStats.routes";
-
-export const FRONTEND_URL: string = process.env.FRONTEND_URL!;
-export const BACKEND_URL: string = process.env.BACKEND_URL!;
-
-if (!FRONTEND_URL || !BACKEND_URL) {
-    
-    throw new Error("FRONTEND_URL and BACKEND_URL must be defined in environment variables");
-}
+import env from "./env";
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -76,12 +69,12 @@ fastify.setSerializerCompiler(serializerCompiler);
 fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 fastify.register(cookie, {
-    secret: process.env.JWT_SECRET!,
+    secret: env.JWT_SECRET,
     parseOptions: {},
 });
 
 fastify.register(jwt, {
-    secret: process.env.JWT_SECRET!,
+    secret: env.JWT_SECRET,
     cookie: {
         cookieName: "access_token",
         signed: false,
@@ -92,8 +85,8 @@ fastify.register(oauthPlugin, {
     name: "intra42OAuth2",
     credentials: {
         client: {
-            id: process.env.INTRA_CLIENT_ID!,
-            secret: process.env.INTRA_CLIENT_SECRET!,
+            id: env.INTRA_CLIENT_ID,
+            secret: env.INTRA_CLIENT_SECRET,
         },
         auth: {
             authorizeHost: "https://api.intra.42.fr",
@@ -103,7 +96,7 @@ fastify.register(oauthPlugin, {
         },
     },
     startRedirectPath: "/api/auth/oauth/42",
-    callbackUri: "http://localhost:3000/api/auth/oauth/42/callback",
+    callbackUri: env.INTRA_REDIRECT_URI,
     scope: ["public"],
 });
 
@@ -111,13 +104,13 @@ fastify.register(oauthPlugin, {
     name: "googleOAuth2",
     credentials: {
         client: {
-            id: process.env.GOOGLE_CLIENT_ID!,
-            secret: process.env.GOOGLE_CLIENT_SECRET!,
+            id: env.GOOGLE_CLIENT_ID,
+            secret: env.GOOGLE_CLIENT_SECRET,
         },
         auth: oauthPlugin.GOOGLE_CONFIGURATION,
     },
     startRedirectPath: "/api/auth/oauth/google",
-    callbackUri: "http://localhost:3000/api/auth/oauth/google/callback",
+    callbackUri: env.GOOGLE_REDIRECT_URI,
     scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
@@ -178,14 +171,14 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
                 id: decoded.id,
             },
             {
-                expiresIn: process.env.ACCESS_TOKEN_EXPR || "10m", // Token expiration time
+                expiresIn: env.ACCESS_TOKEN_EXPR,
             },
         );
 
         reply.setCookie("access_token", newAccessToken, {
             path: "/",
             secure: true, // send cookie over HTTPS only
-            domain: process.env.COOKIE_DOMAIN || "localhost", // set the domain for the cookie
+            domain: env.COOKIE_DOMAIN,
             sameSite: true, // alternative CSRF protection
         });
         req.user = decoded; // Set the user in the request object

@@ -1,10 +1,9 @@
 import 'dotenv/config';
 import sqlite3 from 'sqlite3'
 import fs from 'fs'
+import env from '../src/env';
 
-const db_path : string =  process.env.DB_PATH!;  // "./sqliteDB/pingo.db"
-if (!db_path)
-    throw new Error("can not open the Database")
+const db_path : string =  env.DB_PATH;
 
 const sqliteDB = new sqlite3.Database(db_path, (err) => {
     if (err) {
@@ -12,7 +11,7 @@ const sqliteDB = new sqlite3.Database(db_path, (err) => {
     }
 });
 
-const data = fs.readFileSync(process.env.DB_SCHEMA!, { encoding: 'utf8', flag: 'r' });
+const data = fs.readFileSync(env.DB_SCHEMA, { encoding: 'utf8', flag: 'r' });
 sqliteDB.exec(data.toString(), (err) => {
     if (err) {
         console.error(err.message);
