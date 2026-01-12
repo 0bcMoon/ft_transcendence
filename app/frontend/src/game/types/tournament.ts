@@ -23,6 +23,7 @@ export interface TournamentPlayer {
     registered_at: string;
     username: string;
     avatar_url?: string;
+    profile_picture?: string;
 }
 
 export interface TournamentCreator {
