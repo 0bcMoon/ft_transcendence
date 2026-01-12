@@ -30,3 +30,7 @@ OpenCode.md
 .opencode/
 backend/public
 *.db
+
+images
+database
+nginx/ssl
