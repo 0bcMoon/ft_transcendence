@@ -9,7 +9,6 @@ const envSchema = z.object({
     DB_SCHEMA: z.string(),
     JWT_SECRET: z.string(),
     COOKIE_DOMAIN: z.string(),
-    UPLOAD_DIR: z.string(),
     FRONTEND_URL: z.string().url(),
     BACKEND_URL: z.string().url(),
     ACCESS_TOKEN_EXPR: z.string(),
