@@ -4,11 +4,11 @@ services:
     container_name: backend
     env_file:
       - .env
-    logging:
-      driver: "gelf"
-      options:
-        gelf-address: "udp://localhost:12201"
-        tag: "backend"
+    # logging:
+    #   driver: "gelf"
+    #   options:
+    #     gelf-address: "udp://localhost:12201"
+    #     tag: "backend"
     networks:
       - pingpong
     volumes:
@@ -31,8 +31,9 @@ services:
       # Mount nginx config as volume
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - images:/var/www/uploads
+      - ./nginx/ssl:/etc/nginx/ssl
     ports:
-      - 8080:80 # change it to 443
+      - 8080:443 # change it to 443
 
   # es-init:
   #   image: curlimages/curl:latest
@@ -126,6 +127,12 @@ volumes:
       type: none
       o: bind
       device: ${PWD}/images
+  database:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/database
 
 networks:
   pingpong:
