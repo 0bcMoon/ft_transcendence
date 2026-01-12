@@ -178,7 +178,7 @@ const Auth = {
             .setCookie('session_key', session_key, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
-                domain: env.COOKIE_DOMAIN,
+                // domain: env.COOKIE_DOMAIN,
                 maxAge: 15 * 60, // 15 minutes
                 sameSite: true, // TODO: whats is CSRF alternative CSRF protection
             })
@@ -274,7 +274,7 @@ const Auth = {
             .setCookie('session_key', session_key, {
                 path: '/',
                 secure: true, // send cookie over HTTPS only
-                domain: env.COOKIE_DOMAIN,
+                // domain: env.COOKIE_DOMAIN,
                 maxAge: 15 * 60, // 15 minutes
                 sameSite: true, // TODO: whats is CSRF alternative CSRF protection
             })
@@ -456,7 +456,7 @@ const Auth = {
             .setCookie('access_token', access_token, {
                 path: '/',
                 secure: true,
-                domain: env.COOKIE_DOMAIN,
+                // domain: env.COOKIE_DOMAIN,
                 maxAge: 30 * 24 * 60 * 60,
                 sameSite: true,
             })
@@ -467,7 +467,7 @@ const Auth = {
                 secure: true, 
                 httpOnly: true,
                 maxAge: 30 * 24 * 60 * 60,
-                domain: env.COOKIE_DOMAIN,
+                // domain: env.COOKIE_DOMAIN,
                 sameSite: true
             })
         reply.clearCookie('session_key');

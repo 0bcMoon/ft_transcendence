@@ -166,7 +166,7 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         const decoded = (await fastify.jwt.verify(
             refreshToken,
         )) as FastifyJWT["user"];
-        const newAccessToken = fastify.jwt.sign(
+        const access_token = fastify.jwt.sign(
             {
                 id: decoded.id,
             },
@@ -175,13 +175,16 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
             },
         );
 
-        reply.setCookie("access_token", newAccessToken, {
-            path: "/",
-            secure: true, // send cookie over HTTPS only
-            domain: env.COOKIE_DOMAIN,
-            sameSite: true, // alternative CSRF protection
-        });
+        reply
+            .setCookie('access_token', access_token, {
+                path: '/',
+                secure: true,
+                // domain: env.COOKIE_DOMAIN,
+                maxAge: 30 * 24 * 60 * 60,
+                sameSite: true,
+            })
         req.user = decoded; // Set the user in the request object
+
     } catch (error: any) {
         reply.clearCookie("access_token");
         reply.clearCookie("refresh_token");
