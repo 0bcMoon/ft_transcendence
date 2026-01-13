@@ -7,13 +7,16 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 import TwoFactorAuth from './TwoFactorAuth';
 import { useAuth } from '@/context/AuthContext';
 import { useLogin } from '@/users/hooks/useApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 const loginSchema = z.object({
-    username: z
-        .string()
-        .min(1, "Username is required")
-        .min(3, "Username must be at least 3 characters")
-        .max(24, "Username must be at most 24 characters"),
+    identifier: z.union([
+        z.string().email("Invalid email format"),
+        z.string()
+            .min(3, "Username too short")
+            .max(20, "Username too long")
+            .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+    ]),
     password: z.string().min(1, "Password is required").min(8, "Password must be at least 8 characters"),
 })
 
@@ -38,6 +41,7 @@ export default function LoginPage() {
             navigate(from, { replace: true })
         }
     }, [isAuthenticated, isLoading, navigate, from])
+    const queryClient = useQueryClient();
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -53,6 +57,7 @@ export default function LoginPage() {
                     if (data.two_factor_enabled) {
                         setCurrentStep("two_factor_auth")
                     } else {
+                        queryClient.invalidateQueries({ queryKey: ['user'] });
                         setAuth(true)
                         navigate(from, { replace: true })
                     }
@@ -63,7 +68,7 @@ export default function LoginPage() {
 
         const newErrors = result.error.flatten().fieldErrors
         setErrors({
-            username: newErrors.username?.[0],
+            identifier: newErrors.identifier?.[0],
             password: newErrors.password?.[0],
         })
     }
@@ -97,14 +102,14 @@ export default function LoginPage() {
                         <div>
                             <div className="relative">
                                 <input
-                                    name="username"
+                                    name="identifier"
                                     type="text"
-                                    className={`w-full h-12 px-4 py-3 bg-slate-800 border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.username ? "border-red-500/50" : "border-slate-700"}`}
-                                    placeholder="Username"
+                                    className={`w-full h-12 px-4 py-3 bg-slate-800 border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.identifier ? "border-red-500/50" : "border-slate-700"}`}
+                                    placeholder="identifier"
                                 />
                                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
                             </div>
-                            {errors.username && <p className="mt-2 text-sm text-red-400">{errors.username}</p>}
+                            {errors.identifier && <p className="mt-2 text-sm text-red-400">{errors.identifier}</p>}
                         </div>
 
                         <div>
