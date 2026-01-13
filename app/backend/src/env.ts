@@ -4,22 +4,28 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const envSchema = z.object({
-    PORT: z.string().transform((val) => parseInt(val, 10)).default('3000'),
-    DB_PATH: z.string(),
-    DB_SCHEMA: z.string(),
-    JWT_SECRET: z.string(),
-    COOKIE_DOMAIN: z.string(),
-    FRONTEND_URL: z.string().url(),
-    BACKEND_URL: z.string().url(),
-    ACCESS_TOKEN_EXPR: z.string(),
-    REFRESH_TOEKN_EXPR: z.string(), // Note: Typo matches .env file
-    GOOGLE_CLIENT_ID: z.string(),
+    PORT                : z.string()
+                            .transform((val) => parseInt(val, 10))
+                            .default('3000'),
+    DB_PATH             : z.string(),
+    DB_SCHEMA           : z.string(),
+    JWT_SECRET          : z.string(),
+    COOKIE_DOMAIN       : z.string(),
+    FRONTEND_URL        : z.string()
+                            .url(),
+    BACKEND_URL         : z.string()
+                            .url(),
+    ACCESS_TOKEN_EXPR   : z.string(),
+    REFRESH_TOKEN_EXPR  : z.string(),
+    GOOGLE_CLIENT_ID    : z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
-    INTRA_CLIENT_ID: z.string(),
-    INTRA_CLIENT_SECRET: z.string(),
-    INTRA_REDIRECT_URI: z.string().url(),
-    GOOGLE_REDIRECT_URI: z.string().url(),
-    RESEND_API_KEY: z.string(),
+    INTRA_CLIENT_ID     : z.string(),
+    INTRA_CLIENT_SECRET : z.string(),
+    INTRA_REDIRECT_URI  : z.string()
+                            .url(),
+    GOOGLE_REDIRECT_URI : z.string()
+                            .url(),
+    RESEND_API_KEY      : z.string()
 });
 
 const _env = envSchema.safeParse(process.env);
