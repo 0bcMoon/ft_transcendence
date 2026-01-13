@@ -1,7 +1,7 @@
 import { deleteCookie, login_api } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import Loader from '@/vendor/loader';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/state/authStore';
 
 interface AuthContextType {
@@ -22,7 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
     }, []);
 
+
+// Invalidate everything
     const logout = () => {
+        // queryClient.invalidateQueries();
+        useAuthStore.getState().logout();
         deleteCookie('access_token');
         login_api.get('/api/auth/logout')
         setAuth(false);

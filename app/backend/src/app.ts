@@ -68,10 +68,7 @@ fastify.setSerializerCompiler(serializerCompiler);
 
 fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
-fastify.register(cookie, {
-    secret: env.JWT_SECRET,
-    parseOptions: {},
-});
+fastify.register(cookie);
 
 fastify.register(jwt, {
     secret: env.JWT_SECRET,
@@ -179,9 +176,9 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
             .setCookie('access_token', access_token, {
                 path: '/',
                 secure: true,
-                // domain: env.COOKIE_DOMAIN,
-                maxAge: 30 * 24 * 60 * 60,
-                sameSite: true,
+                maxAge: 15 * 60,
+                httpOnly: true,
+                sameSite: 'strict',
             })
         req.user = decoded; // Set the user in the request object
 

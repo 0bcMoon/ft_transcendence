@@ -1,12 +1,15 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-    username: z.
-        string({ required_error: 'username is required'}).
-        min(3, 'Username must be at least 3 characters').
-        max(24, 'Username must be at most 20 characters'),
+    identifier: z.union([
+        z.string().email("Invalid email format"),
+        z.string()
+            .min(3, "Username too short")
+            .max(20, "Username too long")
+            .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+    ]),
     password: z.
-        string({ required_error: 'password is required'}).
+        string({ required_error: 'password is required' }).
         min(1, 'Password is required').
         min(8, 'Password must be at least 8 characters'),
 }, {
@@ -16,10 +19,10 @@ export const loginSchema = z.object({
 
 
 export const registerSchema = z.object({
-    username: z
-        .string({ required_error: "Username is required" })
-        .min(3)
-        .max(20),
+    username: z.string()
+        .min(3, "Username too short")
+        .max(20, "Username too long")
+        .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
     display_name: z
         .string({ required_error: "Display name is required" })
         .min(1)
@@ -77,9 +80,9 @@ export const updateUserInfo = z.object({
         .optional(),
     username: z
         .string()
-        .min(3, "Username is required.")
-        .max(24)
-        .regex(/^\S+$/, 'Username cannot contain whitespace')
+        .min(3, "Username too short")
+        .max(20, "Username too long")
+        .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
         .optional(),
     current_password: z
         .string()

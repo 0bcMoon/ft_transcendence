@@ -10,7 +10,7 @@ import crypto from 'crypto';
 import z from 'zod';
 
 interface LoginBody {
-    username: string;
+    identifier: string;
     password: string;
 }
 interface ITwoFactorAuth {
@@ -177,10 +177,10 @@ const Auth = {
         reply
             .setCookie('session_key', session_key, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                // domain: env.COOKIE_DOMAIN,
-                maxAge: 15 * 60, // 15 minutes
-                sameSite: true, // TODO: whats is CSRF alternative CSRF protection
+                secure: true,
+                maxAge: 15 * 60,
+                httpOnly: true,
+                sameSite: 'strict',
             })
         register.set(session_key, { confirmation_code: code, email: email });
         setTimeout(() => {
@@ -225,8 +225,6 @@ const Auth = {
     },
 
     TwoFactorAuth: async (req: FastifyRequest, reply: FastifyReply) => {
-
-        // TODO: add a cooldown time using redis
 
         const { confirmation_code, action } = req.query as { confirmation_code: string, action: boolean };
         if (action === undefined) {
@@ -273,10 +271,9 @@ const Auth = {
         reply
             .setCookie('session_key', session_key, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                // domain: env.COOKIE_DOMAIN,
-                maxAge: 15 * 60, // 15 minutes
-                sameSite: true, // TODO: whats is CSRF alternative CSRF protection
+                secure: true,
+                maxAge: 15 * 60,
+                sameSite: 'strict', // TODO: whats is CSRF alternative CSRF protection
             })
         if (userSessions.has(id)) {
             const old_session_key = userSessions.get(id)!;
@@ -301,17 +298,15 @@ const Auth = {
 
     login: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        const { username, password } = req.body as LoginBody;
-        if (!username || !password) {
-            return reply.status(400).send({ message: 'Invalid username or password' });
-        }
-        const user = await userRepository.getUserByUsername(username);
+        const { identifier, password } = req.body as LoginBody;
+        let user: User | undefined;
+        user = await userRepository.getUserByIdentifier(identifier);
         if (!user) {
-            return reply.status(401).send({ message: 'Invalid username or password' });
+            return reply.status(401).send({ message: 'Invalid identifier or password' });
         }
         const isPasswordValid = await bcrypt.compare(password, user.password!);
         if (!isPasswordValid) {
-            return reply.status(401).send({ message: 'Invalid username or password' });
+            return reply.status(401).send({ message: 'Invalid identifier or password' });
         }
 
         if (user.two_factor_enabled) {
@@ -448,7 +443,7 @@ const Auth = {
         const refresh_token = fastify.jwt.sign({
             id: user_id,
         }, {
-            expiresIn: env.REFRESH_TOEKN_EXPR
+            expiresIn: env.REFRESH_TOKEN_EXPR
         },
         )
 
@@ -456,19 +451,18 @@ const Auth = {
             .setCookie('access_token', access_token, {
                 path: '/',
                 secure: true,
-                // domain: env.COOKIE_DOMAIN,
-                maxAge: 30 * 24 * 60 * 60,
-                sameSite: true,
+                maxAge: 15 * 60,
+                httpOnly: true,
+                sameSite: 'strict',
             })
 
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
-                secure: true, 
+                secure: true,
+                maxAge: 15 * 60,
                 httpOnly: true,
-                maxAge: 30 * 24 * 60 * 60,
-                // domain: env.COOKIE_DOMAIN,
-                sameSite: true
+                sameSite: 'strict',
             })
         reply.clearCookie('session_key');
     },
