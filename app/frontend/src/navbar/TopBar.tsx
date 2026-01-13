@@ -31,7 +31,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
 
 
     return (
-        <header className="fixed top-0 left-0 lg:left-20 right-0 h-16 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 flex items-center justify-between px-6 z-30">
+        <header className="fixed top-0 left-0 lg:left-20 right-0 h-16 bg-slate-950/95 backdrop-blur-xl border-b 
+                            border-slate-800/50 flex items-center justify-between px-6 z-30"
+        >
             {/* Mobile Menu Button */}
             <button
                 onClick={onMenuClick}
@@ -70,7 +72,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                         className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-all"
                     >
                         <img
-                            src={user?.profile_picture || '/default-avatar.png'}
+                            src={user?.profile_picture || '/public/default.png'}
                             className="w-12 h-10 rounded-lg object-cover"
                             alt="Profile"
                         />

@@ -1,6 +1,7 @@
 import { Home, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProfileMenuProps {
     onClose: () => void
@@ -14,6 +15,7 @@ export default function ProfileMenu({ onClose }: ProfileMenuProps) {
         navigate(path)
         onClose()
     }
+    const queryClient = useQueryClient();
 
     return (
         <div className="absolute right-0 mt-2 w-48 bg-slate-900 rounded-lg shadow-lg border border-slate-700 py-2 z-50">
@@ -38,6 +40,7 @@ export default function ProfileMenu({ onClose }: ProfileMenuProps) {
             <button
                 onClick={() => {
                     logout()
+                    queryClient.invalidateQueries() // Invalidate all queries on logout
                     onClose()
                 }}
                 className="w-full px-4 py-2 text-left text-red-500 hover:bg-red-950 flex items-center space-x-3 transition-colors"
