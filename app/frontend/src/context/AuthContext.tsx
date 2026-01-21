@@ -1,7 +1,7 @@
 import { deleteCookie, login_api } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import Loader from '@/vendor/loader';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/state/authStore';
 
 interface AuthContextType {

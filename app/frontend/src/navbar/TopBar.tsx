@@ -83,4 +83,3 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
         </header>
     )
 }
-
