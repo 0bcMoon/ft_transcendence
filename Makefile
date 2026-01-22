@@ -4,7 +4,7 @@ up:
 	docker-compose up -d --build
 down:
 	docker-compose down
-re: down  fclean up
+re: down up
 
 clean:
 	docker-compose down --rmi all --volumes --remove-orphans
