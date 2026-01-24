@@ -1,0 +1,2 @@
+prometeus and grafana : https://www.youtube.com/watch?v=L-dDeZjZUiA&list=LL&index=1
+https://prometheus.io/docs/prometheus/latest/querying/api/
