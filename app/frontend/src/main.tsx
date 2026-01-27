@@ -33,7 +33,7 @@ import { WebSocketProvider } from './context/WebSocketContext';
 import MatchDetailsPage from './game/pages/MatchDetailsPage';
 import PasswordReset from './auth/components/PasswordReset';
 
-import ArenaStartPage from "./arena/pages/ArenaStartPage";
+// import ArenaStartPage from "./arena/pages/ArenaStartPage";
 import ArenaPlayPage from "./arena/pages/ArenaPlayPage";
 import ArenaLobbyPage from "./arena/pages/ArenaLobbyPage";
 import ArenaHistoryPage from "./arena/pages/ArenaHistoryPage";
@@ -58,7 +58,7 @@ const router = createBrowserRouter([
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
 
-            { path: "game/arena/start", element: <ArenaStartPage /> },
+            // { path: "game/arena/start", element: <ArenaStartPage /> },
             { path: "arena", element: <ArenaLobbyPage /> },
             { path: "arena/history", element: <ArenaHistoryPage /> },
             { path: "/game/arena/:gameId/play", element: <ArenaPlayPage /> },

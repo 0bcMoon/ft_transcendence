@@ -42,7 +42,6 @@ function Avatar({ src, label }: { src: string | null; label: string }) {
     </div>
   );
 }
-
 export default function ArenaMatchesPage() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -60,7 +59,7 @@ export default function ArenaMatchesPage() {
       arenaApi.getGamesByStatus("playing"),
       arenaApi.getGamesByStatus("waiting"),
     ]);
-
+    
     const live: GameRow[] = [
       ...playingRes.games.map((g) => ({
         id: g.id,

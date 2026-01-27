@@ -90,9 +90,9 @@ export const Arena = {
 
   getGamePlayers: async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      const gameId = Number((req.params as any).gameId);
-      if (!gameId || Number.isNaN(gameId)) return reply.status(400).send({ error: "Invalid game ID" });
-
+      // const gameId = Number((req.params as any).gameId);
+      // if (!gameId || Number.isNaN(gameId)) return reply.status(400).send({ error: "Invalid game ID" });
+      const gameId  = (req.params as any).gameId;
       const players = await arenaRepository.getGamePlayers(gameId);
       return reply.status(200).send(players);
     } catch (err) {

@@ -6,6 +6,7 @@ import type { ArenaState } from "../types/arena.types";
 const W = 800;
 const H = 600;
 
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
@@ -72,6 +73,7 @@ export default function ArenaPlayPage() {
   const resetInputs = () => {
     inputRef.current = { up: false, down: false, left: false, right: false };
   };
+
   const clearCountdown = () => {
     if (countdownIntervalRef.current) {
       window.clearInterval(countdownIntervalRef.current);
@@ -104,6 +106,10 @@ export default function ArenaPlayPage() {
   // keyboard
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      //stop scroling in broser with arrors
+      if (e.key.startsWith("Arrow")) 
+          e.preventDefault();
+
       // block movement keys while countdown / not playing
       if (!canSendInput()) return;
 
@@ -117,6 +123,11 @@ export default function ArenaPlayPage() {
     };
 
     const up = (e: KeyboardEvent) => {
+      //stop scroling in broser with arrors
+      if (e.key.startsWith("Arrow"))
+          e.preventDefault();
+      
+      
       if (!canSendInput()) return;
 
       let changed = false;
@@ -129,9 +140,7 @@ export default function ArenaPlayPage() {
     };
 
     const onBlur = () => {
-      // if user alt-tabs, we don't want sticky movement
       resetInputs();
-      // no sendInput unless canSendInput; but safe to try
       sendInput();
     };
 
@@ -185,6 +194,7 @@ export default function ArenaPlayPage() {
       try { ws.close(); } catch {}
     };
   }, [wsUrl, gameId]);
+
   useEffect(() => {
     countdownStartedRef.current = false;
     prevStatusRef.current = null;
@@ -472,17 +482,17 @@ export default function ArenaPlayPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <div>
+          {/* <div>
             <h1 className="text-2xl font-bold">Arena</h1>
             <div className="text-xs text-slate-400">
               WS {connected ? "✅" : "❌"} • Joined {joined ? "✅" : "❌"} • You: {myPos ? `P${myPos}` : "-"} • Game {gameId}
             </div>
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-3">
-            <div className="text-sm text-slate-300">
+            {/* <div className="text-sm text-slate-300">
               Move: <span className="font-mono">WASD</span> / <span className="font-mono">Arrows</span>
-            </div>
+            </div> */}
 
             <button
               onClick={leaveGame}
@@ -519,15 +529,17 @@ export default function ArenaPlayPage() {
           {/* Countdown overlay */}
           {showCountdownOverlay && (
             <div className="absolute inset-0 rounded-xl flex items-center justify-center">
+                
               <div className="rounded-3xl border border-slate-800 bg-slate-950/70 px-10 py-8 text-center shadow">
                 <div className="text-xs text-slate-400">Get ready</div>
                 <div className="text-6xl font-black tracking-tight mt-2">
                   {countdown === 0 ? "GO" : countdown}
                 </div>
                 <div className="text-sm text-slate-300 mt-3">
-                  Inputs activate after GO
+                  RUUUUUN!
                 </div>
               </div>
+                
             </div>
           )}
 
@@ -542,19 +554,10 @@ export default function ArenaPlayPage() {
 
                 <div className="mt-5">
                   <button
+                    className=" w-full rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-3 transition"
                     onClick={() => {
                       nav("/arena");
                     }}
-                    className="
-                      w-full
-                      rounded-xl
-                      bg-slate-800
-                      hover:bg-slate-700
-                      text-slate-100
-                      font-semibold
-                      py-3
-                      transition
-                    "
                   >
                     Back to Lobby
                   </button>
@@ -565,12 +568,12 @@ export default function ArenaPlayPage() {
         </div>
 
         {/* Debug (optional) */}
-        <details className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+        {/* <details className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
           <summary className="cursor-pointer text-sm text-slate-300">Debug state</summary>
           <pre className="mt-2 text-xs overflow-auto whitespace-pre-wrap">
             {serverState ? JSON.stringify(serverState, null, 2) : "No state yet..."}
           </pre>
-        </details>
+        </details> */}
       </div>
     </div>
   );
