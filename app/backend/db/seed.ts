@@ -58,7 +58,7 @@ db.serialize(async () => {
         ["hmouda", "Mohammed El Bouazizi", faker.internet.email()]
     ];
 
-    for (const [username, displayName, email] of fixedUsers) {
+    for (const [username, displayName, email] of fixedUtestsers) {
         createUsers.run(
             username,
             displayName,

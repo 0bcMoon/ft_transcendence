@@ -9,6 +9,7 @@ import metricsPlugin from 'fastify-metrics';
 import routes from "./routes";
 import auth from "./auth.routes";
 import game from "./game.routes";
+import metricsRoutes from "./routes/metrics.routes";
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
@@ -66,7 +67,7 @@ const fastify = Fastify({
 fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
 
-fastify.register(metricsPlugin, { endpoint: '/metrics' });
+// fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 fastify.register(cookie);
 
@@ -122,6 +123,7 @@ fastify.register(chatRoute, { prefix: "/api" });
 fastify.register(routes, { prefix: "/api" });
 fastify.register(auth, { prefix: "/api" });
 fastify.register(game, { prefix: "/api" });
+fastify.register(metricsRoutes);
 
 fastify.register(arenaRoutes, { prefix: "/api" });
 fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });
