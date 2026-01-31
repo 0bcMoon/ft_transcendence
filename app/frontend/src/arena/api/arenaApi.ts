@@ -5,9 +5,7 @@ export const arenaApi = {
   API_BASE,
   WS_BASE,
   
-  // --------------------
   // Matchmaking: STATUS
-  // --------------------
   async getMatchmakingStatus() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/status`, {
       method: "GET",
@@ -21,32 +19,7 @@ export const arenaApi = {
     return data;
   },
 
-  // // --------------------
-  // // Create arena game
-  // // --------------------
-  // async createGame(payload: {
-  //   players: { user_id: number | null; position: 1 | 2; is_ai?: boolean }[];
-  //   target_round_wins?: number;
-  // }) {
-  //   const res = await fetch(`${API_BASE}/arena/games`, {
-  //     method: "POST",
-  //     credentials: "include",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify(payload),
-  //   });
-
-  //   const data = await res.json().catch(() => ({}));
-  //   if (!res.ok) {
-  //     throw new Error(data?.details || data?.error || "Failed to create arena game");
-  //   }
-  //   return data;
-  // },
-
-  // --------------------
   // Matchmaking: JOIN
-  // --------------------
   async joinMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/join`, {
       method: "POST",
@@ -60,9 +33,7 @@ export const arenaApi = {
     return data;
   },
 
-  // --------------------
   // Matchmaking: LEAVE
-  // --------------------
   async leaveMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/leave`, {
       method: "POST",
@@ -76,9 +47,7 @@ export const arenaApi = {
     return data;
   },
 
-  // --------------------
   // Arena: MY HISTORY
-  // --------------------
   async getMyHistory() {
     const res = await fetch(`${API_BASE}/arena/me/history`, {
       method: "GET",
@@ -92,9 +61,7 @@ export const arenaApi = {
     return data;
   },
 
-   // --------------------
   // Arena: MY STATS
-  // --------------------
   async getMyStats() {
     const res = await fetch(`${API_BASE}/arena/me/stats`, {
       method: "GET",
@@ -112,7 +79,6 @@ export const arenaApi = {
     const res = await fetch(`${API_BASE}/arena/games/ai`, {
       method: "POST",
       credentials: "include",
-      // no body, no Content-Type (avoids empty JSON body issue)
     });
   
     const data = await res.json().catch(() => ({}));

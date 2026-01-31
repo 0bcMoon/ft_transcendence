@@ -1,4 +1,3 @@
-// frontend/src/arena/pages/ArenaLobbyPage.tsx
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { arenaApi } from "../api/arenaApi";

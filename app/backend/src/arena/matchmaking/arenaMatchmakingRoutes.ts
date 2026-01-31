@@ -1,4 +1,3 @@
-// backend/src/arena/matchmaking/arenaMatchmakingRoutes.ts
 import { FastifyPluginAsync } from "fastify";
 import { arenaMatchmakingService } from "./arenaMatchmaking.service";
 

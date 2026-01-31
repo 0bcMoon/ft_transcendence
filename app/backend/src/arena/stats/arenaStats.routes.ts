@@ -25,16 +25,16 @@ const arenaStatsRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // Recent matches for currently authenticated user (optional helper)
-  fastify.get(
-    "/arena/me/recent",
-    { onRequest: [fastify.authenticate] },
-    async (req, reply) => {
-      const userId = req.user.id;
-      const limit = Number((req.query as any).limit) || 10;
-      const recent = await arenaRepository.getRecentMatches(userId, limit);
-      return reply.status(200).send(recent);
-    }
-  );
+  // fastify.get(
+  //   "/arena/me/recent",
+  //   { onRequest: [fastify.authenticate] },
+  //   async (req, reply) => {
+  //     const userId = req.user.id;
+  //     const limit = Number((req.query as any).limit) || 10;
+  //     const recent = await arenaRepository.getRecentMatches(userId, limit);
+  //     return reply.status(200).send(recent);
+  //   }
+  // );
 };
 
 export default arenaStatsRoutes;

@@ -1,5 +1,5 @@
 import {z} from "zod"
 
-export const ArenaGameIdByPlayerSchema = z.object ({
+export const ArenaGameIdCheck = z.object ({
     gameId : z.coerce.number().int().positive()
 })

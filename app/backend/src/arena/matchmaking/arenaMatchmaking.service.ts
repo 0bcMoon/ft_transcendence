@@ -1,4 +1,3 @@
-// backend/src/arena/matchmaking/arenaMatchmaking.service.ts
 import arenaRepository from "../repository/arenaRepository";
 
 type MatchmakingResult =

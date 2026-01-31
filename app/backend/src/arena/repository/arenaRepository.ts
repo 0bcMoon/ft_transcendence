@@ -173,58 +173,58 @@ const arenaRepository = {
 
   // ---------- independent history / match endpoints ----------
 
-  async getRecentGlobalMatches(limit = 10) {
-    return db.all(
-      `SELECT
-          ag.id AS game_id,
-          ag.winner_user_id,
-          ag.ended_at,
-          ag.created_at,
-          p1.round_wins AS player1_score,
-          u1.username AS player1_name,
-          u1.profile_picture AS player1_avatar,
-          p2.round_wins AS player2_score,
-          u2.username AS player2_name,
-          u2.profile_picture AS player2_avatar
-       FROM arena_games ag
-       LEFT JOIN arena_players p1 ON ag.id=p1.arena_game_id AND p1.position=1
-       LEFT JOIN users u1 ON p1.user_id=u1.id
-       LEFT JOIN arena_players p2 ON ag.id=p2.arena_game_id AND p2.position=2
-       LEFT JOIN users u2 ON p2.user_id=u2.id
-       WHERE ag.status='finished'
-       ORDER BY COALESCE(ag.ended_at, ag.created_at) DESC
-       LIMIT ?`,
-      [limit]
-    );
-  },
+  // async getRecentGlobalMatches(limit = 10) {
+  //   return db.all(
+  //     `SELECT
+  //         ag.id AS game_id,
+  //         ag.winner_user_id,
+  //         ag.ended_at,
+  //         ag.created_at,
+  //         p1.round_wins AS player1_score,
+  //         u1.username AS player1_name,
+  //         u1.profile_picture AS player1_avatar,
+  //         p2.round_wins AS player2_score,
+  //         u2.username AS player2_name,
+  //         u2.profile_picture AS player2_avatar
+  //      FROM arena_games ag
+  //      LEFT JOIN arena_players p1 ON ag.id=p1.arena_game_id AND p1.position=1
+  //      LEFT JOIN users u1 ON p1.user_id=u1.id
+  //      LEFT JOIN arena_players p2 ON ag.id=p2.arena_game_id AND p2.position=2
+  //      LEFT JOIN users u2 ON p2.user_id=u2.id
+  //      WHERE ag.status='finished'
+  //      ORDER BY COALESCE(ag.ended_at, ag.created_at) DESC
+  //      LIMIT ?`,
+  //     [limit]
+  //   );
+  // },
   
-  async getRecentMatches(userId: number, limit = 10) {
-    return db.all(
-      `SELECT
-          ag.id AS game_id,
-          ag.winner_user_id,
-          ag.ended_at,
-          ag.created_at,
-          p1.user_id AS player1_id,
-          p1.round_wins AS player1_score,
-          u1.username AS player1_name,
-          u1.profile_picture AS player1_avatar,
-          p2.user_id AS player2_id,
-          p2.round_wins AS player2_score,
-          u2.username AS player2_name,
-          u2.profile_picture AS player2_avatar
-       FROM arena_games ag
-       JOIN arena_players p1 ON ag.id=p1.arena_game_id AND p1.position=1
-       JOIN arena_players p2 ON ag.id=p2.arena_game_id AND p2.position=2
-       LEFT JOIN users u1 ON p1.user_id=u1.id
-       LEFT JOIN users u2 ON p2.user_id=u2.id
-       WHERE (p1.user_id=? OR p2.user_id=?)
-         AND ag.status='finished'
-       ORDER BY COALESCE(ag.ended_at, ag.created_at) DESC
-       LIMIT ?`,
-      [userId, userId, limit]
-    );
-  },
+  // async getRecentMatches(userId: number, limit = 10) {
+  //   return db.all(
+  //     `SELECT
+  //         ag.id AS game_id,
+  //         ag.winner_user_id,
+  //         ag.ended_at,
+  //         ag.created_at,
+  //         p1.user_id AS player1_id,
+  //         p1.round_wins AS player1_score,
+  //         u1.username AS player1_name,
+  //         u1.profile_picture AS player1_avatar,
+  //         p2.user_id AS player2_id,
+  //         p2.round_wins AS player2_score,
+  //         u2.username AS player2_name,
+  //         u2.profile_picture AS player2_avatar
+  //      FROM arena_games ag
+  //      JOIN arena_players p1 ON ag.id=p1.arena_game_id AND p1.position=1
+  //      JOIN arena_players p2 ON ag.id=p2.arena_game_id AND p2.position=2
+  //      LEFT JOIN users u1 ON p1.user_id=u1.id
+  //      LEFT JOIN users u2 ON p2.user_id=u2.id
+  //      WHERE (p1.user_id=? OR p2.user_id=?)
+  //        AND ag.status='finished'
+  //      ORDER BY COALESCE(ag.ended_at, ag.created_at) DESC
+  //      LIMIT ?`,
+  //     [userId, userId, limit]
+  //   );
+  // },
   
 
   async getMatchHistoryForUser(userId: number) {

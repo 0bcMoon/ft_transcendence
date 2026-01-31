@@ -16,10 +16,13 @@ export default function ArenaPlayPage() {
   const gameId = Number(gameIdParam);
   const nav = useNavigate();
 
-  const [connected, setConnected] = useState(false);
   const [joined, setJoined] = useState(false);
   const [myPos, setMyPos] = useState<number | null>(null);
   const [serverState, setServerState] = useState<ArenaState | null>(null);
+  const [names, setNames] = useState<{ p1: string; p2: string }>({
+    p1: "Player 1",
+    p2: "Player 2",
+  });
 
   // countdown UI
   const [countdown, setCountdown] = useState<number | null>(null); // 3..2..1..0->GO (we'll hide after)
@@ -165,7 +168,6 @@ export default function ArenaPlayPage() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setConnected(true);
       ws.send(JSON.stringify({ type: "arena:join", gameId }));
     };
 
@@ -186,14 +188,42 @@ export default function ArenaPlayPage() {
         console.error("Arena error:", msg.message);
       }
     };
-
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-
+    
     return () => {
       try { ws.close(); } catch {}
     };
   }, [wsUrl, gameId]);
+
+  useEffect(() => {
+      if (!gameId || Number.isNaN(gameId)) return;
+
+      let alive = true;
+
+      const pickName = (p: any) => p.username || p.display_name || (p.is_ai ? "AI" : "Unknown");
+
+      (async () => {
+        try {
+          const ps = await arenaApi.getGamePlayers(gameId);
+
+          const p1 = ps.find((p) => p.position === 1);
+          const p2 = ps.find((p) => p.position === 2);
+
+          if (!alive) return;
+
+          setNames({
+            p1: p1 ? pickName(p1) : "Player 1",
+            p2: p2 ? pickName(p2) : "Player 2",
+          });
+        } catch {
+          if (!alive) return;
+          setNames({ p1: "Player 1", p2: "Player 2" });
+        }
+      })();
+
+      return () => {
+        alive = false;
+      };
+    }, [gameId]);
 
   useEffect(() => {
     countdownStartedRef.current = false;
@@ -317,7 +347,7 @@ export default function ArenaPlayPage() {
         ctx.shadowBlur = 22;
 
         const g = ctx.createRadialGradient(tx, ty, 2, tx, ty, 22);
-        g.addColorStop(0, "rgba(250, 204, 21, 0.95)");
+        g.addColorStop(0, "rgba(250, 246, 21, 0.95)");
         g.addColorStop(0.55, "rgba(250, 204, 21, 0.22)");
         g.addColorStop(1, "rgba(250, 204, 21, 0.00)");
         ctx.fillStyle = g;
@@ -438,7 +468,7 @@ export default function ArenaPlayPage() {
   const hud = serverState ? (
     <div className="grid grid-cols-3 gap-3">
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-        <div className="text-xs text-slate-400">Player 1</div>
+        <div className="text-xs text-slate-400">{names.p1}</div>
         <div className="text-lg font-semibold">{p1?.roundsWon ?? 0}</div>
       </div>
 
@@ -449,7 +479,7 @@ export default function ArenaPlayPage() {
       </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-right">
-        <div className="text-xs text-slate-400">Player 2</div>
+        <div className="text-xs text-slate-400">{names.p2}</div>
         <div className="text-lg font-semibold">{p2?.roundsWon ?? 0}</div>
       </div>
     </div>
@@ -473,6 +503,7 @@ export default function ArenaPlayPage() {
     : isFinished
       ? `Score ${p1?.roundsWon ?? 0} - ${p2?.roundsWon ?? 0}`
       : "";
+
   useEffect(() => {
     return () => clearCountdown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,23 +513,12 @@ export default function ArenaPlayPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          {/* <div>
-            <h1 className="text-2xl font-bold">Arena</h1>
-            <div className="text-xs text-slate-400">
-              WS {connected ? "✅" : "❌"} • Joined {joined ? "✅" : "❌"} • You: {myPos ? `P${myPos}` : "-"} • Game {gameId}
-            </div>
-          </div> */}
-
           <div className="flex items-center gap-3">
-            {/* <div className="text-sm text-slate-300">
-              Move: <span className="font-mono">WASD</span> / <span className="font-mono">Arrows</span>
-            </div> */}
-
             <button
               onClick={leaveGame}
               className="rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold px-4 py-2"
             >
-              Leave
+              Leave Game
             </button>
           </div>
         </div>

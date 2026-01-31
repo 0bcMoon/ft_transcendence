@@ -1,4 +1,3 @@
-// frontend/src/arena/pages/ArenaSpectatePage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { arenaApi } from "../api/arenaApi";
@@ -11,21 +10,24 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
+
 export default function ArenaSpectatePage() {
   const { gameId: gameIdParam } = useParams();
+  const [names, setNames] = useState<{ p1: string; p2: string }>({
+    p1: "Player 1",
+    p2: "Player 2",
+  });
   const gameId = Number(gameIdParam);
   const nav = useNavigate();
 
-  const [connected, setConnected] = useState(false);
+  // const [connected, setConnected] = useState(false);
   const [serverState, setServerState] = useState<ArenaState | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
 
-  const renderPlayersRef = useRef<
-    Map<number, { x: number; y: number; roundsWon: number; position: number }>
-  >(new Map());
+  const renderPlayersRef = useRef<Map<number, { x: number; y: number; roundsWon: number; position: number }>> (new Map());
   const latestServerStateRef = useRef<ArenaState | null>(null);
 
   const wsUrl = useMemo(() => `${arenaApi.WS_BASE}/arena`, []);
@@ -37,7 +39,6 @@ export default function ArenaSpectatePage() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setConnected(true);
       ws.send(JSON.stringify({ type: "arena:join", gameId, spectate: true }));
     };
 
@@ -53,9 +54,10 @@ export default function ArenaSpectatePage() {
         console.error("Arena error:", msg.message);
       }
     };
-
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
+    
+    ws.onclose = (evt) => {
+      console.log("close the ")
+    }
 
     return () => {
       try {
@@ -63,6 +65,42 @@ export default function ArenaSpectatePage() {
       } catch {}
     };
   }, [wsUrl, gameId]);
+
+
+
+  useEffect(() => {
+    if (!gameId || Number.isNaN(gameId)) return;
+
+    let alive = true;
+
+    const pickName = (p: any) =>
+       p.username || p.display_name || (p.is_ai ? "AI" : "Unknown");
+
+    (async () => {
+      try {
+        const ps = await arenaApi.getGamePlayers(gameId);
+
+        const p1 = ps.find((p) => p.position === 1);
+        const p2 = ps.find((p) => p.position === 2);
+
+        if (!alive) return;
+
+        setNames({
+          p1: p1 ? pickName(p1) : "Player 1",
+          p2: p2 ? pickName(p2) : "Player 2",
+        });
+      } catch {
+        if (!alive) return;
+        setNames({ p1: "Player 1", p2: "Player 2" });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [gameId]);
+
+  
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -242,23 +280,17 @@ export default function ArenaSpectatePage() {
   const p1 = serverState?.players.find((p) => p.position === 1);
   const p2 = serverState?.players.find((p) => p.position === 2);
 
+  
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Arena</h1>
-            <div className="text-xs text-slate-400">
-              Spectating • WS {connected ? "✅" : "❌"} • Game {gameId}
-            </div>
-          </div>
-
           <button
             onClick={() => {
               try {
                 wsRef.current?.close();
               } catch {}
-              nav("/arena");
+              nav("/arena/matches");
             }}
             className="rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold px-4 py-2"
           >
@@ -269,7 +301,7 @@ export default function ArenaSpectatePage() {
         {serverState && (
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-              <div className="text-xs text-slate-400">Player 1</div>
+              <div className="text-xs text-slate-400">{names.p1}</div>
               <div className="text-lg font-semibold">{p1?.roundsWon ?? 0}</div>
             </div>
 
@@ -280,7 +312,7 @@ export default function ArenaSpectatePage() {
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-right">
-              <div className="text-xs text-slate-400">Player 2</div>
+              <div className="text-xs text-slate-400">{names.p2}</div>
               <div className="text-lg font-semibold">{p2?.roundsWon ?? 0}</div>
             </div>
           </div>

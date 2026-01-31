@@ -69,17 +69,18 @@ export default function ArenaHistoryPage() {
       try {
         setLoading(true);
         setErr(null);
-
         const [h, s] = await Promise.all([arenaApi.getMyHistory(), arenaApi.getMyStats()]);
-        if (!alive) return;
-
+        if (!alive)
+          return;
         setHistory(Array.isArray(h) ? h : []);
         setStats(s ?? null);
       } catch (e: any) {
-        if (!alive) return;
+        if (!alive)
+          return;
         setErr(e?.message || "Failed to load arena history");
       } finally {
-        if (!alive) return;
+        if (!alive)
+          return;
         setLoading(false);
       }
     })();

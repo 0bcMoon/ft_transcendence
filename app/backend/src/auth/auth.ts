@@ -295,6 +295,7 @@ const Auth = {
 
     login: async (req: FastifyRequest, reply: FastifyReply) => {
 
+        console.log("hello world!!!!!!!!!!!!!!!!!!")
         const { username, password } = req.body as LoginBody;
         if (!username || !password) {
             return reply.status(400).send({ message: 'Invalid username or password' });
