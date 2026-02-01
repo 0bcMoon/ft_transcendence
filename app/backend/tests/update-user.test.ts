@@ -22,11 +22,11 @@ describe('User API', () => {
         await app.close();
     });
 
-    describe('PATCH /user/update/info', () => {
+    describe('PATCH /api/user/update/info', () => {
         it('should update display_name successfully', async () => {
             const newDisplayName = 'New Name';
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     display_name: newDisplayName
@@ -38,7 +38,7 @@ describe('User API', () => {
         it('should update username successfully', async () => {
             const newUsername = `newuser_${randomBytes(4).toString('hex')}`;
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     username: newUsername
@@ -49,7 +49,7 @@ describe('User API', () => {
 
         it('should update password successfully', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     current_password: 'password',
@@ -62,7 +62,7 @@ describe('User API', () => {
         it('should update all user info successfully', async () => {
             const newUsername = `newuser_${randomBytes(4).toString('hex')}`;
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     display_name: 'Another Name',
@@ -78,7 +78,7 @@ describe('User API', () => {
         it('should not update with existing username', async () => {
             const existingUsername = 'jebli';
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     username: existingUsername
@@ -89,7 +89,7 @@ describe('User API', () => {
 
         it('should not update password with incorrect current_password', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     current_password: 'wrong_password',
@@ -101,7 +101,7 @@ describe('User API', () => {
 
         it('should not update with invalid new_password', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     current_password: 'password',
@@ -112,7 +112,7 @@ describe('User API', () => {
 
         it('should not update with current_password but no new_password', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     current_password: 'password'
@@ -122,7 +122,7 @@ describe('User API', () => {
 
         it('should not update with new_password but no current_password', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({
                     new_password: 'new_password_!@#123'
@@ -132,7 +132,7 @@ describe('User API', () => {
 
         it('should not update with no fields', async () => {
             const response = await supertest(app.server)
-                .patch('/user/update/info')
+                .patch('/api/user/update/info')
                 .set('Cookie', `access_token=${token}`)
                 .send({});
             expect(response.status).toBe(400);

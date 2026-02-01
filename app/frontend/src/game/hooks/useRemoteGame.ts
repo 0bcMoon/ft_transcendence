@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
@@ -6,14 +6,14 @@ import { useNavigate } from "react-router-dom";
 type KeysPressed = { up: boolean; down: boolean };
 
 export function useRemoteGame() {
-    const user = useAuthStore((state) => state.user);
+    const userId = useAuthStore((state) => state.user?.id);
     const navigate = useNavigate();
-
-    const { id: userId, username, profile_picture: avatar } = user ?? {};
 
     const wsRef = useRef<WebSocket | null>(null);
     const gameStateRef = useRef<GameState | null>(null);
     const keysPressed = useRef<KeysPressed>({ up: false, down: false });
+    const isGameOverRef = useRef(false);
+    const countdownRef = useRef<number | null>(null);
 
     const [side, setSide] = useState<Side | null>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
@@ -25,50 +25,36 @@ export function useRemoteGame() {
     const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
     const [waiting, setWaiting] = useState(true);
 
-    const isGameOverRef = useRef(isGameOver);
-    const countdownRef = useRef(countdown);
+    useEffect(() => {
+        isGameOverRef.current = isGameOver;
+        countdownRef.current = countdown;
+    }, [isGameOver, countdown]);
 
-    const setCountdownState = (value: number | null) => {
-        countdownRef.current = value;
-        setCountdown(value);
-    };
-
-    const setIsGameOverState = (value: boolean) => {
-        isGameOverRef.current = value;
-        setIsGameOver(value);
-    };
-
-    const resetGameState = useCallback(() => {
+    const resetGameState = () => {
         setSide(null);
         setPlayerNames(null);
         setPlayerAvatars(null);
-        setIsGameOverState(false);
+        setIsGameOver(false);
         setWinner(null);
         setFinalScore(null);
-        setCountdownState(null);
+        setCountdown(null);
         setScore({ left: 0, right: 0 });
         gameStateRef.current = null;
         keysPressed.current = { up: false, down: false };
         setWaiting(true);
-    }, []);
+    };
 
     useEffect(() => {
-        if (!userId || !username) {
-            return;
-        }
+        if (!userId) return;
 
-        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/game`);
-        wsRef.current = websocket;
+        const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/game`);
+        wsRef.current = ws;
 
-        websocket.onopen = () => {
-            websocket.send(
-                JSON.stringify({
-                    type: "joinGame", 
-                    mode: "remote", username: username, avatar: avatar, })
-            );
+        ws.onopen = () => {
+            ws.send(JSON.stringify({ type: "remote" }));
         };
 
-        websocket.onmessage = ({ data }) => {
+        ws.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
@@ -77,8 +63,8 @@ export function useRemoteGame() {
                     setSide(msg.side);
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
-                    setCountdownState(3);
-                    setIsGameOverState(false);
+                    setCountdown(3);
+                    setIsGameOver(false);
                     setWinner(null);
                     setFinalScore(null);
                     setScore({ left: 0, right: 0 });
@@ -87,105 +73,94 @@ export function useRemoteGame() {
                 case "state":
                     if (!isGameOverRef.current) {
                         gameStateRef.current = msg.state;
-                        if (msg.state?.score) {
-                            setScore({ ...msg.state.score });
-                        }
+                        if (msg.state?.score) setScore(msg.state.score);
                     }
                     break;
 
                 case "gameOver":
-                    setIsGameOverState(true);
+                    setIsGameOver(true);
                     setWinner(msg.winner);
                     setFinalScore(msg.score);
-                    setCountdownState(null);
+                    setCountdown(null);
                     break;
 
                 case "leaveGame":
-                    console.log("Opponent left. Resetting game.");
                     resetGameState();
                     break;
             }
         };
 
-        websocket.onclose = () => {
-            console.log("WebSocket disconnected.");
-            wsRef.current = null;
-        };
+        ws.onclose = () => wsRef.current = null;
 
         return () => {
-            websocket.close();
+            ws.close();
             wsRef.current = null;
         };
-    }, [userId, username, avatar, resetGameState]);
+    }, [userId]);
 
     useEffect(() => {
-        if (countdown === null) return;
+        if (countdown === null)
+            return;
 
         if (countdown === 0) {
             wsRef.current?.send(JSON.stringify({ type: "ready" }));
-            setCountdownState(null);
+            setCountdown(null);
             return;
         }
 
-        const timer = setTimeout(() => {
-            setCountdownState(countdown ? countdown - 1 : 0);
-        }, 1000);
-
+        const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
         return () => clearTimeout(timer);
     }, [countdown]);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)
-                return;
-            if (!side || countdownRef.current !== null || isGameOverRef.current)
-                return;
+        if (!side) return;
 
-            wsRef.current.send(JSON.stringify({
+        const interval = setInterval(() => {
+            if (countdownRef.current !== null || isGameOverRef.current) return;
+            
+            wsRef.current?.send(JSON.stringify({
                 type: "move",
                 up: keysPressed.current.up,
                 down: keysPressed.current.down
             }));
-        }, 16); // ~60fps
+        }, 16);
 
         return () => clearInterval(interval);
     }, [side]);
 
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, pressed: boolean) => {
-            if (e.key === "ArrowUp" || e.key === "w") {
+            const key = e.key.toLowerCase();
+
+            if (key === "arrowup" || key === "w") {
                 e.preventDefault();
                 keysPressed.current.up = pressed;
-            }
-            if (e.key === "ArrowDown" || e.key === "s") {
+            } else if (key === "arrowdown" || key === "s") {
                 e.preventDefault();
                 keysPressed.current.down = pressed;
-            }
-            if (pressed && e.key === "Enter" && isGameOverRef.current) {
+            } else if (pressed && key === "enter" && isGameOverRef.current) {
                 e.preventDefault();
                 wsRef.current?.send(JSON.stringify({ type: "playAgain", mode: "remote" }));
                 resetGameState();
-            }
-
-            if (pressed && e.key === "Escape") {
+            } else if (pressed && key === "escape") {
                 e.preventDefault();
                 wsRef.current?.send(JSON.stringify({ type: "leaveGame" }));
-                wsRef.current?.close();
                 navigate("/game");
             }
-
         };
 
-        const down = (e: KeyboardEvent) => handleKey(e, true);
-        const up = (e: KeyboardEvent) => handleKey(e, false);
+        const onKeyDown = (e: KeyboardEvent) => handleKey(e, true);
+        const onKeyUp = (e: KeyboardEvent) => handleKey(e, false);
 
-        window.addEventListener("keydown", down);
-        window.addEventListener("keyup", up);
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+
         return () => {
-            window.removeEventListener("keydown", down);
-            window.removeEventListener("keyup", up);
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
         };
-    });
+    }, [navigate]);
+
     return {
         gameStateRef,
         side,

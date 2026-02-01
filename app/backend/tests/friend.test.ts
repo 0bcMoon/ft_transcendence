@@ -1,6 +1,14 @@
 import app from '../src/app';
 import supertest from 'supertest';
 
+// should delete (cancal) a friend request (7 ms)
+//     ✓ should return 404 when trying to delete a non-existent request (17 ms)
+//   Friend Requests API - Accepting Requests
+//     ✕ should send a friend request to users  (110 ms)
+//     ✕ should return a list of pending request (2 ms)
+//     ✕ should allow a user to accept a friend request (3 ms)
+//     ✓ should send a friend request to users  (116 ms)
+//     ✕ should allow a user to deny a friend request (3 ms)
 
 // TODO: add tests for friend requests, if request from both side
 
@@ -22,7 +30,7 @@ describe('GET /users', () => {
 
     it('should return a list of friend with a valid token in a cookie', async () => {
         const response = await supertest(app.server)
-            .get('/user/friends')
+            .get('/api/user/friends')
             .set('Cookie', `access_token=${token}`);
         expect(response.status).toBe(200);
         expect(response.body).toBeDefined();
@@ -48,7 +56,7 @@ describe('Friend Requests API', () => {
 
     it(`should send a friend request to users `, async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: otherUser.id, type: 'friend' });
 
@@ -57,7 +65,7 @@ describe('Friend Requests API', () => {
 
     it('relations status should be friend', async () => {
         const response = await supertest(app.server)
-            .get(`/user/${friend.id}`)
+            .get(`/api/user/${friend.id}`)
             .set('Cookie', `access_token=${token}`)
 
         expect(response.status).toBe(200);
@@ -67,7 +75,7 @@ describe('Friend Requests API', () => {
 
     it('relations status should be pending', async () => {
         const response = await supertest(app.server)
-            .get(`/user/${otherUser.id}`)
+            .get(`/api/user/${otherUser.id}`)
             .set('Cookie', `access_token=${token}`)
 
         expect(response.status).toBe(200);
@@ -77,7 +85,7 @@ describe('Friend Requests API', () => {
 
     it('should not allow a user to send a friend request to themselves', async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: testUser.id, type: 'friend' });
 
@@ -88,7 +96,7 @@ describe('Friend Requests API', () => {
 
     it('should not allow a user to send a friend request to existing friend', async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: friend.id, type: 'friend' });
 
@@ -99,7 +107,7 @@ describe('Friend Requests API', () => {
 
     it('should not allow a user to send a friend request to blocked users', async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: blocked.id, type: 'friend' });
 
@@ -110,7 +118,7 @@ describe('Friend Requests API', () => {
 
     it('should not allow a user to send a friend request to non existing user', async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: 9999, type: 'friend' });
 
@@ -121,7 +129,7 @@ describe('Friend Requests API', () => {
 
     it('should not allow to delete a non existing request', async () => {
         const response = await supertest(app.server)
-            .delete('/user/requests/9999') // Assuming 9999 is a non-existent request ID
+            .delete('/api/user/requests/9999') // Assuming 9999 is a non-existent request ID
             .set('Cookie', `access_token=${token}`);
 
         expect(response.status).toBe(404);
@@ -132,7 +140,7 @@ describe('Friend Requests API', () => {
 
         // Step 2: Get the list of sent requests to find the request ID.
         const getRequestsResponse = await supertest(app.server)
-            .get('/user/requests')
+            .get('/api/user/requests')
             .query({ type: 'friend' })
             .set('Cookie', `access_token=${token}`);
 
@@ -147,7 +155,7 @@ describe('Friend Requests API', () => {
 
         // Step 3: Delete the request.
         const deleteResponse = await supertest(app.server)
-            .delete(`/user/requests/${req_id}`)
+            .delete(`/api/user/requests/${req_id}`)
             .set('Cookie', `access_token=${token}`);
 
         expect(deleteResponse.status).toBe(200);
@@ -157,7 +165,7 @@ describe('Friend Requests API', () => {
 
     it('should return 404 when trying to delete a non-existent request', async () => {
         const response = await supertest(app.server)
-            .delete('/user/requests/9999') // Assuming 9999 is a non-existent request ID
+            .delete('/api/user/requests/9999') // Assuming 9999 is a non-existent request ID
             .set('Cookie', `access_token=${token}`);
         expect(response.status).toBe(404);
         expect(response.body).toEqual({ message: 'no friends request found' });
@@ -197,7 +205,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
     it(`should send a friend request to users `, async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: accepteUser.id, type: 'friend' });
 
@@ -207,7 +215,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
     it('should return a list of pending request', async () => {
         const response = await supertest(app.server)
-            .get('/user/requests')
+            .get('/api/user/requests')
             .query({ type: 'friend' })
             .set('Cookie', `access_token=${token}`);
         expect(response.status).toBe(200);
@@ -224,7 +232,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
         // get Users 1 (hicham) requests for list
         const response = await supertest(app.server)
-            .get('/user/requests')
+            .get('/api/user/requests')
             .query({ type: 'friend' })
             .set('Cookie', `access_token=${accepteToken}`);
 
@@ -243,14 +251,14 @@ describe('Friend Requests API - Accepting Requests', () => {
 
         // User 2 (user12) accepts the request
         const acceptResponse = await supertest(app.server)
-            .patch('/user/requests')
+            .patch('/api/user/requests')
             .set('Cookie', `access_token=${accepteToken}`) // token for user 2
             .send({ req_id: req_id, user_id: testUser.id, type: 'friend', action: true });
         expect(acceptResponse.status).toBe(200);
         expect(acceptResponse.body).toEqual({ message: 'friends request has been accepted' });
         // Check if the relation status is now 'friend'
         const checkResponse = await supertest(app.server)
-            .get(`/user/${testUser.id}`)
+            .get(`/api/user/${testUser.id}`)
             .set('Cookie', `access_token=${accepteToken}`);
         expect(checkResponse.status).toBe(200);
         expect(checkResponse.body.relation_status).toEqual('friend');
@@ -259,7 +267,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
     it(`should send a friend request to users `, async () => {
         const response = await supertest(app.server)
-            .post('/user/requests')
+            .post('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ user_id: denyUser.id, type: 'friend' });
 
@@ -270,7 +278,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
         // get Users 1 (hicham) requests fro list
         const response = await supertest(app.server)
-            .get('/user/requests')
+            .get('/api/user/requests')
             .query({ type: 'friend' })
             .set('Cookie', `access_token=${token}`);
 
@@ -289,7 +297,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
         // User 3 (user13) deny the request
         const denyResponse = await supertest(app.server)
-            .patch('/user/requests')
+            .patch('/api/user/requests')
             .set('Cookie', `access_token=${denyToken}`) // token for user 2
             .send({ req_id: req_id, user_id: request.id, type: 'friend', action: false });
 
@@ -297,7 +305,7 @@ describe('Friend Requests API - Accepting Requests', () => {
         expect(denyResponse.body).toEqual({ message: 'friends request has been deleted' });
         // Check if the relation status is now 'none'
         const checkResponse = await supertest(app.server)
-            .get(`/user/${testUser.id}`)
+            .get(`/api/user/${testUser.id}`)
             .set('Cookie', `access_token=${denyToken}`);
         expect(checkResponse.status).toBe(200);
         expect(checkResponse.body.relation_status).toEqual('none');
@@ -305,7 +313,7 @@ describe('Friend Requests API - Accepting Requests', () => {
 
     it('should return 404 when trying to accept a non-existent request', async () => {
         const response = await supertest(app.server)
-            .patch('/user/requests')
+            .patch('/api/user/requests')
             .set('Cookie', `access_token=${token}`)
             .send({ req_id: 9999, user_id: 2, type: 'friend', action: true });
         expect(response.status).toBe(404);

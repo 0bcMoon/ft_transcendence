@@ -21,7 +21,7 @@ describe('Auth API - Register', () => {
         it('should fail if username is missing', async () => {
             const { display_name, password, email } = generateRandomUser();
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send({ display_name, password, email });
 
             expect(response.status).toBe(400);
@@ -31,7 +31,7 @@ describe('Auth API - Register', () => {
         it('should fail if display_name is missing', async () => {
             const { username, password, email } = generateRandomUser();
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send({ username, password, email });
 
             expect(response.status).toBe(400);
@@ -41,7 +41,7 @@ describe('Auth API - Register', () => {
         it('should fail if password is missing', async () => {
             const { username, display_name, email } = generateRandomUser();
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send({ username, display_name, email });
 
             expect(response.status).toBe(400);
@@ -51,7 +51,7 @@ describe('Auth API - Register', () => {
         it('should fail if email is missing', async () => {
             const { username, display_name, password } = generateRandomUser();
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send({ username, display_name, password });
 
             expect(response.status).toBe(400);
@@ -63,7 +63,7 @@ describe('Auth API - Register', () => {
         it('should fail if username is too short', async () => {
             const newUser = { ...generateRandomUser(), username: 'a' };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -73,7 +73,7 @@ describe('Auth API - Register', () => {
         it('should fail if username is too long', async () => {
             const newUser = { ...generateRandomUser(), username: 'a'.repeat(21) };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -83,7 +83,7 @@ describe('Auth API - Register', () => {
         it('should fail if display_name is too short', async () => {
             const newUser = { ...generateRandomUser(), display_name: 'a' };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -93,7 +93,7 @@ describe('Auth API - Register', () => {
         it('should fail if display_name is too long', async () => {
             const newUser = { ...generateRandomUser(), display_name: 'a'.repeat(31) };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -103,7 +103,7 @@ describe('Auth API - Register', () => {
         it('should fail if password is too short', async () => {
             const newUser = { ...generateRandomUser(), password: 'a' };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -113,7 +113,7 @@ describe('Auth API - Register', () => {
         it('should fail if password is too long', async () => {
             const newUser = { ...generateRandomUser(), password: 'a'.repeat(33) };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -123,7 +123,7 @@ describe('Auth API - Register', () => {
         it('should fail if email is invalid', async () => {
             const newUser = { ...generateRandomUser(), email: 'invalid-email' };
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send(newUser);
 
             expect(response.status).toBe(400);
@@ -132,7 +132,7 @@ describe('Auth API - Register', () => {
 
         it('should reject on empty body', async () => {
             const response = await supertest(app.server)
-                .post('/auth/register')
+                .post('/api/auth/register')
                 .send();
 
             expect(response.status).toBe(400);

@@ -51,10 +51,10 @@ export default function GameModesPage() {
                             colorClass="cyan"
                         />
                         <GameModeCard
-                            to="/game/seconde-game"
+                            to="/arena"
                             icon={<X size={24} />}
-                            title="TIC-TAC-TOE"
-                            description="TODO: zakaria 9adlina l game asa7bi"
+                            title="Arena"
+                            description="Hahia a kha Mohamed"
                             colorClass="purple"
                         />
                     </div>

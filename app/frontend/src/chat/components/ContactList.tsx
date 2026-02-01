@@ -27,7 +27,7 @@ export function ContactList({ chats, onChatSelect }: ContactListProps) {
                     <div className="relative cursor-pointer" onClick={(e) => e.stopPropagation()}>
                         <img
                             src={chat.profile_picture || "/placeholder.svg"}
-                            alt={chat.display_name}
+                            alt={"img"}
                             className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-700 hover:ring-blue-500 transition-all duration-200"
                         />
                         {!(chat.relation_status === "blocking" || chat.relation_status === "blocked_by") && (

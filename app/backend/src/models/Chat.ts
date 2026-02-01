@@ -3,6 +3,7 @@ import chatRepository, { Contacts } from "../repository/chatRepository";
 import { isOnline, subscribe } from "../notifications";
 
 const Chat = {
+
     getContact: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.query as { id: number };
 

@@ -11,6 +11,11 @@ import crypto from 'node:crypto';
 import { sendEmail } from "../email-service";
 import { isOnline } from "../notifications";
 import { subscribe } from "../notifications";
+import fastify from "../app";
+import {
+    notifyFriendRequest,
+    acceptFriendRequest
+} from "../notification.service";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -50,6 +55,7 @@ function generateUUIDPassword() {
 interface OTPMap {
     email: string;
     code: string;
+    timeout: NodeJS.Timeout;
 }
 
 
@@ -58,7 +64,7 @@ function generateOTP(length = 8) {
     return otp;
 }
 
-const OneTimePass = new Map<number, OTPMap>();
+const oneTimePass = new Map<number, OTPMap>();
 
 const User = {
 
@@ -137,6 +143,7 @@ const User = {
         if (!result) {
             return reply.status(400).send({ message: "friend request already exists" });
         }
+        notifyFriendRequest(req.user.id, user_id);
 
         return reply.status(200).send({ message: 'friend request sent' });
     },
@@ -225,6 +232,7 @@ const User = {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
                 await userRepository.createContactIfNotExist(req.user.id, user_id);
+                acceptFriendRequest(req.user.id, user_id);
                 return reply.status(200).send({ message: 'friends request has been accepted' });
             case false:
                 const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
@@ -328,7 +336,9 @@ const User = {
 
 
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
+
         const data = await req.file();
+
         if (!data) {
             return reply.status(400).send({ message: 'No file uploaded' });
         }
@@ -336,22 +346,22 @@ const User = {
         const uniqueFilename = `${randomUUID()}${extension}`;
 
         // Define the path where the file will be saved
-        const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+        const uploadDir = path.join(process.cwd(), "/public/uploads");
         const filePath = path.join(uploadDir, uniqueFilename);
-        // console.log(uploadDir, filePath)
-
 
         await pipeline(data.file, createWriteStream(filePath));
+
         const result = await userRepository.updateProfilePicture(req.user.id, uniqueFilename);
-        if (result === undefined) {
-            await fs.unlink(filePath); // Clean up the file if the update fails
-            return reply.status(400).send({ message: 'Failed to update profile image' });
-        }
+        // if (result === undefined) {
+        //     await fs.unlink(filePath); // Clean up the file if the update fails
+        //     return reply.status(400).send({ message: 'Failed to update profile image' });
+        // }
+
         if (result && result !== "default.jpg") {
             try {
-                await fs.unlink(path.join(process.cwd(), process.env.UPLOAD_DIR!, result));
+                await fs.unlink(path.join(process.cwd(), "/public/uploaded", result));
             } catch (error) {
-                console.error('Error deleting old profile image:', error);
+                fastify.log.error(`Failed to delete old profile image: ${error}`);
             }
         }
         reply.send({ message: 'Profile image Updated successfully' });
@@ -364,7 +374,6 @@ const User = {
         }
 
         user.profile_picture = user.image_src + user.profile_picture;
-
         return reply.status(200).send({
             id: user.id,
             display_name: user.display_name,
@@ -442,12 +451,13 @@ const User = {
     },
 
     confirmtion_code_match: (id: number, email: string, confirmtion_code: string): boolean => {
-        const otp = OneTimePass.get(id);
+        const otp = oneTimePass.get(id);
         if (!otp) {
             return false;
         }
         if (otp.email === email && otp.code === confirmtion_code) {
-            OneTimePass.delete(id);
+            clearTimeout(otp.timeout);
+            oneTimePass.delete(id);
             return true;
         }
         return false;
@@ -463,9 +473,22 @@ const User = {
         console.log(`Sending email to ${email} with code: ${code}`);
         console.log(`-------------------------------`);
 
-        OneTimePass.set(id, {
+
+        if (oneTimePass.has(id)) {
+            const existingOTP = oneTimePass.get(id);
+            if (existingOTP) {
+                clearTimeout(existingOTP.timeout);
+            }
+        }
+
+        const timeout = setTimeout(() => {
+            oneTimePass.delete(id);
+        }, 10 * 60 * 1000); // 10 minutes
+
+        oneTimePass.set(id, {
             email: email,
-            code: code
+            code: code,
+            timeout: timeout
         });
 
 

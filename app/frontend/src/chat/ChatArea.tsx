@@ -126,7 +126,7 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
                 return newContacts
             })
         }
-    }, [active_chat, ws, queryClient])
+    }, [active_chat, ws.current, queryClient])
 
     if (!active_chat) {
         return <StartChatPlaceholder onSidebarToggle={onSidebarToggle} />

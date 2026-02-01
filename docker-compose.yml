@@ -1,52 +1,133 @@
 services:
-  # app:
-  #   build: ./app
-  #   container_name: app
-  #   volumes:
-  #     - frontend:/app/frontend
-  #     - backend:/app/backend
-  #   env_file:
-  #     - .env
-  #   networks:
-  #     - pingpong
-
-  #
-  # nginx:
-  #   container_name: nginx
-  #   depends_on:
-  #     - app
-  #   build: ./nginx
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - frontend:/var/www/html
-  #   env_file:
-  #     - .env
-  #   networks:
-  #     - pingpong
-
-  redis:
-    container_name: redis
-    build: ./redis
-    ports:
-      - "9090:6379"
+  backend:
+    build: ./app/backend
+    container_name: backend
     env_file:
       - .env
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "udp://localhost:12201"
+        tag: "backend"
+    networks:
+      - pingpong
+    volumes:
+      - ./database:/app/sqliteDB
+      - images:/app/public/uploads
+    depends_on:
+      logstash:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    container_name: nginx
+    volumes:
+      - images:/var/www/uploads
+      - ./nginx/ssl:/etc/nginx/ssl
+    ports:
+      - "8080:443"
+    networks:
+      - pingpong
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  es-init:
+    build: ./elk-stack/es-init
+    container_name: es-init
+    env_file:
+      - .env
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pingpong
+    restart: "no"
+
+  logstash:
+    build: ./elk-stack/logstash
+    container_name: logstash
+    ports:
+      - "12201:12201/udp"
+      - "5044:5044"
+      - "9600:9600"
+    networks:
+      - pingpong
+    env_file:
+      - .env
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  elasticsearch:
+    build: ./elk-stack/elasticsearch
+    container_name: elasticsearch
+    env_file:
+      - .env
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "xpack.security.enabled=true"
+    networks:
+      - pingpong
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  kibana:
+    build: ./elk-stack/kibana
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    env_file:
+      - .env
+    networks:
+      - pingpong
+    depends_on:
+      es-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
-  backend:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${PWD}/app/backend
 
-  frontend:
+  elasticsearch-data: 
+
+  images:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/app/frontend
+      device: ${PWD}/images
+  database:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/database
 
 networks:
   pingpong:

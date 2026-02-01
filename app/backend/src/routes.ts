@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import User from './models/User';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo as updateUserSchema, updateEmailSchema, updateUserInfo } from './schema/zod-schema';
+import { requestHandlerBody, blockUserBody, createRequestBody, updateUserInfo as updateUserSchema, updateEmailSchema, updateUserInfo } from './schema/user.schema';
 
 const routes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> => {
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();

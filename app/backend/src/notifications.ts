@@ -1,44 +1,35 @@
 import { FastifyInstance } from "fastify";
+import { Notification } from "./repository/notificationsRepository";
 import WebSocket from "ws";
-
 import fastify from "./app";
 
 type NotificationType =
-    | 'notify'
-    | 'subscribe'
-    | 'unsubscribe'
-    | 'message'
-    | 'friend_request'
-    | 'friend_accept'
-    | 'game_invite'
-    | 'tournament_started'
-    | 'tournament_full'
-    | 'match_ready'
-    | 'tournament_finished';
+    | 'user_status'        
+    | 'subscribe'          
+    | 'unsubscribe'        
+    | 'message'            
+    | 'notification';      
 
 export interface IEvent {
     type: NotificationType;
+    userId?: number;
     status?: 'online' | 'offline';
-    id?: number;
-    subscribers?: number[];
-    tournament?: {
-        id: number;
-        name: string;
-    };
-    match?: {
-        id: number;
-        round: number;
-        matchNumber: number;
-    };
-    champion?: {
-        id: number;
+    notification?: Notification;
+    sender?: {
         username: string;
+        profile_picture: string;
     };
+    message?: {
+        username: string;
+        content: string;
+        profile_picture: string;
+    };
+    subscribers?: number[];
 }
 
 const online = new Map<number, WebSocket>();
 
-const subscribers = new Map<number, Set<number>>(); // userId -> Set of subscriberIds
+const subscribers = new Map<number, Set<number>>();
 
 export function isOnline(userId: number) {
     return online.has(userId);
@@ -78,13 +69,11 @@ export function notifyUser(userId: number, event: IEvent) {
         fastify.log.warn(`User ${userId} socket not OPEN (state: ${connection.readyState})`);
         return;
     }
-
     connection.send(JSON.stringify(event));
     fastify.log.info(`Sent ${event.type} to user ${userId}`);
 }
 
 
-// Send notification to multiple users
 export function notifyUsers(userIds: number[], event: IEvent) {
     userIds.forEach(userId => {
         notifyUser(userId, event);
@@ -92,17 +81,6 @@ export function notifyUsers(userIds: number[], event: IEvent) {
     fastify.log.info(`Broadcast ${event.type} to ${userIds.length} users`);
 }
 
-// Send notification to all online users
-export function broadcastToAll(event: IEvent) {
-    let sentCount = 0;
-    online.forEach((socket, userId) => {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(event));
-            sentCount++;
-        }
-    });
-    fastify.log.info(`Broadcast ${event.type} to ${sentCount} online users`);
-}
 
 export default async function(fastify: FastifyInstance) {
     fastify.get('/notify', { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
@@ -135,4 +113,3 @@ export default async function(fastify: FastifyInstance) {
 
     });
 };
-

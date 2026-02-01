@@ -1,7 +1,6 @@
-// components/CreateTournamentModal. tsx
 import { useState } from "react";
 import { X, Trophy, Loader2 } from "lucide-react";
-import { useCreateTournament } from "../hooks/mutations/useTournamentMutations";
+import { useCreateTournament } from "../hooks/mutations";
 
 interface CreateTournamentModalProps {
     onClose: () => void;
@@ -10,131 +9,84 @@ interface CreateTournamentModalProps {
 
 export function CreateTournamentModal({ onClose, onSuccess }: CreateTournamentModalProps) {
     const [name, setName] = useState("");
-    const [maxPlayers, setMaxPlayers] = useState(8);
+    const [maxPlayers, setMaxPlayers] = useState(4);
+    const [startTime, setStartTime] = useState<string>(
+        new Date().toISOString().slice(0, 16) // default to current datetime for input
+    );
     const [error, setError] = useState("");
 
     const { mutate: createTournament, isPending } = useCreateTournament();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
-
-        // Validate name
         const trimmedName = name.trim();
-        if (!trimmedName) {
-            setError("Tournament name is required");
-            return;
-        }
-        if (trimmedName.length < 3) {
-            setError("Name must be at least 3 characters");
-            return;
-        }
-        if (trimmedName.length > 64) {
-            setError("Name must be less than 64 characters");
-            return;
-        }
+        if (!trimmedName) return setError("Tournament name is required");
+        if (trimmedName.length < 3) return setError("Name must be at least 3 characters");
+        if (trimmedName.length > 64) return setError("Name must be less than 64 characters");
+        if (!startTime) return setError("Start time is required");
 
-        // Create tournament
+        setError("");
         createTournament(
+            { name: trimmedName, maxPlayers, startTime },
             {
-                name: trimmedName,
-                maxPlayers
-            },
-            {
-                onSuccess: (tournament) => {
-                    console.log('Tournament created:', tournament);
-                    onSuccess?.();
-                    onClose();
-                },
-                onError: (err: any) => {
-                    // Handle validation errors from backend
-                    if (err.response?.data?.details) {
-                        const details = err.response.data.details;
-                        if (Array.isArray(details)) {
-                            setError(details.map((d: any) => d.message).join(', '));
-                        } else {
-                            setError(details);
-                        }
-                    } else {
-                        setError(err.response?.data?.error || err.message || "Failed to create tournament");
-                    }
-                }
+                onSuccess: () => { onSuccess?.(); onClose(); },
+                onError: (err: any) => setError(err.response?.data?.error || err.message || "Failed to create tournament")
             }
         );
     };
 
     return (
         <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
-
+            <div className="bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-white">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                            <Trophy size={20} className="text-gray-600 dark:text-gray-400" />
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <Trophy className="w-6 h-6 text-gray-900" />
                         </div>
-                        {/* <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create Tournament</h2> */}
+                        <h2 className="text-xl sm:text-2xl font-bold">Create Tournament</h2>
                     </div>
-                    <button
-                        onClick={onClose}
-                        disabled={isPending}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={onClose} disabled={isPending} className="text-gray-400 hover:text-white">
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {error && (
-                        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
-                            {error}
-                        </div>
-                    )}
+                {/* Error */}
+                {error && (
+                    <div className="text-red-400 bg-red-900/20 p-3 rounded-lg mb-4 text-sm text-center">
+                        {error}
+                    </div>
+                )}
 
+                {/* Form */}
+                <form className="space-y-4" onSubmit={handleSubmit}>
                     {/* Tournament Name */}
                     <div>
-                        <label htmlFor="name" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                            Tournament Name
-                        </label>
+                        <label className="block mb-1 text-sm font-semibold">Tournament Name</label>
                         <input
-                            id="name"
                             type="text"
                             value={name}
-                            onChange={(e) => {
-                                setName(e.target.value);
-                                setError("");
-                            }}
+                            onChange={(e) => setName(e.target.value)}
                             placeholder="Enter tournament name"
                             maxLength={64}
                             disabled={isPending}
-                            className="w-full px-4 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white 
-                                     border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500 
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all
-                                     disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
                             autoFocus
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {name.length}/64 characters
-                        </p>
+                        <p className="text-xs text-gray-400 mt-1">{name.length}/64</p>
                     </div>
 
                     {/* Max Players */}
                     <div>
-                        <label htmlFor="maxPlayers" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                            Number of Players
-                        </label>
+                        <label className="block mb-1 text-sm font-semibold">Number of Players</label>
                         <select
-                            id="maxPlayers"
                             value={maxPlayers}
                             onChange={(e) => setMaxPlayers(Number(e.target.value))}
                             disabled={isPending}
-                            className="w-full px-4 py-2.5 border rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white 
-                                     border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all
-                                     disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value={4}>4 Players</option>
                             <option value={8}>8 Players</option>
@@ -142,32 +94,34 @@ export function CreateTournamentModal({ onClose, onSuccess }: CreateTournamentMo
                         </select>
                     </div>
 
+                    {/* Start Time */}
+                    <div>
+                        <label className="block mb-1 text-sm font-semibold">Start Time</label>
+                        <input
+                            type="datetime-local"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            disabled={isPending}
+                            className="w-full px-4 py-2.5 rounded-lg bg-gray-800 border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                        />
+                    </div>
+
                     {/* Buttons */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={isPending}
-                            className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 
-                                     font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed
-                                     transition-colors"
+                            className="flex-1 py-2.5 rounded-lg border border-gray-700 hover:bg-gray-800 transition"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            disabled={isPending || !name.trim()}
-                            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white 
-                                     font-medium py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            disabled={isPending || !name.trim() || !startTime}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition"
                         >
-                            {isPending ? (
-                                <>
-                                    <Loader2 size={18} className="animate-spin" />
-                                    Creating...
-                                </>
-                            ) : (
-                                "Create"
-                            )}
+                            {isPending ? <Loader2 className="animate-spin w-4 h-4" /> : "Create"}
                         </button>
                     </div>
                 </form>
@@ -175,3 +129,4 @@ export function CreateTournamentModal({ onClose, onSuccess }: CreateTournamentMo
         </div>
     );
 }
+

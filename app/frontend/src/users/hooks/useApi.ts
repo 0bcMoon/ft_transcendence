@@ -1,10 +1,10 @@
-import api from "@/api/api"
+import api, { login_api } from "@/api/api"
 import { useQuery } from "@tanstack/react-query"
 import type { Request } from "../types/User"
 import type { RemoteUser } from "@/types/types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
-import { IFormData } from "@/zod/zod-schema";
+import { IFormData } from "@/zod/user.schema";
 
 interface IUpdateState {
     type: "error" | "success"
@@ -291,8 +291,8 @@ export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePictur
 
 export const useLogin = () => {
     return useMutation({
-        mutationFn: async (data: { username: string; password: string }) => {
-            const response = await api.post("/api/auth/login", data)
+        mutationFn: async (data: { identifier: string; password: string }) => {
+            const response = await login_api.post("/api/auth/login", data)
             return response.data
         },
     })

@@ -63,7 +63,7 @@ db.serialize(async () => {
             username,
             displayName,
             await bcrypt.hash('password', salt),
-            'http://localhost:3000/public/',
+            '/public/',
             'default.jpg',
             email
         );
@@ -75,7 +75,7 @@ db.serialize(async () => {
             faker.internet.username(),
             faker.person.fullName(),
             await bcrypt.hash(faker.internet.password(), salt),
-            'http://localhost:3000/public/',
+            '/public/',
             'default.jpg',
             faker.internet.email()
         );

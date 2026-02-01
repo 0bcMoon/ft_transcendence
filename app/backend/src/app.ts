@@ -4,10 +4,12 @@ import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import websocket from "@fastify/websocket";
 import chatSocket from "./websocket";
 import gameSocket from "./gameSocket";
+import metricsPlugin from 'fastify-metrics';
 
 import routes from "./routes";
 import auth from "./auth.routes";
-import game from "./game.routes";
+import PingPongRoutes from "./routes/pingpong.routes";
+import NotificationsRoutes from "./routes/notifications.routes";
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
@@ -20,8 +22,11 @@ import path from 'path';
 import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 import chatRoute from "./chat.routes";
 import notifications from "./notifications";
-
-export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+import arenaRoutes from "./arena/arenaRoutes";
+import arenaSocket from "./arena/arenaSocket";
+import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
+import arenaStatsRoutes from "./arena/stats/arenaStats.routes";
+import env from "./env";
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -46,32 +51,27 @@ declare module "fastify" {
 
 const fastify = Fastify({
     logger:
-        process.env.NODE_ENV === "test"
-            ? false
-            : {
-                level: "debug",
-                transport: {
-                    target: "pino-pretty",
-                    options: {
-                        colorize: true,
-                        translateTime: "SYS:standard",
-                        // ignore: "pid,hostname,remoteAddress,remotePort",
-                        ignore: "pid,hostname,remoteAddress,remotePort,req,res,responseTime",
-                    },
-                },
+    {
+        level: "debug",
+        transport: {
+            target: "pino-pretty",
+            options: {
+                colorize: true,
+                translateTime: "SYS:standard",
             },
+        },
+    },
 }).withTypeProvider<ZodTypeProvider>();
 
 fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
 
-fastify.register(cookie, {
-    secret: process.env.JWT_SECRET!,
-    parseOptions: {},
-});
+fastify.register(metricsPlugin, { endpoint: '/metrics' });
+
+fastify.register(cookie);
 
 fastify.register(jwt, {
-    secret: process.env.JWT_SECRET!,
+    secret: env.JWT_SECRET,
     cookie: {
         cookieName: "access_token",
         signed: false,
@@ -82,8 +82,8 @@ fastify.register(oauthPlugin, {
     name: "intra42OAuth2",
     credentials: {
         client: {
-            id: process.env.INTRA_CLIENT_ID!,
-            secret: process.env.INTRA_CLIENT_SECRET!,
+            id: env.INTRA_CLIENT_ID,
+            secret: env.INTRA_CLIENT_SECRET,
         },
         auth: {
             authorizeHost: "https://api.intra.42.fr",
@@ -92,8 +92,8 @@ fastify.register(oauthPlugin, {
             tokenPath: "/oauth/token",
         },
     },
-    startRedirectPath: "/auth/oauth/42",
-    callbackUri: "http://localhost:3000/auth/oauth/42/callback",
+    startRedirectPath: "/api/auth/oauth/42",
+    callbackUri: env.INTRA_REDIRECT_URI,
     scope: ["public"],
 });
 
@@ -101,13 +101,13 @@ fastify.register(oauthPlugin, {
     name: "googleOAuth2",
     credentials: {
         client: {
-            id: process.env.GOOGLE_CLIENT_ID!,
-            secret: process.env.GOOGLE_CLIENT_SECRET!,
+            id: env.GOOGLE_CLIENT_ID,
+            secret: env.GOOGLE_CLIENT_SECRET,
         },
         auth: oauthPlugin.GOOGLE_CONFIGURATION,
     },
-    startRedirectPath: "/auth/oauth/google",
-    callbackUri: "http://localhost:3000/auth/oauth/google/callback",
+    startRedirectPath: "/api/auth/oauth/google",
+    callbackUri: env.GOOGLE_REDIRECT_URI,
     scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
@@ -121,14 +121,21 @@ fastify.register(websocket);
 fastify.register(chatRoute, { prefix: "/api" });
 fastify.register(routes, { prefix: "/api" });
 fastify.register(auth, { prefix: "/api" });
-fastify.register(game, { prefix: "/api" });
+
+fastify.register(PingPongRoutes, { prefix: "/api" });
+fastify.register(NotificationsRoutes, { prefix: "/api" });
+
+fastify.register(arenaRoutes, { prefix: "/api" });
+fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });
+fastify.register(arenaStatsRoutes, { prefix: "/api" });
 
 fastify.register(gameSocket, { prefix: "/ws" });
+fastify.register(arenaSocket, { prefix: "/ws" });
 fastify.register(chatSocket, { prefix: "/ws" });
 fastify.register(notifications, { prefix: "/ws" });
 
 fastify.register(staticPlugin, {
-    root: path.join(process.cwd(), process.env.UPLOAD_DIR!),
+    root: path.join(process.cwd(), "/public/uploads"),
     prefix: "/public/",
 });
 
@@ -142,7 +149,7 @@ fastify.register(cors, {
     preflightContinue: true, // Important for WebSocket connections
 });
 
-const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR!);
+const uploadDir = path.join(process.cwd(), "/public/uploads");
 
 mkdir(uploadDir, { recursive: true }, (err) => {
     if (err) throw err;
@@ -158,22 +165,25 @@ const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
         const decoded = (await fastify.jwt.verify(
             refreshToken,
         )) as FastifyJWT["user"];
-        const newAccessToken = fastify.jwt.sign(
+        const access_token = fastify.jwt.sign(
             {
                 id: decoded.id,
             },
             {
-                expiresIn: process.env.ACCESS_TOKEN_EXPR || "10m", // Token expiration time
+                expiresIn: env.ACCESS_TOKEN_EXPR,
             },
         );
 
-        reply.setCookie("access_token", newAccessToken, {
-            path: "/",
-            secure: true, // send cookie over HTTPS only
-            domain: process.env.COOKIE_DOMAIN || "localhost", // set the domain for the cookie
-            sameSite: true, // alternative CSRF protection
-        });
+        reply
+            .setCookie('access_token', access_token, {
+                path: '/',
+                secure: true,
+                maxAge: 15 * 60,
+                httpOnly: true,
+                sameSite: 'strict',
+            })
         req.user = decoded; // Set the user in the request object
+
     } catch (error: any) {
         reply.clearCookie("access_token");
         reply.clearCookie("refresh_token");

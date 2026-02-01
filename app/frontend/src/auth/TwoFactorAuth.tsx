@@ -16,112 +16,137 @@ function TwoFactorAuth({ setCurrentStep }: { setCurrentStep: (step: 'two_factor_
     const { setAuth } = useAuth();
 
     const { mutate, isPending } = useMutation({
-
         mutationFn: async (confirmation_code: string) => {
             const response = await login_api.get('/api/auth/login/2fa', {
-                params: { confirmation_code: confirmation_code }
+                params: { confirmation_code }
             });
             return response.data;
         },
         onSuccess: () => {
             setAuth(true);
-            // Redirect or perform further actions
         },
         onError: (error: any) => {
-            setUpdateState({ type: 'error', message: error.response.data.message || 'Verification failed' });
+            setUpdateState({
+                type: 'error',
+                message: error.response?.data?.message || 'Verification failed',
+            });
         },
-    })
+    });
 
     const UpdateState = () => {
-
         if (!updateState) return null;
 
-        switch (updateState.type) {
-            case 'success':
-                return (
-                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-                        <Check className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800">{updateState.message}</span>
-                    </div>
-                );
-            case 'error':
-                return (
-                    <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-                        <X className="w-5 h-5 text-red-600" />
-                        <span className="text-red-800">{updateState.message}</span>
-                    </div>
-                );
-            default:
-                return null;
+        if (updateState.type === 'success') {
+            return (
+                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5 text-green-400" />
+                    <p className="text-sm text-green-400">{updateState.message}</p>
+                </div>
+            );
         }
-    }
 
+        if (updateState.type === 'error') {
+            return (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center gap-2">
+                    <X className="w-5 h-5 text-red-400" />
+                    <p className="text-sm text-red-400">{updateState.message}</p>
+                </div>
+            );
+        }
+
+        return null;
+    };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-                {/* Shield Icon */}
-                <div className="flex justify-center mb-6">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-blue-500" />
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 selection:bg-blue-500/30">
+            <div className="w-full max-w-md">
+                <div className="bg-slate-900 rounded-2xl p-8 border border-slate-800 shadow-2xl shadow-black/30">
+                    {/* Icon */}
+                    <div className="flex justify-center mb-6">
+                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                            <Shield className="w-6 h-6 text-blue-400" />
+                        </div>
                     </div>
-                </div>
 
-                <UpdateState />
+                    <div className="text-center mb-8">
+                        <h1 className="text-2xl font-bold text-white mb-2">
+                            Two-Factor Authentication
+                        </h1>
+                        <p className="text-slate-400 text-sm">
+                            Enter the 8-character code sent to your email.
+                            <br />
+                            Session expires in 15 minutes.
+                        </p>
+                    </div>
 
-                {/* Title */}
-                <h1 className="text-2xl font-semibold text-gray-900 text-center mb-2">
-                    Two-Factor Authentication
-                </h1>
+                    <UpdateState />
 
-                {/* Subtitle */}
-                <p className="text-gray-600 text-center mb-8">
-                    Enter the 8-character code sent to your email.
-                    <br />
-                    Session expires in 15 minutes.
-                </p>
+                    {/* Code Input */}
+                    <div className="mb-6">
+                        <input
+                            type="text"
+                            placeholder="XXXXXXXX"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            maxLength={8}
+                            className="
+                                w-full h-12
+                                px-4 py-3
+                                text-center font-mono tracking-widest text-lg
+                                bg-slate-800 text-white
+                                border border-slate-700 rounded-lg
+                                placeholder:text-slate-500
+                                focus:outline-none focus:ring-2 focus:ring-blue-500
+                                transition-all
+                            "
+                        />
+                    </div>
 
+                    {/* Verify */}
+                    <button
+                        onClick={() => mutate(code)}
+                        disabled={code.length !== 8 || isPending}
+                        className="
+                            w-full h-12
+                            bg-blue-600 hover:bg-blue-500
+                            text-white rounded-lg font-semibold
+                            transition-all
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            flex items-center justify-center
+                        "
+                    >
+                        {isPending ? (
+                            <>
+                                <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Verifying...
+                            </>
+                        ) : (
+                            'Verify Code'
+                        )}
+                    </button>
 
-                {/* Code Input */}
-                <div className="mb-6">
-                    <input
-                        type="text"
-                        placeholder="XXXXXXXX"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        className="w-full placeholder:opacity-30 px-4 py-3 text-center text-lg font-mono tracking-widest border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-colors"
-                        maxLength={8} // 8 characters + 7 spaces
-                    />
-                </div>
+                    {/* Cancel */}
+                    <button
+                        onClick={() => setCurrentStep('login')}
+                        className="
+                            w-full h-12 mt-4
+                            border border-slate-700
+                            rounded-lg
+                            text-slate-300 font-medium
+                            hover:bg-slate-800
+                            transition-colors
+                        "
+                    >
+                        Cancel
+                    </button>
 
-                {/* Verify Button */}
-                <button
-                    onClick={() => mutate(code)}
-                    disabled={code.length !== 8 || isPending}
-                    className="w-full bg-blue-500 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
-                >
-                    Verify Code
-                </button>
-
-                {/* Back Button */}
-                <button
-                    onClick={() => setCurrentStep('login')}
-                    className="w-full bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg mt-4 hover:bg-gray-300 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-colors"
-                >
-                    Cancel
-                </button>
-
-                {/* Resend Link */}
-                <div className="text-center mt-6">
-                    <span className="text-gray-600 text-sm">
-                        Didn't receive a code?{' '}
-                        <button
-                            // onClick={handleResend}
-                            className="text-blue-500 hover:text-blue-600 font-medium hover:underline focus:outline-none transition-colors"
-                        >
+                    {/* Resend */}
+                    <p className="mt-6 text-center text-sm text-slate-400">
+                        Didn’t receive a code?{' '}
+                        <button className="text-blue-400 hover:text-blue-300 font-medium">
                             Resend
                         </button>
-                    </span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -129,3 +154,4 @@ function TwoFactorAuth({ setCurrentStep }: { setCurrentStep: (step: 'two_factor_
 }
 
 export default TwoFactorAuth;
+

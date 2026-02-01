@@ -1,0 +1,5 @@
+FROM curlimages/curl:latest
+
+COPY init-users.sh /init-users.sh
+
+ENTRYPOINT ["/bin/sh", "/init-users.sh"]
