@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Play, Trophy, Activity, ChevronRight, Menu, X, Globe, Cpu, User } from 'lucide-react';
-import { Privacy_Policy } from './Privacy_policy/Privacy_policy';
+// import { Privacy_Policy } from './Privacy_policy/Privacy_policy';
 
 // --- Types ---
 interface ButtonProps {
@@ -230,7 +230,8 @@ const LandingPage: React.FC = () => {
             {/* Footer */}
             <footer className="bg-slate-950 border-t border-slate-800 py-8 relative z-10">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <Privacy_Policy/>
+                    {/* onrievacy_Policy/> */}
+                     {/* <div onClick={Navigate("privacy-policy")}>Privacy_Policy </div> */}
                     <p className="text-slate-500 text-sm">© 2025 Pong.1337. All rights reserved. </p>
                 </div>
             </footer>
