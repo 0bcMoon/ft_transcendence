@@ -3,11 +3,11 @@ import sqlite3 from 'sqlite3'
 import fs from 'fs'
 import env from '../src/env';
 
-const db_path : string =  env.DB_PATH;
+const db_path : string = './sqliteDB/' + env.DB_NAME;
 
 const sqliteDB = new sqlite3.Database(db_path, (err) => {
     if (err) {
-        console.error(err.message);
+        throw new Error(`Failed to connect to SQLite database at ${db_path}: ${err.message}`);
     }
 });
 
