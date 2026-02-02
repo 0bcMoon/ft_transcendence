@@ -132,7 +132,6 @@ export function cleanupRemotePlayer(userId: number): void {
             clearInterval(match.loop);
             match.loop = undefined;
         }
-
         endGame(match);
     }
     removeFromQueue(userId);

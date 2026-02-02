@@ -60,10 +60,6 @@ async function cancelGame(gameId: number): Promise<void> {
 
 async function updateTournamentResult(match: TournamentMatch, winnerId: number): Promise<void> {
     try {
-        const gamePlayers = await gameRepository.getPlayers(match.gameId);
-        const winnerGamePlayer = gamePlayers.find(p => p.user_id === winnerId);
-        if (!winnerGamePlayer)
-            return;
 
         await tournamentRepository.updateMatchWinner(match.tournamentId, match.matchId, winnerId,);
         const allCompleted = await tournamentRepository.areAllMatchesCompleted(match.tournamentId,);

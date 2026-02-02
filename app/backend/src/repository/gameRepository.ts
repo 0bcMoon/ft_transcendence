@@ -2,7 +2,6 @@ import db from "../../db/db";
 
 import {
     Game,
-    GamePlayer,
     RecentMatch,
     XPProgressPoint,
     MatchDetail,
@@ -30,6 +29,28 @@ const gameRepository = {
         );
     },
 
+    async getPlayers(game_id: number): Promise<number[]> {
+        const rows = await db.all<{ user_id: number }>(
+            `SELECT user_id FROM game_players WHERE game_id = ?`,
+            [game_id]
+        );
+        return rows.map(row => row.user_id);
+    },
+
+    async getPlayerScores(game_id: number): Promise<Array<{ user_id: number; score: number }>> {
+        return await db.all<{ user_id: number; score: number }>(
+            `SELECT user_id, score FROM game_players WHERE game_id = ?`,
+            [game_id]
+        );
+    },
+
+    async getWinner(game_id: number): Promise<number | null> {
+        const result = await db.get<{ winner_id: number | null }>(
+            `SELECT winner_id FROM games WHERE id = ?`,
+            [game_id]
+        );
+        return result?.winner_id ?? null;
+    },
 
     async getTopPlayers(limit: number = 10): Promise<TopPlayer[]> {
         return db.all<TopPlayer>(
@@ -194,13 +215,6 @@ const gameRepository = {
         return (game as Game) || null;
     },
 
-    async getPlayers(game_id: number): Promise<GamePlayer[]> {
-        const players = await db.all(
-            `SELECT * FROM game_players WHERE game_id = ?  ORDER BY position ASC`,
-            [game_id]
-        );
-        return players as GamePlayer[];
-    },
 
     async start(game_id: number): Promise<void> {
         await db.run(
@@ -216,48 +230,20 @@ const gameRepository = {
         );
     },
 
-    async calculateAndStoreXP(gameId: number, winnerId: number | null): Promise<void> {
-        const XP_RULES = { WIN: 100, LOSS: 30, PER_POINT: 5, };
-
-        const players = await db.all<{ user_id: number; score: number; position: number }>(
-            `SELECT user_id, score, position FROM game_players WHERE game_id = ? `,
-            [gameId]
-        );
-
-        if (players.length === 0)
-            return;
-
-        for (const player of players) {
-            if (!player.user_id)
-                continue;
-            const isWinner = player.user_id === winnerId;
-            const baseXP = isWinner ? XP_RULES.WIN : XP_RULES.LOSS;
-            const bonusXP = player.score * XP_RULES.PER_POINT;
-            const totalXP = baseXP + bonusXP;
-
-            await db.run(
-                `UPDATE game_players 
-                SET xp_gained = ?  
-                WHERE game_id = ? AND user_id = ?`,
-                [totalXP, gameId, player.user_id]
-            );
-
-            await db.run(
-                `UPDATE player_stats 
-                SET total_xp = total_xp + ?,
-                    level = (total_xp + ?) / 1000.0
-                WHERE user_id = ?`,
-                [totalXP, totalXP, player.user_id]
-            );
-        }
-    },
-
     async finishGame(game_id: number, winner_id: number | null): Promise<void> {
         await db.run(
             `UPDATE games SET status = 'finished', winner_id = ?, ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
             [winner_id, game_id]
         );
-        await this.calculateAndStoreXP(game_id, winner_id);
+    },
+
+    async updatePlayerXpGained(gameId: number, userId: number, xpGained: number): Promise<void> {
+        await db.run(
+            `UPDATE game_players 
+             SET xp_gained = ?
+             WHERE game_id = ? AND user_id = ?`,
+            [xpGained, gameId, userId]
+        );
     },
 
     async updateStatus(game_id: number, status: 'waiting' | 'playing' | 'finished'): Promise<void> {
@@ -267,68 +253,45 @@ const gameRepository = {
         );
     },
 
-    // async cancel(game_id: number): Promise<void> {
-    //     await db.run(
-    //         `UPDATE games SET status = 'cancelled', ended_at = CURRENT_TIMESTAMP WHERE id = ?`,
-    //         [game_id]
-    //     );
-    // },
 
-    /**
-     * Update player ELO, rank, wins, and losses
-     */
-    async updatePlayerStats(
-        userId: number,
-        totalXp: number,
-        level: number,
-        wins: number,
-        losses: number,
-        gamesPlayed: number
-    ): Promise<void> {
+    async updatePlayerStats(userId: number, xpGain: number, isWinner: boolean): Promise<number> {
+        const winsIncrement = isWinner ? 1 : 0;
+        const lossesIncrement = isWinner ? 0 : 1;
+
         await db.run(
             `INSERT INTO player_stats (user_id, total_xp, level, wins, losses, games_played, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         VALUES (?, ?, CAST(? AS REAL) / ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          ON CONFLICT(user_id) DO UPDATE SET
-             total_xp = excluded.total_xp,
-             level = excluded.level,
-             wins = excluded.wins,
-             losses = excluded.losses,
-             games_played = excluded. games_played,
+             total_xp = player_stats.total_xp + excluded.total_xp,
+             level = CAST((player_stats.total_xp + excluded.total_xp) AS REAL) / ?,
+             wins = player_stats.wins + excluded.wins,
+             losses = player_stats.losses + excluded.losses,
+             games_played = player_stats.games_played + 1,
              updated_at = CURRENT_TIMESTAMP`,
-            [userId, totalXp, level, wins, losses, gamesPlayed]
+            [userId, xpGain, xpGain, 1000, winsIncrement, lossesIncrement, 1000]
         );
-    },
 
-    async getUserBadge(userId: number): Promise<{ badge_name: string; badge_icon: string } | undefined> {
-        return await db.get<{ badge_name: string; badge_icon: string }>(
-            'SELECT badge_name, badge_icon FROM user_badges WHERE user_id = ? ',
+        const result = await db.get<{ total_xp: number }>(
+            `SELECT total_xp FROM player_stats WHERE user_id = ?`,
             [userId]
         );
+
+        return result?.total_xp ?? 0;
     },
 
     async upsertBadge(userId: number, badgeName: string, badgeIcon: string): Promise<void> {
-        // Check if user has a badge
-        const existing = await db.get(
-            'SELECT id FROM user_badges WHERE user_id = ? ',
+        const currentBadge = await db.get<{ badge_name: string; badge_icon: string }>(
+            `SELECT badge_name, badge_icon FROM user_badges WHERE user_id = ?`,
             [userId]
         );
-
-        if (existing) {
-            // User has badge - UPDATE
-            await db.run(
-                `UPDATE user_badges 
-             SET badge_name = ?, badge_icon = ?, earned_at = datetime('now')
-             WHERE user_id = ? `,
-                [badgeName, badgeIcon, userId]
-            );
-        } else {
-            // User has no badge - INSERT
-            await db.run(
-                `INSERT INTO user_badges (user_id, badge_name, badge_icon, earned_at)
-             VALUES (?, ?, ?, datetime('now'))`,
-                [userId, badgeName, badgeIcon]
-            );
+        if (currentBadge?.badge_name === badgeName && currentBadge?.badge_icon === badgeIcon) {
+            return; 
         }
+        await db.run(
+            `INSERT OR REPLACE INTO user_badges (user_id, badge_name, badge_icon)
+            VALUES (?, ?, ?)`,
+            [userId, badgeName, badgeIcon]
+        );
     },
 
 

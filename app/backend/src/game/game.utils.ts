@@ -1,7 +1,7 @@
-import {Player} from './game.types';
-import {Paddle, Canvas } from './game.config';
+import { Player } from './game.types';
+import { Paddle, Canvas } from './game.config';
 import gameRepository from '../repository/gameRepository';
-import { TournamentMatch, Match, Side, BadgeCheckStats } from './game.types';
+import { TournamentMatch, Match, Side } from './game.types';
 import { getPlayer } from './game.server';
 import { getRemoteMatch } from './game.remote';
 import { getTournamentMatch } from './game.tournament';
@@ -29,11 +29,11 @@ export function sendMessage(player: Player | undefined, message: object): void {
     }
 }
 
-export function updatePaddle( paddle: { y: number } | undefined, keys: { up: boolean; down: boolean }): void {
+export function updatePaddle(paddle: { y: number } | undefined, keys: { up: boolean; down: boolean }): void {
     if (!paddle)
         return;
 
-    if (keys.up) 
+    if (keys.up)
         paddle.y -= Paddle.SPEED;
     if (keys.down)
         paddle.y += Paddle.SPEED;
@@ -42,16 +42,16 @@ export function updatePaddle( paddle: { y: number } | undefined, keys: { up: boo
 }
 
 export function getPlayerSide(userId: number, match: Match | TournamentMatch): Side | null {
-    if (match.players.left?.id === userId) 
+    if (match.players.left?.id === userId)
         return 'left';
-    if (match.players.right?.id === userId) 
+    if (match.players.right?.id === userId)
         return 'right';
     return null;
 }
 
-export function handleMove(userId: number, data: { up:  boolean; down: boolean }): void {
+export function handleMove(userId: number, data: { up: boolean; down: boolean }): void {
     const player = getPlayer(userId);
-    if (!player) 
+    if (!player)
         return;
 
     if (player.mode === 'remote') {
@@ -60,19 +60,19 @@ export function handleMove(userId: number, data: { up:  boolean; down: boolean }
             return;
 
         const side = getPlayerSide(player.id, match);
-        if (!side) 
+        if (!side)
             return;
 
         match.keys[side].up = data.up ?? false;
         match.keys[side].down = data.down ?? false;
-    } 
+    }
     else if (player.mode === 'tournament') {
         const match = getTournamentMatch(player.id);
         if (!match)
             return;
 
         const side = getPlayerSide(player.id, match);
-        if (!side) 
+        if (!side)
             return;
 
         match.keys[side].up = data.up ?? false;
@@ -80,93 +80,55 @@ export function handleMove(userId: number, data: { up:  boolean; down: boolean }
     }
 }
 
-
-
-
 export async function updatePlayerProgress( match: TournamentMatch | Match, winnerId: number): Promise<void> {
     try {
-        const players = await gameRepository.getPlayers(match.gameId);
-        if (!players || players.length !== 2) {
+        const playerScores = await gameRepository.getPlayerScores(match.gameId);
+        
+        if (playerScores.length !== 2) {
             throw new Error("Game must have exactly two players");
         }
 
-        const [p1, p2] = players;
-        if (!p1.user_id || !p2.user_id) {
-            throw new Error("Both players must be users");
+        const winnerData = playerScores.find(p => p.user_id === winnerId);
+        const loserData = playerScores.find(p => p.user_id !== winnerId);
+
+        if (!winnerData || !loserData) {
+            throw new Error("Winner not found in game");
         }
 
-        const loserId = p1.user_id === winnerId ? p2.user_id : p1.user_id;
+        const loserId = loserData.user_id;
+        const winnerXpGain = XP_RULES.WIN + winnerData.score * XP_RULES.PER_POINT;
+        const loserXpGain = XP_RULES.LOSS + loserData.score * XP_RULES.PER_POINT;
 
-        const winnerPlayer = p1.user_id === winnerId ? p1 : p2;
-        const loserPlayer = p1.user_id === loserId ? p1 : p2;
+        const [winnerTotalXp, loserTotalXp] = await Promise.all([
+            gameRepository.updatePlayerStats(winnerId, winnerXpGain, true),
+            gameRepository.updatePlayerStats(loserId, loserXpGain, false),
 
-        const winnerScore = winnerPlayer.score ?? 0;
-        const loserScore = loserPlayer.score ?? 0;
-
-        const [winnerStats, loserStats] = await Promise.all([
-            gameRepository.getPlayerStats(winnerId),
-            gameRepository.getPlayerStats(loserId),
-        ]);
-
-        const winnerXpGain = XP_RULES.WIN + winnerScore * XP_RULES.PER_POINT;
-        const loserXpGain = XP_RULES.LOSS + loserScore * XP_RULES.PER_POINT;
-
-        const winnerTotalXp = (winnerStats?.total_xp ?? 0) + winnerXpGain;
-        const loserTotalXp = (loserStats?.total_xp ?? 0) + loserXpGain;
-
-        const winnerLevel = winnerTotalXp / XP_RULES.XP_PER_LEVEL;
-        const loserLevel = loserTotalXp / XP_RULES.XP_PER_LEVEL;
-
-        await Promise.all([
-            gameRepository.updatePlayerStats(
-                winnerId,
-                winnerTotalXp,
-                winnerLevel,
-                (winnerStats?.wins ?? 0) + 1,
-                winnerStats?.losses ?? 0,
-                (winnerStats?.games_played ?? 0) + 1
-            ),
-            gameRepository.updatePlayerStats(
-                loserId,
-                loserTotalXp,
-                loserLevel,
-                loserStats?.wins ?? 0,
-                (loserStats?.losses ?? 0) + 1,
-                (loserStats?.games_played ?? 0) + 1
-            ),
+            gameRepository.updatePlayerXpGained(match.gameId, winnerId, winnerXpGain),
+            gameRepository.updatePlayerXpGained(match.gameId, loserId, loserXpGain),
         ]);
 
         await Promise.all([
             checkAndAwardBadges(winnerId, winnerTotalXp),
             checkAndAwardBadges(loserId, loserTotalXp),
         ]);
+
+        console.log(`Progress: Winner ${winnerId} (${winnerTotalXp}xp) vs Loser ${loserId} (${loserTotalXp}xp)`);
     } catch (error) {
         console.error("Player progress update failed:", error);
-    }
-}
-
-
-async function awardBadge(userId: number, badgeName:  string, badgeIcon: string): Promise<void> {
-    try {
-        const currentBadge = await gameRepository.getUserBadge(userId);
-        if (!currentBadge || currentBadge.badge_name !== badgeName) {
-            await gameRepository.upsertBadge(userId, badgeName, badgeIcon);
-        }
-    } catch (err) {
-        console.error(`Failed to update badge for user ${userId}: `, err);
+        throw error;
     }
 }
 
 export async function checkAndAwardBadges(userId: number, totalXP: number): Promise<void> {
     if (totalXP >= 50000) {
-        await awardBadge(userId, 'Master', '👑');
+        await gameRepository.upsertBadge(userId, 'Master', '👑');
     } else if (totalXP >= 20000) {
-        await awardBadge(userId, 'Platinum', '💎');
+        await gameRepository.upsertBadge(userId, 'Platinum', '💎');
     } else if (totalXP >= 10000) {
-        await awardBadge(userId, 'Gold', '🥇');
+        await gameRepository.upsertBadge(userId, 'Gold', '🥇');
     } else if (totalXP >= 5000) {
-        await awardBadge(userId, 'Silver', '🥈');
+        await gameRepository.upsertBadge(userId, 'Silver', '🥈');
     } else if (totalXP >= 100) {
-        await awardBadge(userId, 'Bronze', '🥉');
+        await gameRepository.upsertBadge(userId, 'Bronze', '🥉');
     }
 }
