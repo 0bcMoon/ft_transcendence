@@ -289,11 +289,15 @@ export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePictur
     })
 }
 
-export const useLogin = () => {
+export const useLogin = (callback: (error: string) => void) => {
     return useMutation({
         mutationFn: async (data: { identifier: string; password: string }) => {
             const response = await login_api.post("/api/auth/login", data)
             return response.data
+        },
+        onError: (error: any) => {
+            const errorMessage = error.response?.data?.message || "Login failed. Please try again."
+            callback(errorMessage)
         },
     })
 }

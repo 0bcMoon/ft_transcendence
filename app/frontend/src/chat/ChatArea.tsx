@@ -96,7 +96,15 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
         if (!ws.current || !active_chat) return
 
         ws.current.onmessage = (event) => {
-            const data: Message = JSON.parse(event.data)
+            let data: Message
+
+            try{
+
+                data= JSON.parse(event.data)
+            } catch (error) {
+                console.error("Failed to parse message:", error)
+                return
+            }
 
             queryClient.setQueryData<Message[]>(["messages", active_chat?.id], (oldMessages) => {
                 if (!oldMessages) return [data]

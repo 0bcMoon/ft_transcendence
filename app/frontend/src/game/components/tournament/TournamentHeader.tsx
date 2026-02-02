@@ -1,91 +1,80 @@
+import { useAuthStore } from "@/state/authStore";
+import { useTournamentBasic, useUserMatch } from "../../hooks/queries";
+import { useRegisterTournament } from "../../hooks/mutations";
+import { useNavigate } from "react-router-dom";
+
 interface TournamentHeaderProps {
-    tournament: {
-        name: string;
-        status: 'registration' | 'active' | 'finished' | 'cancelled';
-        player_count: number;
-        max_players: number;
-        is_registered: boolean;
-    };
-    onRegister: () => void;
-    onStart: () => void;
-    isRegistering: boolean;
-    isStarting: boolean;
+    tournamentId: number;
 }
 
-const StatusBadge = ({ status }: { status: TournamentHeaderProps['tournament']['status'] }) => {
-    switch (status) {
-        case 'registration':
-            return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">
-                    Open for Registration
-                </div>
-            );
-        case 'active':
-            return (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    Live Now
-                </div>
-            );
-        case 'finished':
-            return (
-                <div className="px-3 py-1.5 rounded-full bg-slate-700 text-slate-300 text-xs font-semibold">
-                    Finished
-                </div>
-            );
-        case 'cancelled':
-            return (
-                <div className="px-3 py-1.5 rounded-full bg-slate-800 text-slate-500 text-xs font-semibold">
-                    Cancelled
-                </div>
-            );
-        default:
-            return null;
-    }
-};
+export function TournamentHeader({ tournamentId }: TournamentHeaderProps) {
+    const { data: tournament, isLoading } = useTournamentBasic(tournamentId);
+    const { mutate: register, isPending: isRegistering } = useRegisterTournament();
+    const user = useAuthStore((state) => state.user);
+    const navigate = useNavigate();
 
-export function TournamentHeader({ tournament, onRegister, isRegistering, }: TournamentHeaderProps) {
-    const isTournamentFull = tournament.player_count >= tournament.max_players;
+    const { data: userMatch, isLoading: isLoadingMatch } = useUserMatch( tournamentId, !!user && tournament?.status === "active");
+
+    if (isLoading) {
+        return (
+            <div className="bg-slate-900 rounded-2xl p-12 flex items-center justify-center">
+                <span className="text-slate-300">Loading tournament...</span>
+            </div>
+        );
+    }
+    if (!tournament) {
+        return (
+            <div className="bg-slate-900 rounded-2xl p-12 text-center">
+                <span className="text-slate-400">Tournament not found</span>
+            </div>
+        );
+    }
+
+    // Use API is_registered property
+    const isRegistered = tournament.is_registered;
 
     return (
-        <div className="relative bg-slate-900 rounded-2xl p-12 text-center border border-slate-800 shadow-xl shadow-black/20 overflow-hidden">
-
-            <div className="flex justify-center mb-4">
-                <StatusBadge status={tournament.status} />
-            </div>
-
-            <h1 className="text-5xl md:text-6xl font-black text-white">
+        <div className="bg-slate-900 rounded-2xl p-12 text-center border border-slate-800">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 {tournament.name}
             </h1>
 
-            <div className="mt-8 flex justify-center">
-                {tournament.status === 'registration' && (
-                    <>
-                        {tournament.is_registered ? (
-                            <div className="flex items-center gap-3 text-lg font-bold px-8 py-4 rounded-xl bg-green-500/20 text-green-400">
-                                <span className="text-2xl">✓</span>
-                                <span>You're Registered!</span>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={onRegister}
-                                disabled={isTournamentFull || isRegistering}
-                                className="flex items-center justify-center gap-3 h-14 px-10 bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/20
-                                           disabled:bg-slate-700 disabled:shadow-none disabled:cursor-not-allowed disabled:scale-100"
-                            >
-                                {isRegistering
-                                    ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Registering...</span></>
-                                    : isTournamentFull ? '🔒 Tournament Full' : '🎮 Join Tournament'
-                                }
-                            </button>
-                        )}
-                    </>
-                )}
-            </div>
+            {/* User Match Info */}
+            {userMatch && !isLoadingMatch && (
+                <div className="mb-6 bg-indigo-900/60 border border-indigo-400/40 rounded-lg p-6">
+                    <div className="font-bold text-lg text-white mb-1">You have a match ready!</div>
+                    <div className="text-indigo-200">
+                        Round {userMatch.round} | Match #{userMatch.match_number}
+                    </div>
+                    <div className="text-sm text-slate-300 mb-3">
+                        {userMatch.player1?.username} vs {userMatch.player2?.username}
+                    </div>
+                    <button
+                        onClick={() => navigate(`/game/tournament/${tournamentId}/match/${userMatch.id}`)}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded transition"
+                    >
+                        Play Your Match
+                    </button>
+                </div>
+            )}
+
+            {tournament.status === "registration" && (
+                <div className="flex flex-col items-center gap-4">
+                    {isRegistered ? (
+                        <div className="px-7 py-3 rounded-lg bg-green-100 text-green-700 font-semibold">
+                            You are registered!
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => register(tournamentId)}
+                            disabled={isRegistering}
+                            className={`px-7 py-3 rounded-lg text-white font-semibold transition ${isRegistering ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
+                        >
+                            {isRegistering ? "Registering..." : "Join Tournament"}
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
-

@@ -1,11 +1,9 @@
 type GameInstructionsProps = {
     userSide: "left" | "right";
     mode: string;
-    matchNumber?: number;
-    round?: number;
 };
 
-export default function GameInstructions({ userSide, mode, matchNumber, round }: GameInstructionsProps) {
+export default function GameInstructions({ userSide, mode}: GameInstructionsProps) {
     return (
         <div className="w-full max-w-[100%] bg-slate-900 rounded-lg border border-slate-800 p-3 sm:p-4 mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
             {userSide && (
@@ -17,15 +15,6 @@ export default function GameInstructions({ userSide, mode, matchNumber, round }:
                 <span className="font-semibold bg-slate-700 px-2 py-0.5 rounded whitespace-nowrap text-slate-300">
                     Mode: {mode}
                 </span>
-            )}
-            
-            {matchNumber !== undefined && round !== undefined && (
-                <>
-                    <div className="w-px h-6 bg-slate-700"></div>
-                    <span className="font-semibold text-purple-400 whitespace-nowrap">
-                        Round {round} - Match {matchNumber}
-                    </span>
-                </>
             )}
             
             <div className="w-px h-6 bg-slate-700"></div>

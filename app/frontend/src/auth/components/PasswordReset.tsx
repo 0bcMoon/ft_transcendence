@@ -6,10 +6,10 @@ import { useMutation } from '@tanstack/react-query';
 import { login_api } from '@/api/api';
 
 const passwordResetSchema = z.object({
-    password: z
-        .string()
-        .min(8, "Password must be at least 8 characters")
-        .max(32, "Password must be at most 32 characters"),
+    password: z.string()
+        .trim()
+        .min(8, "Password must be at least 8 characters long.")
+        .max(64, "Password cannot exceed 64 characters."),
     confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",

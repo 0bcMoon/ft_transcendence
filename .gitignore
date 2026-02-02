@@ -34,3 +34,4 @@ backend/public
 images
 database
 nginx/ssl
+.todos

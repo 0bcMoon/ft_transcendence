@@ -30,10 +30,11 @@ export interface Intra42OAuth2 {
     email: string
     displayname: string
     image: intra42ImageUser
+    login: string
 
 }
 
 export interface EmailUpdate {
     email: string
-    confirmtion_code?: string
+    confirmation_code?: string
 }

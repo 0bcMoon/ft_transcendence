@@ -24,7 +24,7 @@ import Tournaments from './game/pages/TournamentPage';
 import TournamentMatch from './game/pages/TournamentMatch';
 import TournamentDetailPage from './game/pages/TournamentDetailPage';
 import HistoryPage from './game/pages/HistoryPage';
-// mport UserMatchHistoryPage from './game/pages/UserMatchHistoryPage';
+import UserMatchHistoryPage from './game/pages/UserMatchHistoryPage';
 
 
 import FriendsPage from './users/FriendsPage';
@@ -38,7 +38,7 @@ import ArenaLobbyPage from "./arena/pages/ArenaLobbyPage";
 import ArenaHistoryPage from "./arena/pages/ArenaHistoryPage";
 import ArenaSpectatePage from "./arena/pages/ArenaSpectatePage";
 import ArenaMatchesPage from "./arena/pages/ArenaMatchesPage";
-// import AllNotificationsPage$1 from './notifications/AllNotificationsPage';
+import AllNotificationsPage$1 from './notifications/AllNotificationsPage';
 
 import PrivacyPolicy from './landingpage/pages/PrivacyPolicy';
 import TermsOfService from './landingpage/pages/TermsOfService';
@@ -60,10 +60,10 @@ const router = createBrowserRouter([
             { path: "history", element: <HistoryPage /> },
             { path: "settings", element: <Settings /> },
             { path: "history/:matchId", element: <MatchDetailsPage /> },
-            // { path: "users/:userId/history", element: <UserMatchHistoryPage /> },
+            { path: "users/:userId/history", element: <UserMatchHistoryPage /> },
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
-            // { path: "notifications", element: <AllNotificationsPage$1 /> },
+            { path: "notifications", element: <AllNotificationsPage$1 /> },
 
 
             { path: "game/arena/start", element: <ArenaStartPage /> },

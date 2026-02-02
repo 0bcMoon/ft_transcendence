@@ -1,5 +1,3 @@
-"use client"
-
 import { useValidationStore } from "@/state/Store"
 import { Lock, Eye, EyeOff } from "lucide-react"
 import { useState } from "react"

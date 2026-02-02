@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { Search, MessageCircle, UserX, Users } from "lucide-react"
 import UserCard from "./UserCard"
 import LoadingSpinner from "./LoadingSpinner"
@@ -8,8 +8,6 @@ import { useActiveChatStore } from "@/state/Store"
 import Modal from "@/component/Model"
 import type { RemoteUser } from "@/types/types"
 import { useUnFriend } from "../hooks/useApi"
-import { unsubscribe } from "@/home/Notification"
-import { useWebSocket } from "@/context/WebSocketContext"
 
 const FriendsList = () => {
     const [searchTerm, setSearchTerm] = useState("")
@@ -19,10 +17,6 @@ const FriendsList = () => {
     const [currentUserId, setcurrentUserId] = useState<number | undefined>(undefined)
     const { mutate: unfriend, isPending: isUnfriending } = useUnFriend()
 
-    const { socket } = useWebSocket()
-    const isConnected = socket && socket.readyState === WebSocket.OPEN
-
-    // Filter friends based on search term
     const filteredFriends = useCallback(() => {
         return friends.filter(
             (friend) =>
@@ -30,15 +24,6 @@ const FriendsList = () => {
                 (friend.username && friend.username.toLowerCase().includes(searchTerm.toLowerCase())),
         )
     }, [friends, searchTerm])()
-
-    const friends_id = friends.map((friend) => friend.id)
-
-    useEffect(() => {
-        return () => {
-            if (!socket || !isConnected || isLoading || friends_id.length === 0) return
-            unsubscribe(socket, friends_id)
-        }
-    }, [isLoading, isConnected, socket, friends_id])
 
     if (isLoading) {
         return (

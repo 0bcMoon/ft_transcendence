@@ -1,4 +1,4 @@
-import { useTournamentBracket } from '../../../hooks/queries/useTournamentQueries';
+import { useTournamentBracket, useGetChampion } from '../../../hooks/queries';
 import { Loader2, GitBranch, Trophy } from 'lucide-react';
 import { MatchCard } from '../MatchCard';
 
@@ -7,66 +7,60 @@ interface BracketTabProps {
 }
 
 export function BracketTab({ tournamentId }: BracketTabProps) {
-    const { data: bracket, isLoading, error } = useTournamentBracket(tournamentId);
+    const { data: matches, isLoading, error } = useTournamentBracket(tournamentId);
+    const { data: champion } = useGetChampion(tournamentId);
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex justify-center py-20">
                 <Loader2 className="animate-spin text-blue-400" size={32} />
-                <p className="text-slate-400 mt-4">Loading bracket...</p>
             </div>
         );
     }
 
-    if (error || !bracket) {
+    if (error || !matches?.length) {
         return (
-            <div className="text-center bg-slate-900 border border-slate-800 rounded-2xl p-12">
-                <div className="w-20 h-20 mx-auto mb-6 bg-slate-800 rounded-full flex items-center justify-center">
-                    <GitBranch className="text-slate-500" size={40} />
-                </div>
-                <h2 className="text-xl font-bold text-white">
-                    Bracket Not Ready
-                </h2>
-                <p className="text-slate-400 mt-2">
-                    The bracket will be generated once registration closes and the tournament starts.
-                </p>
+            <div className="text-center bg-slate-900 border border-slate-800 rounded-2xl p-10">
+                <GitBranch className="mx-auto mb-4 text-slate-500" size={40} />
+                <h2 className="text-lg font-bold text-white">Bracket not ready</h2>
+                <p className="text-slate-400 mt-1">Tournament has not started yet.</p>
             </div>
         );
     }
+
+    const rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
 
     return (
-        <div className="space-y-12">
-            {bracket.champion && (
-                <div className="bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl p-8 text-center shadow-2xl shadow-yellow-500/10">
-                    <div className="flex justify-center items-center gap-4">
-                        <Trophy size={48} className="text-white drop-shadow-lg" />
-                        <div>
-                            <p className="text-sm font-bold uppercase tracking-widest text-amber-900">Tournament Champion</p>
-                            <h2 className="text-4xl font-black text-white drop-shadow-md">{bracket.champion.username}</h2>
+        <div className="space-y-10">
+            {/* Champion Display */}
+            {champion && (
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-center shadow-lg">
+                    <p className="text-sm font-semibold text-blue-200">Champion</p>
+                    <div className="flex flex-col items-center gap-2 mt-2">
+                        <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-blue-400 shadow-inner">
+                            <img
+                                src={champion.profile_picture}
+                                alt={champion.username}
+                                className="w-full h-full object-cover"
+                            />
                         </div>
-                        <Trophy size={48} className="text-white drop-shadow-lg" />
+                        <h2 className="text-2xl font-bold text-white truncate max-w-xs">
+                            {champion.username}
+                        </h2>
+                        <Trophy size={28} className="text-white mt-1" />
                     </div>
                 </div>
             )}
-
-            {bracket.rounds.map((round: any) => (
-                <div key={round.round}>
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-1.5 h-10 bg-blue-500 rounded-full"></div>
-                        <div>
-                            <h3 className="text-2xl font-bold text-white">
-                                {round.name}
-                            </h3>
-                            <p className="text-sm text-slate-400">
-                                {round.matches.length} match{round.matches.length !== 1 ? 'es' : ''}
-                            </p>
-                        </div>
-                    </div>
-
+            {/* Tournament Rounds */}
+            {rounds.map(round => (
+                <div key={round}>
+                    <h3 className="mb-4 text-xl font-bold text-white">Round {round}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {round.matches.map((match: any) => (
-                            <MatchCard key={match.id} match={match} />
-                        ))}
+                        {matches
+                            .filter(match => match.round === round)
+                            .map(match => (
+                                <MatchCard key={match.id} match={match} />
+                            ))}
                     </div>
                 </div>
             ))}

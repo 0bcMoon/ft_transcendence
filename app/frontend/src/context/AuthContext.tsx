@@ -1,4 +1,4 @@
-import { deleteCookie, login_api } from '@/api/api';
+import { login_api } from '@/api/api';
 import { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import Loader from '@/vendor/loader';
 import { useQuery } from '@tanstack/react-query';
@@ -23,11 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
 
-// Invalidate everything
     const logout = () => {
-        // queryClient.invalidateQueries();
         useAuthStore.getState().logout();
-        deleteCookie('access_token');
         login_api.get('/api/auth/logout')
         setAuth(false);
     };
@@ -35,26 +32,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, isLoading: isLoadingUser, isError, isSuccess } = useQuery({
         queryKey: ['user'],
         queryFn: async () => (await login_api.get('/api/user')).data,
-        enabled: !isAuthenticated && !isLoading,
-        refetchOnWindowFocus: false,
         retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: true,
+        staleTime: 0,
     })
 
     useEffect(() => {
-        if (isError) {
-            setAuth(false);
-            setLoading(false);
-            logout();
-        }
+        if (!isError) return;
+        setAuth(false);
+        setLoading(false);
     }, [isError]);
 
 
     useEffect(() => {
-        if (isSuccess) {
-            useAuthStore.getState().login(data as any);
-            setAuth(true);
-        }
-    }, [data]);
+
+        if (!isSuccess) return;
+        useAuthStore.getState().login(data as any);
+        setAuth(true);
+
+    }, [isSuccess, data]);
 
     if (isLoadingUser) {
         return <Loader />

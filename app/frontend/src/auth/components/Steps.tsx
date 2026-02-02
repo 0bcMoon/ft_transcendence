@@ -5,6 +5,7 @@ import { z } from "zod"
 import { useMutation } from "@tanstack/react-query"
 import { login_api } from "@/api/api"
 import type { IFormData } from "../Register"
+import { emailSchema, usernameSchema } from "@/zod/user.schema"
 
 interface StepOneProps {
     formData: {
@@ -18,25 +19,33 @@ interface StepOneProps {
 const userinfoSchema = z.object({
     username: z
         .string()
+        .trim()
         .min(1, "Username is required")
         .max(24, "Username cannot exceed 24 characters")
-        .regex(/^\S+$/, "Username cannot contain whitespace"),
-    display_name: z.string().min(1, "Display name is required").max(24, "Display name cannot exceed 24 characters"),
+        .regex(
+            /^[a-zA-Z][a-zA-Z0-9_]*$/,
+            'Username must start with a letter and can only contain letters, numbers, and underscores'
+        ),
+    display_name: z
+        .string()
+        .trim()
+        .min(1, "Display name is required.")
+        .max(64, "Display name cannot exceed 64 characters.")
+        .regex(/^[a-zA-Z ]+$/, 'Display name can only contain letters and spaces'),
 })
 
 export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
     const [errors, setErrors] = useState<{ username?: string; display_name?: string }>({})
-    const canContinue = !errors.username && !errors.display_name
 
     const usernameMutation = useMutation({
         mutationFn: async (username: string) => {
             const response = await login_api.get("/api/auth/check-username", { params: { username } })
             return response.data
         },
-        onError: () => {
+        onError: (err: any) => {
             setErrors((prev) => ({
                 ...prev,
-                username: "Username is already taken",
+                username: err.response?.data?.message || "Username is already taken",
             }))
         },
         onSuccess: () => {
@@ -52,10 +61,12 @@ export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
         const form = new FormData(e.currentTarget)
         const username = form.get("username") as string
         const display_name = form.get("display_name") as string
-        const result = userinfoSchema.safeParse({ username, display_name: display_name })
+
+        const result = userinfoSchema.safeParse({ username, display_name })
         if (result.success) {
             onNext()
-            updateFormData({ username, display_name: display_name })
+            updateFormData((p: any) => { return { ...p, username, display_name } })
+            // updateFormData((prev) => {...prev, username, display_name: display_name })
             return
         }
         const fieldErrors = result.error.flatten().fieldErrors
@@ -73,6 +84,19 @@ export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
         if (timeout) clearTimeout(timeout)
         timeout = setTimeout(() => {
             const { value } = e.target
+            const resutl = usernameSchema.safeParse(value);
+            if (resutl.success) {
+                setErrors((prev) => ({
+                    ...prev,
+                    username: undefined,
+                }))
+            } else {
+                setErrors((prev) => ({
+                    ...prev,
+                    username: resutl.error.errors[0].message,
+                }))
+                return
+            }
             usernameMutation.mutate(value)
         }, 300)
     }
@@ -124,7 +148,6 @@ export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
                 </div>
 
                 <button
-                    disabled={!canContinue}
                     type="submit"
                     className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
                 >
@@ -175,7 +198,7 @@ export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoPro
         const confirm_password = form.get("confirm_password") as string
         const result = passwordSchema.safeParse({ password, confirm_password })
         if (result.success) {
-            updateFormData({ password, confirm_password })
+            updateFormData((p: any) => { return { ...p, password, confirm_password} })
             onNext()
             return
         }
@@ -317,7 +340,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
         },
     })
 
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    const isValidEmail = emailSchema.safeParse(email).success
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()

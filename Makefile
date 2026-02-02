@@ -1,17 +1,23 @@
-all: up
+all: dirs up 
+
+dirs:
+	mkdir -p database
+	mkdir -p images
 
 up:
-	docker-compose up -d --build
+	docker compose up -d --build
+
 down:
-	docker-compose down
-re: down up
+	docker compose down -v
+
+restart: down up
 
 clean:
-	docker-compose down --rmi all --volumes --remove-orphans
-fclean: down
-	docker system prune -a --volumes
+	docker compose down --rmi all --volumes --remove-orphans
 
-init:
-	cd backend && npm install
-	cd frontend && npm install
-	
+logs:
+	docker compose logs -f
+
+ps:
+	docker compose ps
+
