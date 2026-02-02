@@ -98,11 +98,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         if (socket && socket.readyState === WebSocket.OPEN) return;
 
         const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/notify`);
-
-        // ws.onopen = () => {
-        //     toast.success('[WebSocket] Connected 🎉');
-        // };
-
         ws.onmessage = (event: MessageEvent) => {
             try {
 
@@ -181,14 +176,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
             } catch (error) {
                 console.error('[WebSocket] Parse error:', error);
             }
-        };
-
-        ws.onclose = () => {
-            console.log('[WebSocket] Disconnected');
-        };
-
-        ws.onerror = (error) => {
-            console.error('[WebSocket]  Error:', error);
         };
 
         setSocket(ws);
