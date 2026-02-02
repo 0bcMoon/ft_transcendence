@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Play, Trophy, Activity, ChevronRight, Menu, X, Globe, Cpu, User } from 'lucide-react';
 // import { Privacy_Policy } from './Privacy_policy/Privacy_policy';
 
