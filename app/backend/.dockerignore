@@ -11,3 +11,5 @@ coverage
 tmp
 .cache
 *.db
+sqliteD
+
