@@ -1,38 +1,109 @@
-export default function Notification() {
-    const notifications = [
-        { id: 1, title: "New Match", message: "You have a new game invitation", time: "2m ago" },
-        { id: 2, title: "Achievement Unlocked", message: "You reached level 10!", time: "1h ago" },
-        { id: 3, title: "Friend Request", message: "John wants to connect", time: "3h ago" },
-    ]
+import { Link } from "react-router-dom"
+import { useGetNotifications } from "@/notifications/hooks/useNotificationQueries"
+import { useMarkAsRead } from "@/notifications/hooks/useNotificationMutations"
+import { timeAgo } from "@/utils/utils"
+
+interface NotificationProps {
+    onClose?: () => void
+}
+
+export default function Notification({ onClose }: NotificationProps) {
+    const { data: notifications = [], isLoading, isError } = useGetNotifications(1, 5)
+    const { mutate: markAsRead } = useMarkAsRead()
+
+    const handleClick = (id: number, isRead: boolean) => {
+        if (!isRead) markAsRead(id)
+        onClose?.()
+    }
+
+    const containerClass = "absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl"
+
+    if (isLoading) {
+        return (
+            <div className={containerClass}>
+                <div className="p-4 text-center text-slate-400">Loading...</div>
+            </div>
+        )
+    }
+
+    if (isError) {
+        return (
+            <div className={containerClass}>
+                <div className="p-4 text-center text-red-400">Failed to load notifications</div>
+            </div>
+        )
+    }
 
     return (
-        <div className="absolute right-0 top-12 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50">
-            <div className="p-4 border-b border-slate-700">
+        <div className={containerClass}>
+            {/* Header */}
+            <div className="border-b border-slate-700 p-4">
                 <h3 className="font-semibold text-white">Notifications</h3>
             </div>
+
+            {/* Notifications List */}
             <div className="max-h-96 overflow-y-auto">
-                {notifications.map((notification) => (
-                    <div
-                        key={notification.id}
-                        className="p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium text-white text-sm">{notification.title}</p>
-                                <p className="text-gray-400 text-sm mt-1">{notification.message}</p>
-                                <p className="text-gray-500 text-xs mt-1">{notification.time}</p>
+                {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400">No notifications</div>
+                ) : (
+                    notifications.map((notification) => {
+                        const isRead = Boolean(notification.is_read)
+
+                        const content = (
+                            <div className="flex items-start gap-3">
+                                {!isRead && (
+                                    <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-white">
+                                        {notification.title}
+                                    </p>
+                                    <p className="mt-1 line-clamp-2 text-sm text-slate-400">
+                                        {notification.message}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {timeAgo(notification.created_at)}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        )
+
+                        const itemClass = "block cursor-pointer border-b border-slate-800 p-4 transition hover:bg-slate-800 last:border-b-0"
+
+                        return notification.link ? (
+                            <Link
+                                key={notification.id}
+                                to={notification.link}
+                                onClick={() => handleClick(notification.id, isRead)}
+                                className={itemClass}
+                            >
+                                {content}
+                            </Link>
+                        ) : (
+                            <div
+                                key={notification.id}
+                                onClick={() => handleClick(notification.id, isRead)}
+                                className={itemClass}
+                            >
+                                {content}
+                            </div>
+                        )
+                    })
+                )}
             </div>
-            <div className="p-3 text-center border-t border-slate-700">
-                <button className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
-                    View all notifications
-                </button>
-            </div>
+
+            {/* Footer */}
+            {notifications.length > 0 && (
+                <div className="border-t border-slate-700 p-3 text-center">
+                    <Link
+                        to="/notifications"
+                        onClick={onClose}
+                        className="inline-block w-full text-sm font-medium text-blue-400 transition hover:text-blue-300"
+                    >
+                        View all notifications
+                    </Link>
+                </div>
+            )}
         </div>
     )
 }
-

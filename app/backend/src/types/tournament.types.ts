@@ -5,7 +5,7 @@ export type TournamentStatus = 'registration' | 'active' | 'finished' | 'cancell
 export interface Tournament {
     id: number;
     name: string;
-    status: TournamentStatus;
+    status: 'registration' | 'active' | 'finished' | 'cancelled';
     created_by: number;
     winner_id: number | null;
     max_players: number;
@@ -15,15 +15,73 @@ export interface Tournament {
     created_at: string;
 }
 
+export interface Champion {
+    id: number;
+    username: string;
+    profile_picture: string | null;
+}
+
+export interface TournamentList {
+    id: number;
+    name: string;
+    start_time: string;
+    max_players: number;
+    status: string;
+    created_at: string;
+}
+
+export interface TournamentOverview {
+    id: number;
+    name: string;
+    status: 'registration' | 'active' | 'finished' | 'cancelled';
+    created_by: number;              // Keep as number
+    creator_username?: string;        // Add this
+    winner_id: number | null;
+    winner_username?: string | null;
+    winner_display_name?: string | null;
+    max_players: number;
+    current_round: number;
+    started_at: string | null;
+    ended_at: string | null;
+    created_at: string;
+}
+
+export interface TournamentBasic {
+    id: number;
+    name: string;
+    status: 'registration' | 'active' | 'finished' | 'cancelled';
+    is_registered: boolean;
+}
+
+export interface AvailableTournament {
+    id: number;
+    name: string;
+    status: string;
+    created_by: number;
+    winner_id: number | null;
+    max_players: number;
+    current_round: number;
+    started_at: string | null;
+    ended_at: string | null;
+    created_at: string;
+    creator_username: string;
+    player_count: number;
+    is_registered: boolean;
+}
+
 export interface TournamentPlayer {
     id: number;
-    tournament_id: number;
     user_id: number;
-    seed: number;
-    eliminated: number;
     registered_at: string;
     username: string;
-    profile_picture?: string;
+    avatar: string;
+}
+
+export interface UserMatch {
+    id: number;
+    round: number;
+    match_number: number;
+    status: string;
 }
 
 export type TournamentMatch = {
@@ -41,11 +99,6 @@ export type TournamentMatch = {
     created_at: string;
 };
 
-export interface CreateTournamentData {
-    name: string;
-    created_by: number;
-    max_players: number;
-}
 
 export interface TournamentDetails extends Tournament {
     creator: {
@@ -64,43 +117,18 @@ export interface BracketPlayer {
     seed?: number;
 }
 
+
 export interface BracketMatch {
     id: number;
-    tournament_id: number;
     round: number;
-    match_number: number;
-    status: string;
-    player1?: BracketPlayer;
-    player2?: BracketPlayer;
-    winner?: BracketPlayer;
-    game_id: number | null;
-    scheduled_at: string | null;
-    completed_at: string | null;
-    created_at: string;
+    matchNumber: number;
+    player1Username: string;
+    player2Username: string;
+    winnerUsername: string;
+    gameId: number;
+    status: "pending" | "playing" | "completed";
 }
 
-export type TournamentMatchWithPlayers = TournamentMatch & {
-    player1_user_id?: number;
-    player1_username?: string;
-    player2_user_id?: number;
-    player2_username?: string;
-};
-
-export interface BracketRound {
-    round: number;
-    name: string;
-    matches: BracketMatch[];
-}
-
-export interface Bracket {
-    rounds: BracketRound[];
-    champion?: {
-        id: number;
-        username: string;
-    };
-}
-
-// Request params types
 export interface TournamentIdParams {
     id: string;
 }

@@ -1,110 +1,91 @@
 import { Link } from "react-router-dom"
-import { useGetTopPlayers } from "@/game/api/queries"
-import { Medal, Gem, Crown } from "lucide-react"
-
-const rankProps = {
-    Bronze: {
-        color: "#b87333",
-        text: "text-orange-400",
-        bg: "bg-orange-100/10",
-        icon: <Medal className="w-4 h-4" color="#b87333" strokeWidth={2.5} />,
-    },
-    Silver: {
-        color: "#C0C0C0",
-        text: "text-slate-300",
-        bg: "bg-slate-100/10",
-        icon: <Medal className="w-4 h-4" color="#C0C0C0" strokeWidth={2.5} />,
-    },
-    Gold: {
-        color: "#FFD700",
-        text: "text-yellow-200",
-        bg: "bg-yellow-100/10",
-        icon: <Medal className="w-4 h-4" color="#FFD700" strokeWidth={2.5} />,
-    },
-    Platinum: {
-        color: "#60e6d0",
-        text: "text-teal-200",
-        bg: "bg-teal-100/10",
-        icon: <Gem className="w-4 h-4" color="#60e6d0" strokeWidth={2.5} />,
-    },
-    Master: {
-        color: "#a78bfa",
-        text: "text-indigo-300",
-        bg: "bg-indigo-100/10",
-        icon: <Crown className="w-4 h-4" color="#a78bfa" strokeWidth={2.5} />,
-    },
-}
-
-const getAvatar = (avatar: string | null, name: string) =>
-    avatar
-        ? `${import.meta.env.VITE_API_URL}/public/${avatar}`
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=64`
+import { Trophy } from "lucide-react"
+import { useGetTopPlayers } from "@/game/hooks/queries"
 
 export default function TopPlayers() {
-    const { data: topPlayers, isLoading, isError } = useGetTopPlayers(6)
+
+    const { data: topPlayers = [], isLoading, isError } = useGetTopPlayers(6)
 
     return (
         <section className="mb-10">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl lg:text-2xl font-bold text-white">Top Players</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-white flex items-center gap-2">
+                    <Trophy className="w-6 h-6 text-blue-400" />
+                    Top Players
+                </h2>
                 <Link to="/leaderboard" className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition">
-                    See leaderboard &rarr;
+                    See leaderboard
                 </Link>
             </div>
-            <div className="rounded-2xl bg-slate-900 p-0 shadow-xl border border-slate-800 overflow-hidden">
-                <ul className="divide-y divide-slate-800">
-                    {isLoading && <li className="py-8 text-slate-400 text-center">Loading top players…</li>}
-                    {isError && <li className="py-8 text-red-400 text-center">Could not load top players.</li>}
-                    {!isLoading && !isError && topPlayers?.length === 0 && (
-                        <li className="py-8 text-slate-400 text-center">No top players found.</li>
-                    )}
-                    {!isLoading &&
-                        !isError &&
-                        topPlayers?.map((player, index) => {
-                            const { text, bg, icon } = rankProps[player.rank as keyof typeof rankProps] || rankProps.Silver
-                            return (
-                                <li
-                                    key={player.user_id}
-                                    className="flex items-center justify-between py-4 px-6 bg-transparent hover:bg-blue-900/30 transition"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <Link
-                                            to={`/users/${player.user_id}`}
-                                            className="flex items-center gap-4 group"
-                                            title={`View ${player.display_name || player.username}'s profile`}
-                                        >
-                                            <img
-                                                src={getAvatar(player.avatar, player.display_name || player.username)}
-                                                alt={player.display_name || player.username}
-                                                className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 group-hover:ring-2 group-hover:ring-blue-400 transition"
-                                            />
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <span className="text-base font-semibold text-white group-hover:text-blue-300 transition">
-                                                        {player.display_name || player.username}
-                                                    </span>
-                                                    <span
-                                                        className={`flex items-center gap-1 px-2 py-0.5 rounded ${bg} ${text} text-xs font-medium`}
-                                                    >
-                                                        {icon}
-                                                        {player.rank}
-                                                    </span>
-                                                </div>
-                                                <span className="text-xs text-slate-400">
-                                                    {player.elo_rating} ELO
-                                                    <span className="ml-2 text-green-300">{player.wins}W</span>
-                                                    <span className="ml-2 text-red-300">{player.losses}L</span>
-                                                </span>
-                                            </div>
-                                        </Link>
+            
+            <div className="rounded-2xl bg-slate-900 shadow-xl border border-slate-800 overflow-hidden p-0">
+                {isLoading && (
+                    <div className="space-y-3 p-6">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 py-2 px-4 rounded-xl bg-slate-800/60 animate-pulse">
+                                <div className="w-8 h-8 bg-slate-700 rounded" />
+                                <div className="w-12 h-12 rounded-full bg-slate-700" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3 w-32 bg-slate-700 rounded" />
+                                    <div className="h-3 w-24 bg-slate-800 rounded" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                
+                {isError && (
+                    <div className="py-10 text-center text-red-400 font-semibold text-base">
+                        Failed to load top players
+                    </div>
+                )}
+                
+                {!isLoading && !isError && topPlayers.length === 0 && (
+                    <div className="py-10 text-center text-slate-400 text-base">
+                        No players found
+                    </div>
+                )}
+                
+                {!isLoading && !isError && topPlayers.length > 0 && (
+                    <ul className="divide-y divide-slate-800">
+                        {topPlayers. map((player, index) => (
+                            <li key={player.id}>
+                                <Link
+                                    to={`/users/${player.id}`}
+                                    className="group flex items-center gap-4 py-4 px-6 bg-transparent hover:bg-blue-900/30 transition rounded-xl block" >
+                                    {/* Rank Number */}
+                                    <div className="w-8 text-center flex-shrink-0">
+                                        <span className="text-lg font-bold text-slate-400 group-hover:text-blue-300 transition">
+                                            {index + 1}
+                                        </span>
                                     </div>
-                                    <span className={`text-lg font-bold ${text}`}>#{index + 1}</span>
-                                </li>
-                            )
-                        })}
-                </ul>
+                                    
+                                    {/* Avatar */}
+                                    <img
+                                        src={player.profile_picture}
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 flex-shrink-0" />
+                                    
+                                    {/* Player Info */}
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-semibold text-blue-200 group-hover:text-white transition">
+                                                {player.username}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Stats */}
+                                    <div className="text-right flex-shrink-0">
+                                        <p className="text-sm font-bold text-blue-300">
+                                            {player.total_xp} XP
+                                        </p>
+                                    </div>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
         </section>
     )
 }
-

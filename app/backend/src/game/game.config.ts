@@ -3,10 +3,6 @@ export const Canvas = {
     HEIGHT: 720,
 };
 
-export const Rules = {
-    MAX_SCORE: 5,
-};
-
 export const Paddle = {
     WIDTH: 16,
     HEIGHT: 120,
@@ -28,19 +24,13 @@ export const Physics = {
     SERVE_ANGLE_RANGE: { min: 10, max: 25 },
 };
 
-export const Colors = {
-    BACKGROUND: "#020617",
-    PADDLE_LEFT: "#3b82f6",
-    PADDLE_RIGHT: "#ef4444",
-    BALL: "#FFFFFF",
-    LINES: "rgba(255, 255, 255, 0.15)",
-    SCORE_TEXT: "rgba(255, 255, 255, 0.2)",
-    COUNTDOWN_TEXT: "#FFFFFF",
+export const XP_RULES = {
+    WIN:  100,
+    LOSS:  30,
+    PER_POINT: 5,
+    XP_PER_LEVEL: 1000,
 };
 
-
-export const Fonts = {
-    SCORE: "bold 72px ui-monospace, monospace",
-    COUNTDOWN: "bold 120px ui-sans-serif, system-ui, sans-serif",
-    GAMEOVER: "bold 50px ui-sans-serif, system-ui, sans-serif",
-};
+export function calculateLevel(totalXP: number): number {
+        return totalXP / XP_RULES.XP_PER_LEVEL;
+}

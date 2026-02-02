@@ -22,8 +22,7 @@ export interface TournamentPlayer {
     eliminated: boolean;
     registered_at: string;
     username: string;
-    avatar_url?: string;
-    profile_picture?: string;
+    avatar: string;
 }
 
 export interface TournamentCreator {
@@ -38,6 +37,7 @@ export interface TournamentDetails extends Tournament {
     player_count: number;
     is_registered: boolean;
     can_start: boolean;
+    success?: boolean;
 }
 
 // API Response Types

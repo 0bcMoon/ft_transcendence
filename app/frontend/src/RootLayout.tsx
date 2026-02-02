@@ -5,7 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import { Loader } from "lucide-react";
 import SideBar from "./navbar/SideBar"
 import TopBar from "./navbar/TopBar"
-import LandingPage from "./LandingPage";
+import LandingPage from "./landingpage/LandingPage";
 
 export default function RootLayout() {
     const { isAuthenticated, isLoading } = useAuth()

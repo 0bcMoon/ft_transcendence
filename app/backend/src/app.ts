@@ -9,6 +9,9 @@ import metricsPlugin from 'fastify-metrics';
 import routes from "./routes";
 import auth from "./auth.routes";
 import game from "./game.routes";
+import PingPongRoutes from "./routes/pingpong.routes";
+import NotificationsRoutes from "./routes/notifications.routes";
+
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
@@ -23,7 +26,6 @@ import path from 'path';
 import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 import chatRoute from "./chat.routes";
 import notifications from "./notifications";
-
 import arenaRoutes from "./arena/arenaRoutes";
 import arenaSocket from "./arena/arenaSocket";
 import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
@@ -129,7 +131,13 @@ fastify.register(websocket, {
 fastify.register(chatRoute, { prefix: "/api" });
 fastify.register(routes, { prefix: "/api" });
 fastify.register(auth, { prefix: "/api" });
-fastify.register(game, { prefix: "/api" });
+
+fastify.register(PingPongRoutes, { prefix: "/api" });
+fastify.register(NotificationsRoutes, { prefix: "/api" });
+
+fastify.register(arenaRoutes, { prefix: "/api" });
+fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });
+fastify.register(arenaStatsRoutes, { prefix: "/api" });
 
 fastify.register(arenaRoutes, { prefix: "/api" });
 fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });

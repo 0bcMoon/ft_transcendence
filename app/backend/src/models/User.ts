@@ -13,6 +13,10 @@ import { isOnline } from "../notifications";
 import { subscribe } from "../notifications";
 import fastify from "../app";
 import { otpConfirmationTemplate } from "../auth/email-template";
+import {
+    notifyFriendRequest,
+    acceptFriendRequest
+} from "../notification.service";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -143,6 +147,7 @@ const User = {
         if (!result) {
             return reply.status(400).send({ message: "friend request already exists" });
         }
+        notifyFriendRequest(req.user.id, user_id);
 
         return reply.status(200).send({ message: 'friend request sent' });
     },
@@ -231,6 +236,7 @@ const User = {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
                 await userRepository.createContactIfNotExist(req.user.id, user_id);
+                acceptFriendRequest(req.user.id, user_id);
                 return reply.status(200).send({ message: 'friends request has been accepted' });
             case false:
                 const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
@@ -334,9 +340,7 @@ const User = {
 
 
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
-
         const data = await req.file();
-
         if (!data) {
             return reply.status(400).send({ message: 'No file uploaded' });
         }
@@ -422,10 +426,7 @@ const User = {
     },
 
     updateEmail: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { email,  confirmation_code } = req.body as EmailUpdate;
-        console.log('-----------------')
-        console.log(confirmation_code)
-        console.log('-----------------')
+        const { email, confirmation_code } = req.body as EmailUpdate;
 
         const existing_user = await userRepository.getUserByEmail(email);
         if (existing_user) {
@@ -468,7 +469,7 @@ const User = {
 
         const code = generateOTP(8);
         await sendEmail(email, "Confirmation Code - Pingo", otpConfirmationTemplate(code));
-        if (oneTimePass.has(id)) {
+        if (oneTimePass.has(id)) { //  TODO: could applay a cold down may be 
             const existingOTP = oneTimePass.get(id);
             if (existingOTP) {
                 clearTimeout(existingOTP.timeout);
@@ -477,7 +478,7 @@ const User = {
 
         const timeout = setTimeout(() => {
             oneTimePass.delete(id);
-        }, 10 * 60 * 1000); // 10 minutes
+        }, 15 * 60 * 1000); // 10 minutes
 
         oneTimePass.set(id, {
             email: email,
