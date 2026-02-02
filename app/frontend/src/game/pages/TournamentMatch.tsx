@@ -7,7 +7,6 @@ import GameInstructions from '@/game/components/GameInstructions';
 
 export default function TournamentMatch() {
     const { tournamentId, matchId } = useParams<{ tournamentId: string; matchId: string }>();
-    console.log(tournamentId, matchId);
 
     if (!tournamentId || !matchId) {
         return (
@@ -47,8 +46,6 @@ export default function TournamentMatch() {
                         <GameInstructions
                             userSide={game.side ?? "left"}
                             mode="tournament"
-                            matchNumber={game.matchNumber}
-                            round={game.round}
                         />
                     </div>
                 </div>

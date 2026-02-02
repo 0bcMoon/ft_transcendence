@@ -120,7 +120,10 @@ export default function ArenaPlayPage() {
       if (!canSendInput()) return;
 
       let changed = false;
-      if ((e.key === "ArrowUp" || e.key === "w") && inputRef.current.up) { inputRef.current.up = false; changed = true; }
+      if ((e.key === "ArrowUp" || e.key === "w") && inputRef.current.up) { 
+                e.preventDefault();
+                inputRef.current.up = false; changed = true; 
+            }
       if ((e.key === "ArrowDown" || e.key === "s") && inputRef.current.down) { inputRef.current.down = false; changed = true; }
       if ((e.key === "ArrowLeft" || e.key === "a") && inputRef.current.left) { inputRef.current.left = false; changed = true; }
       if ((e.key === "ArrowRight" || e.key === "d") && inputRef.current.right) { inputRef.current.right = false; changed = true; }

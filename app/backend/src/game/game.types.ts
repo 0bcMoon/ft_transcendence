@@ -2,11 +2,43 @@ import type { WebSocket } from 'ws';
 
 export type Side = "left" | "right";
 
-export type GameMode = "remote" | "ai" | "tournament";
+export type GameMode = "remote"| "tournament";
 
 export interface Scores {
     left: number;
     right: number;
+}
+
+export interface BadgeCheckStats {
+    wins: number;
+    losses:  number;
+    level: number;
+    total_xp: number;
+    games_played: number;
+    win_rate: number;
+}
+
+export interface TournamentMatch {
+    gameId: number;
+    players: { left: Player; right: Player };
+    ready: { left: boolean; right: boolean };
+    state: GameState;
+    keys: {
+        left: { up: boolean; down: boolean };
+        right: { up: boolean; down: boolean };
+    };
+    loop?: NodeJS.Timeout;
+    tournamentId: number;
+    matchId: number;
+}
+
+export interface Match {
+    gameId: number;
+    players: { left: Player; right: Player };
+    ready: { left: boolean; right: boolean };
+    state: GameState;
+    keys: { left: { up: boolean; down: boolean }; right: { up: boolean; down: boolean }; };
+    loop?: NodeJS.Timeout;
 }
 
 export interface PlayerNames {
@@ -24,6 +56,19 @@ export interface Paddle {
     y: number;
     width: number;
     height: number;
+}
+
+export interface Ball {
+    x: number;
+    y: number;
+    speedX: number;
+    speedY: number;
+    radius: number;
+}
+
+export interface Score {
+    left: number;
+    right: number;
 }
 
 export interface GameState {
@@ -61,21 +106,7 @@ export interface Player {
     gameId?: number;
 }
 
-export interface Match {
-    gameId: number;
-    mode: GameMode;
-    players: {
-        left?: Player;
-        right?: Player;
-    };
-    ready: {
-        left: boolean;
-        right: boolean;
-    };
-    state: GameState;
-    startTime: number;
-    loop?: NodeJS.Timeout;
-}
+
 
 export interface KeysPressed {
     w: boolean;
@@ -84,40 +115,11 @@ export interface KeysPressed {
     ArrowDown: boolean;
 }
 
-export interface LocalGame {
-    countdown: number | null;
-    isGameOver: boolean;
-    winner: Side | null;
-    finalScore: Scores | null;
-    handlePlayAgain: () => void;
-    playerNames: PlayerNames;
-}
-
-export interface GameSession {
-    side: Side | null;
-    countdown: number | null;
-    isGameOver: boolean;
-    winner: Side | null;
-    waiting: boolean;
-    playerNames: PlayerNames | null;
-    playerAvatars: PlayerAvatars | null;
-    finalScore: Scores | null;
-    handlePlayAgain: () => void;
-    handleGoHome: () => void;
-}
-
-export type ClientMessage =
-    | {
-        type: "joinGame";
-        username: string;
-        avatar: string;
-        mode: GameMode;
-        gameId?: number;
-        tournamentId?: number;
-        matchId?: number;
-    }
-    | { type: "ready" }
-    | { type: "move"; up: boolean; down: boolean }
-    | { type: "playAgain"; mode: GameMode }
-    | { type: "leaveGame" };
+export type ClientMessage = 
+    | { type: 'remote'; username: string; avatar?: string }
+    | { type: 'tournament'; username: string; avatar?: string; tournamentId: number; matchId: number }
+    | { type: 'ready' }
+    | { type: 'move'; up: boolean; down: boolean }
+    | { type: 'playAgain' }
+    | { type:  'leaveGame' };
 

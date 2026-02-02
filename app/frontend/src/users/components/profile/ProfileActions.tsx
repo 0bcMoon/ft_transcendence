@@ -60,8 +60,7 @@ function ChallengeButton({ relationStatus }: { relationStatus: string }) {
     return (
         <button
             className={`${buttonClasses} bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 active:from-green-800 active:to-emerald-800 text-white focus:ring-green-500`}
-            onClick={() => toast("🎮 Feature coming soon!")}
-        >
+            onClick={() => toast("🎮 Feature coming soon!")} >
             <Gamepad2 className="w-5 h-5" />
             <span>Challenge</span>
         </button>

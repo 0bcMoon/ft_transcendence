@@ -68,7 +68,6 @@ function Settings() {
         if (!data.username && !data.display_name && !data.current_password) {
             return
         }
-        window.scrollTo(0, 0)
         updateUserProfile(data)
     }
 
