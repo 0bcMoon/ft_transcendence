@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import WebSocket from "ws";
 
 import fastify from "./app";
+import { userRepository } from "./repository/userRepository";
 
 type NotificationType =
     | 'notify'
@@ -20,7 +21,7 @@ export interface IEvent {
     type: NotificationType;
     status?: 'online' | 'offline';
 
-    message_payload? :{
+    message_payload?: {
         username: string;
         content: string;
         profile_picture: string;
@@ -121,32 +122,42 @@ export function sendPayload(userId: number, payload: IEvent) {
 }
 
 export default async function(fastify: FastifyInstance) {
-    fastify.get('/notify', { websocket: true, onRequest: fastify.authenticate }, (socket, req) => {
-        fastify.log.info(`User ${req.user.id} connected to notifications`);
+    fastify.get('/notify', { websocket: true, onRequest: fastify.authenticate }, async (socket, req) => {
         if (online.has(req.user.id)) {
             online.get(req.user.id)?.close();
         }
         online.set(req.user.id, socket)
+        const contactIds = (await userRepository.getContactList(req.user.id)).map(c => c.id);
+        const friendIds = (await userRepository.getFriends(req.user.id)).map(f => f.id);
+
+        fastify.log.info(`User ${req.user.id} connected to notifications`);
+        fastify.log.info(`User count ${online.size} `);
+        fastify.log.debug(`User ${req.user.id} subscribing to contacts: ${contactIds}`);
+        fastify.log.debug(`User ${req.user.id} subscribing to friends: ${friendIds}`);
+
+        subscribe(req.user.id, [...contactIds, ...friendIds]); // auto
         notify(req.user.id, JSON.stringify({ type: 'notify', status: true, id: req.user.id })); // notify subscribers that user is online
         socket.on('close', () => {
             notify(req.user.id, JSON.stringify({ type: 'notify', status: false, id: req.user.id })); // notify subscribers that user is offline
             fastify.log.info(`User ${req.user.id} disconnect to notifications`);
+            unsubscribe(req.user.id, [...contactIds, ...friendIds]);
             online.delete(req.user.id);
-            fastify.log.info(`User count ${online.size} `);
         });
 
         socket.on('message', async (message) => {
-            const payload = JSON.parse(message.toString()) as IEvent;
-            switch (payload.type) {
-                case 'subscribe': // heartbeat message
-                    fastify.log.info(`User ${req.user.id} subscribe to ${payload.subscribers}`);
-                    subscribe(req.user.id, payload.subscribers || []);
-                    break;
-                case 'unsubscribe': // heartbeat message
-                    unsubscribe(req.user.id, payload.subscribers || []);
-                    break;
+            try {
+                const payload = JSON.parse(message.toString()) as IEvent;
+                switch (payload.type) {
+                    case 'unsubscribe': // heartbeat message
+                        unsubscribe(req.user.id, payload.subscribers || []);
+                        break;
+                    default:
+                        fastify.log.warn(`Unknown notification type: ${payload.type} from user ${req.user.id}`);
+                        break;
+                }
+            } catch (error) {
+                fastify.log.error(`Error processing message from user ${req.user.id}: ${error}`);
             }
-
         });
 
     });

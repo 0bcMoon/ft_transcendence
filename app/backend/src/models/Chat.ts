@@ -31,7 +31,6 @@ const Chat = {
             element.image_src = undefined
             element.online_status = isOnline(element.id);
         });
-        subscribe(req.user.id, sub);
         return reply.status(200).send(contacts);
     },
 
