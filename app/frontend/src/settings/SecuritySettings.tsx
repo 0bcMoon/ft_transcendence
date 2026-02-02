@@ -11,7 +11,8 @@ interface IUpdateState {
 }
 
 function SecuritySettings() {
-    const isEnabled = useAuthStore((state) => state.user?.two_factor_enabled)
+
+    const isTwoFaEnabled = useAuthStore((state) => state.user?.two_factor_enabled)
     const [confirmation_sent, setConfirmationSent] = useState<boolean>(false)
     const [open2faModal, setOpen2faModal] = useState<boolean>(false)
     const [updateState, setUpdateState] = useState<IUpdateState | null>(null)
@@ -41,8 +42,9 @@ function SecuritySettings() {
         },
     ]
 
-    const query = useQueryClient()
-    const { mutate: update2fa, isPending: isUpdating2fa } = useMutation({
+    const queryClient = useQueryClient()
+
+    const { mutate: update2FA, isPending: isUpdating2FA } = useMutation({
         mutationFn: async (query: { action: boolean; confirmation_code?: string }) => {
             const response = await api.get("/api/auth/2fa", {
                 params: query,
@@ -51,10 +53,8 @@ function SecuritySettings() {
         },
         onSuccess: (data: any) => {
             setUpdateState({ type: "success", message: data.message })
-            if (confirmation_sent) {
-                query.invalidateQueries({ queryKey: ["user"] })
-            }
-            setConfirmationSent((prev) => !prev)
+            queryClient.invalidateQueries({ queryKey: ["user"], refetchType: 'active' })
+            setConfirmationSent(prev => !prev );
         },
         onError: (error: any) => {
             setUpdateState({ type: "error", message: error.response?.data?.message ?? "Internal Server Error" })
@@ -85,7 +85,7 @@ function SecuritySettings() {
     }
 
     const onAccept = () => {
-        update2fa({ action: !isEnabled })
+        update2FA({ action: !isTwoFaEnabled })
         setOpen2faModal(false)
     }
 
@@ -98,7 +98,7 @@ function SecuritySettings() {
                 setUpdateState({ type: "error", message: "Confirmation code is required" })
                 return
             }
-            update2fa({ action: !isEnabled, confirmation_code: confirmation_code })
+            update2FA({ action: !isTwoFaEnabled, confirmation_code: confirmation_code })
         }
 
         const cancelFunction = () => {
@@ -131,7 +131,7 @@ function SecuritySettings() {
                     <button
                         onClick={cancelFunction}
                         type="button"
-                        disabled={isUpdating2fa}
+                        disabled={isUpdating2FA}
                         className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 
                                    border border-slate-700 rounded-lg 
                                    hover:bg-slate-700 transition-colors 
@@ -141,12 +141,12 @@ function SecuritySettings() {
                     </button>
                     <button
                         type="submit"
-                        disabled={isUpdating2fa}
+                        disabled={isUpdating2FA}
                         className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg 
                                    transition-colors font-medium
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isUpdating2fa ? "Confirming..." : "Confirm 2FA Change"}
+                        {isUpdating2FA ? "Confirming..." : "Confirm 2FA Change"}
                     </button>
                 </div>
             </form>
@@ -166,35 +166,35 @@ function SecuritySettings() {
                 <div className="flex items-center gap-3">
                     <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center 
-                                    ${isEnabled ? "bg-green-500/20" : "bg-slate-800"}`}
+                                    ${isTwoFaEnabled ? "bg-green-500/20" : "bg-slate-800"}`}
                     >
                         <Shield
                             className={`w-5 h-5 
-                                          ${isEnabled ? "text-green-400" : "text-slate-500"}`}
+                                          ${isTwoFaEnabled ? "text-green-400" : "text-slate-500"}`}
                         />
                     </div>
                     <div>
                         <h4 className="font-medium text-white">Two-Factor Authentication</h4>
                         <p className="text-sm text-slate-400">
-                            {isEnabled ? "Your account is protected with 2FA" : "Add an extra layer of security"}
+                            {isTwoFaEnabled ? "Your account is protected with 2FA" : "Add an extra layer of security"}
                         </p>
                     </div>
                 </div>
                 <button
                     type="button"
-                    disabled={isUpdating2fa || confirmation_sent}
+                    disabled={isUpdating2FA || confirmation_sent}
                     onClick={() => setOpen2faModal(true)}
                     className={`disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-white rounded-lg 
                                 transition-colors font-medium flex items-center gap-2
-                                ${isEnabled ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                                ${isTwoFaEnabled ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}
                 >
-                    {isUpdating2fa ? <Loader className="animate-spin w-4 h-4" /> : isEnabled ? "Disable 2FA" : "Enable 2FA"}
+                    {isUpdating2FA ? <Loader className="animate-spin w-4 h-4" /> : isTwoFaEnabled ? "Disable 2FA" : "Enable 2FA"}
                 </button>
             </div>
 
             {confirmation_sent && <ConfirmationCode />}
 
-            <Modal {...curr_modal[Number(!!isEnabled)]} />
+            <Modal {...curr_modal[Number(!!isTwoFaEnabled)]} />
         </div>
     )
 }

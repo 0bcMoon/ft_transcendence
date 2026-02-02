@@ -6,6 +6,7 @@ import type { EmailUpdate } from "@/state/Store"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Check, Mail, X } from "lucide-react"
 import { useEffect, useState } from "react"
+import { emailSchema } from "@/zod/user.schema"
 
 interface IUpdateState {
     type: "error" | "success" | "none"
@@ -26,7 +27,8 @@ function EmailSettings() {
 
     const queryClient = useQueryClient()
     const { mutate: updateEmail, isPending: isEmailLoading } = useMutation({
-        mutationFn: async (email_data: { email: string; confirmtion_code?: string }) => {
+        mutationFn: async (email_data: { email: string; confirmation_code?: string }) => {
+            console.log("email_data", email_data)
             const response = await api.post("/api/user/update/email", email_data)
             return response.data
         },
@@ -36,7 +38,7 @@ function EmailSettings() {
                 message: data.message || "Email address updated successfully.",
             })
             setEmail(data.email)
-            setConfirmationSent((prev) => !prev)
+            setConfirmationSent(true)
             if (confirmation_sent) {
                 setConfirmationSent(false)
             }
@@ -52,11 +54,10 @@ function EmailSettings() {
 
     const handelSumit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-
-        setUpdateState({
-            type: "none",
-            message: "",
-        })
+        // setUpdateState({
+        //     type: "none",
+        //     message: "",
+        // })
         const form = new FormData(e.currentTarget)
         const data = Object.fromEntries(form.entries()) as unknown as EmailUpdate
 
@@ -94,13 +95,12 @@ function EmailSettings() {
     }
 
     const isValidEmail = (email: string) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        return emailRegex.test(email)
+        return emailSchema.safeParse(email).success
     }
 
     function cancelFunction(e: any) {
         e.preventDefault()
-        setEmail(email || "")
+        setEmail(user_email || "")
         setConfirmationSent(false)
         setUpdateState({
             type: "none",
@@ -147,7 +147,7 @@ function EmailSettings() {
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Confirmation Code</label>
                                 <input
-                                    name="confirmtion_code"
+                                    name="confirmation_code"
                                     type="text"
                                     className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg 
                                                text-white placeholder:text-slate-500

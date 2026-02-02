@@ -8,7 +8,7 @@ import { RouterProvider } from "react-router-dom";
 import Login from '@/auth/Login';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/context/AuthContext';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import RootLayout from '@/RootLayout'
 import NotFound from '@/NotFound.tsx';
@@ -90,9 +90,9 @@ createRoot(document.getElementById("root")!).render(
             </WebSocketProvider>
         </AuthProvider>
 
-        <ReactQueryDevtools
-            initialIsOpen={false}
-        />
+        {/* <ReactQueryDevtools */}
+        {/*     initialIsOpen={false} */}
+        {/* /> */}
     </QueryClientProvider>
 );
 

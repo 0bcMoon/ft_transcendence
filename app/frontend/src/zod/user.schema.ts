@@ -1,21 +1,45 @@
 import { useValidationStore } from "@/state/Store";
 import { z } from "zod";
 
+export const usernameSchema = z.string()
+    .trim()
+    .min(1, 'Username is required')
+    .min(3, 'Username must be at least 3 characters')
+    .regex(
+        /^[a-zA-Z][a-zA-Z0-9_]*$/,
+        'Username must start with a letter and can only contain letters, numbers, and underscores'
+    );
+
+export const emailSchema = z.string()
+                        .trim()
+                        .min(1, 'Email is required')
+                        .max(128, 'Email cannot exceed 128 characters')
+                        .email('Please enter a valid email address');
+
 export const registrationSchema = z.object({
+    display_name: z
+        .string()
+        .trim()
+        .min(1, "Display name is required.")
+        .max(64, "Display name cannot exceed 64 characters.")
+        .regex(/^[a-zA-Z ]+$/, 'Display name can only contain letters and spaces'),
     username: z.string()
+        .trim()
         .min(1, 'Username is required')
         .min(3, 'Username must be at least 3 characters')
-        .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-    display_name: z.string()
-        .min(1, 'Display name is required')
-        .min(2, 'Display name must be at least 2 characters'),
+        .regex(
+            /^[a-zA-Z][a-zA-Z0-9_]*$/,
+            'Username must start with a letter and can only contain letters, numbers, and underscores'
+        ),
     email: z.string()
+        .trim()
         .min(1, 'Email is required')
+        .max(128, 'Email cannot exceed 128 characters')
         .email('Please enter a valid email address'),
     password: z.string()
-        .min(1, 'Password is required')
-        .min(8, 'Password must be at least 8 characters')
-        .regex(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+        .trim()
+        .min(8, "Password must be at least 8 characters long.")
+        .max(64, "Password cannot exceed 64 characters."),
     confirm_password: z.string()
         .min(1, 'Please confirm your password')
 }).refine(data => data.password === data.confirm_password, {
@@ -36,6 +60,7 @@ export interface IFormData {
 
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const imageSchema = z.any()
@@ -69,16 +94,14 @@ const updateProfile = (formData: IFormData): boolean => {
     const changePasswordSchema = z.object({
         current_password: z
             .string()
-            .min(1, "Old password is required.")
-            .max(256),
+            .trim()
+            .min(8, "Password must be at least 8 characters long.")
+            .max(64, "Password cannot exceed 64 characters."),
         new_password: z
             .string()
+            .trim()
             .min(8, "Password must be at least 8 characters long.")
-            .regex(/[0-9]/, "Password must contain at least one number.")
-            .regex(
-                /[!@#$%^&*(),.?":{}|<>]/,
-                "Password must contain at least one special character."
-            ),
+            .max(64, "Password cannot exceed 64 characters."),
         confirm_password: z.string().min(1, "Please confirm your new password."),
     })
         .refine((data) => data.new_password === data.confirm_password, {
@@ -93,12 +116,18 @@ const updateProfile = (formData: IFormData): boolean => {
     const updateProfileSchema = z.object({
         display_name: z
             .string()
+            .trim()
             .min(1, "Display name is required.")
-            .max(50, "Display name cannot exceed 50 characters."),
+            .max(64, "Display name cannot exceed 64 characters.")
+            .regex(/^[a-zA-Z ]+$/, 'Display name can only contain letters and spaces'),
         username: z.string()
+            .trim()
             .min(1, 'Username is required')
             .min(3, 'Username must be at least 3 characters')
-            .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+            .regex(
+                /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                'Username must start with a letter and can only contain letters, numbers, and underscores'
+            ),
 
     });
 
