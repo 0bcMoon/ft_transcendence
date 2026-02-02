@@ -1,7 +1,8 @@
+
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-export default function TermsOfService() {
+export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -25,10 +26,10 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-bold text-white mb-4">1. Introduction</h2>
             <p>
-              Welcome to Pong.1337 ("we," "our," or "us"). We are committed to protecting your 
-              privacy and ensuring the security of your personal information. This Privacy Policy 
-              explains how we collect, use, disclose, and safeguard your information when you use 
-              our online ping pong game platform.
+              Welcome to Pong.1337. We are dedicated to safeguarding your privacy.
+              This Privacy Policy explains our practices regarding the collection, 
+              use, disclosure, and protection of personal information in connection 
+              with our online ping pong gaming platform.
             </p>
           </section>
 
@@ -42,41 +43,41 @@ export default function TermsOfService() {
               <li>Username and display name</li>
               <li>Email address</li>
               <li>Password (encrypted and securely stored)</li>
-              <li>Profile picture (optional)</li>
+              <li>Profile picture (optional and safely stored)</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-white mb-3 mt-4">2.2 Game Data</h3>
             <p className="mb-3">During gameplay, we collect:</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Game statistics (wins, losses, scores)</li>
-              <li>Tournament participation and results</li>
-              <li>Match history and replays</li>
-              <li>Player rankings and achievements</li>
+              <li>Game statistics (wins, losses, scores) for personnal statistics.</li>
+              <li>Tournament participation and results.</li>
+              <li>Match history and replays.</li>
+              <li>Player rankings and achievements.</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-white mb-3 mt-4">2.3 Technical Information</h3>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>IP address and device information</li>
-              <li>Browser type and version</li>
-              <li>Operating system</li>
-              <li>Gameplay session data</li>
-              <li>Connection quality metrics</li>
+              <li>IP address and device informations.</li>
+              <li>Browser type and version.</li>
+              <li>Operating system.</li>
+              <li>Gameplay session data.</li>
+              <li>Connection quality metrics.</li>
             </ul>
           </section>
 
           {/* How We Use Your Information */}
           <section>
             <h2 className="text-2xl font-bold text-white mb-4">3. How We Use Your Information</h2>
-            <p className="mb-3">We use your information to:</p>
+            <p className="mb-3">We use your informations in order :</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Provide and maintain the game service</li>
-              <li>Create and manage your account</li>
-              <li>Facilitate online matches and tournaments</li>
-              <li>Calculate rankings and leaderboards</li>
-              <li>Improve game performance and user experience</li>
-              <li>Detect and prevent cheating or abuse</li>
-              <li>Send important updates and notifications</li>
-              <li>Respond to support requests</li>
+              <li>Provide and maintain the game services.</li>
+              <li>Create and manage your account.</li>
+              <li>Facilitate online matches and tournaments.</li>
+              <li>Calculate rankings and leaderboards.</li>
+              <li>Improve game performance and user experience.</li>
+              <li>Detect and prevent cheating or abuse.</li>
+              <li>Send important updates and notifications.</li>
+              <li>Respond to support requests.</li>
             </ul>
           </section>
 
@@ -85,10 +86,10 @@ export default function TermsOfService() {
             <h2 className="text-2xl font-bold text-white mb-4">4. Data Sharing and Disclosure</h2>
             <p className="mb-3">We do not sell your personal information. We may share data:</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li><strong>With Other Players:</strong> Your username, ranking, and game statistics are publicly visible</li>
-              <li><strong>For Legal Compliance:</strong> When required by law or to protect our rights</li>
-              <li><strong>Service Providers:</strong> With trusted third parties who help operate our platform</li>
-              <li><strong>In Case of Merger:</strong> If our company is acquired or merged</li>
+              <li><strong>With Other Players:</strong> Your username, ranking, and game statistics are publicly visible.</li>
+              <li><strong>For Legal Compliance:</strong> When required by law or to protect our rights.</li>
+              <li><strong>Service Providers:</strong> With trusted third parties who help operate our platform.</li>
+              <li><strong>In Case of Merger:</strong> If our company is acquired or merged.</li>
             </ul>
           </section>
 
@@ -128,11 +129,10 @@ export default function TermsOfService() {
               <li><strong>Access:</strong> Request a copy of your personal data</li>
               <li><strong>Correction:</strong> Update or correct your information</li>
               <li><strong>Deletion:</strong> Request deletion of your account and data</li>
-              <li><strong>Export:</strong> Download your game data and statistics</li>
               <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
             </ul>
             <p className="mt-3">
-              To exercise these rights, contact us at privacy@pong1337.com
+              To exercise these rights, contact us at privacy@pingponggame.dev.
             </p>
           </section>
 
@@ -171,8 +171,8 @@ export default function TermsOfService() {
             <h2 className="text-2xl font-bold text-white mb-4">11. Contact Us</h2>
             <p className="mb-3">If you have questions about this Privacy Policy, please contact us:</p>
             <ul className="space-y-2 ml-4">
-              <li><strong>Email:</strong> privacy@pong1337.com</li>
-              <li><strong>Support:</strong> support@pong1337.com</li>
+              <li><strong>Email:</strong> privacy@pingponggame.dev.</li>
+              <li><strong>Support:</strong> support@pingponggame.dev.</li>
             </ul>
           </section>
 

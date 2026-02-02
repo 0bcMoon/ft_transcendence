@@ -235,6 +235,7 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
                         <div className="flex items-end space-x-3">
                             <div className="flex-1">
                                 <input
+                                maxLength={255}
                                     name="message"
                                     placeholder="Type a message..."
                                     className="w-full p-3 bg-slate-900 border border-slate-700 rounded-2xl 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-
-export default function PrivacyPolicy() {
+// TermsOfService
+export default function TermsOfService(){
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -193,9 +193,9 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-bold text-white mb-4">10. Limitation of Liability</h2>
             <p>
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT, 
-              INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOST PROFITS, 
-              DATA LOSS, OR SERVICE INTERRUPTION.
+             to the maximum extent permitted by law, we shall not be liable for any indirect,
+              incidental, special, consequential, or punitive damages, including lost profits,
+              data loss, or service interruption.
             </p>
           </section>
 
@@ -233,8 +233,8 @@ export default function PrivacyPolicy() {
             <h2 className="text-2xl font-bold text-white mb-4">14. Contact Information</h2>
             <p className="mb-3">For questions about these Terms, contact us:</p>
             <ul className="space-y-2 ml-4">
-              <li><strong>Email:</strong> legal@pong1337.com</li>
-              <li><strong>Support:</strong> support@pong1337.com</li>
+              <li><strong>Email:</strong> legal@pingponggagme.dev.</li>
+              <li><strong>Support:</strong> support@pingponggagme.dev.</li>
             </ul>
           </section>
 

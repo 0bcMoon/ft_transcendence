@@ -51,6 +51,7 @@ db.serialize(async () => {
         ["zaid", "Zaid kotbi", "zaid@mail.com"],
         ["microb", "khona microb", "microb@mail.com"],
         ["zeko", "zakaria", "zakaria@mail.com"],
+        ["joulan", "joulan", "joulan@mail.com"],
         ["user1", "khona microb", "user1@mail.com"],
         ["user2", "khona microb", "user2@mail.com"],
         ["user3", "khona microb", "user3@mail.com"],
