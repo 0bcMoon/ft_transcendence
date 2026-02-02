@@ -1,4 +1,8 @@
-all: up
+all: dirs up 
+
+dirs:
+	mkdir -p database
+	mkdir -p images
 
 up:
 	docker-compose up -d --build
