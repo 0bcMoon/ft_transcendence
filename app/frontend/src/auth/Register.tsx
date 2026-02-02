@@ -46,6 +46,7 @@ export default function Register() {
     const handleComplete = () => {
         setIsCompleted(true);
     };
+    console.log("Form Data:", formData);
 
     const RenderStep = () => {
         switch (currentStep) {

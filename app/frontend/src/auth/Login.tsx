@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, AlertTriangle } from 'lucide-react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 import ForgotPasswordModal from './ForgotPasswordModal';
 import TwoFactorAuth from './TwoFactorAuth';
@@ -13,20 +13,28 @@ const loginSchema = z.object({
     identifier: z.union([
         z.string().email("Invalid email format"),
         z.string()
+            .trim()
             .min(3, "Username too short")
-            .max(20, "Username too long")
-            .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores")
+            .max(24, "Username too long")
+            .regex(
+                /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                'Username must start with a letter and can only contain letters, numbers, and underscores'
+            ),
     ]),
-    password: z.string().min(1, "Password is required").min(8, "Password must be at least 8 characters"),
+    password: z.string()
+        .trim()
+        .min(8, "Password must be at least 8 characters long.")
+        .max(64, "Password cannot exceed 64 characters."),
 })
 
-type LoginFormData = z.infer<typeof loginSchema>
 type CurrentStep = "login" | "two_factor_auth"
 
 export default function LoginPage() {
+
     const [showPassword, setShowPassword] = useState(false)
     const [showForgotModal, setShowForgotModal] = useState(false)
-    const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({})
+    const [errors, setErrors] = useState<{ identifier?: string, password?: string }>({})
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [step, setCurrentStep] = useState<CurrentStep>("login")
 
     const { isAuthenticated, isLoading, setAuth } = useAuth()
@@ -34,13 +42,26 @@ export default function LoginPage() {
     const location = useLocation()
     const from = location.state?.from?.pathname || "/"
 
-    const loginMutation = useLogin()
+    const loginMutation = useLogin(setErrorMessage);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const error = searchParams.get('error');
+        if (!error) {
+            return
+        }
+
+        setErrorMessage(error);
+        searchParams.delete('error');
+        setSearchParams(searchParams, { replace: true });
+    }, []);
 
     useEffect(() => {
         if (isAuthenticated && !isLoading) {
             navigate(from, { replace: true })
         }
     }, [isAuthenticated, isLoading, navigate, from])
+
     const queryClient = useQueryClient();
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,8 +95,7 @@ export default function LoginPage() {
     }
 
     const handleOAuthLogin = (provider: "google" | "42") => {
-        const backendUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
-        window.location.href = `${backendUrl}/api/auth/oauth/${provider}`
+        window.location.href = `/api/auth/oauth/${provider}`
     }
 
     if (step === "two_factor_auth") {
@@ -91,10 +111,10 @@ export default function LoginPage() {
                         <p className="text-slate-400">Sign in to continue</p>
                     </div>
 
-                    {loginMutation.isError && (
+                    {errorMessage && (
                         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center gap-2">
                             <AlertTriangle className="w-5 h-5 text-red-400" />
-                            <p className="text-sm text-red-400">Invalid credentials.</p>
+                            <p className="text-sm text-red-400">{errorMessage}</p>
                         </div>
                     )}
 
