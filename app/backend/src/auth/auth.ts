@@ -8,6 +8,9 @@ import { GoogleOAuth2, Intra42OAuth2 } from '../types/types';
 import User from '../models/User';
 import crypto from 'crypto';
 import z from 'zod';
+import { sendEmail } from '../email-service';
+import { emailConfirmationTemplate, resetPasswordEmailTemplate, twoFactorAuthTemplate } from './email-template';
+import { usernameSchema } from '../schema/user.schema';
 
 interface LoginBody {
     identifier: string;
@@ -46,29 +49,21 @@ function generateRandomKey(length = 8) {
 }
 
 const emailSchema = z.object({
-    email: z.string({ required_error: "Email is require" }).email(),
+    email: z
+        .string({ required_error: "Email is require" })
+        .trim()
+        .email('invalid email format')
+        .max(128, "Email too long"),
 });
 
 const passwordSchema = z.object({
     password: z
         .string({ required_error: "Password is required" })
-        .min(8)
-        .max(32),
+        .trim()
+        .min(8, "Password must be at least 8 characters long.")
+        .max(64, "Password too long"),
 });
 
-function resetPasswordEmailTemplate(reset_code: string) {
-    return `
-    <html>
-        <body>
-            <h1>Password Reset Request</h1>
-            <p>You have requested to reset your password. Please use the following code to reset your password:</p>
-            <a href=${env.BACKEND_URL}/reset-password?rest_code=${reset_code}> Reset Password</a>
-            <p>This code will expires In 15 min.</p>
-            <p>If you did not request this, please ignore this email.</p>
-        </body>
-    </html>
-    `;
-}
 
 const Auth = {
 
@@ -124,25 +119,20 @@ const Auth = {
             userPasswordResetRequests.delete(user.id);
         }, 15 * 60 * 1000); // 15 minutes expiration
 
-        console.log(`-------------------------------`);
-        console.log(`Sending password reset email to ${email} with code: ${reset_code}`);
-        console.log(`-------------------------------`);
 
-        // await sendEmail(email, "Password Reset", resetPasswordEmailTemplate(reset_code))
+        await sendEmail(email, "Password Reset Request - Pingo", resetPasswordEmailTemplate(reset_code))
     },
 
     checkUsernameAvailability: async (req: FastifyRequest, reply: FastifyReply) => {
 
+        const resutl  = usernameSchema.safeParse(req.query);
+        if (!resutl.success) {
+            return reply.status(400).send({ message: resutl.error.errors[0].message });
+        }
         const { username } = req.query as { username: string };
-        if (!username) {
-            return reply.status(400).send({ message: "username is require" });
-        }
-        if (username.length < 3 || username.length > 20) {
-            return reply.status(400).send({ message: "username must be between 3 and 20 characters" });
-        }
         const existingUser = await userRepository.getUserByUsername(username);
         if (existingUser) {
-            return reply.status(409).send({ message: 'Username already exists' });
+            return reply.status(409).send({ message: 'username already exists' });
         }
 
         return reply.status(200).send({ message: 'username is available' });
@@ -165,12 +155,7 @@ const Auth = {
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
 
-        // const _ = await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
-
-        // email is expensive operation, so we will just log it
-        console.log(`-------------------------------`);
-        console.log(`Sending email2 to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
+        await sendEmail(email, "Verify Your Email - Pingo", emailConfirmationTemplate(code))
 
 
 
@@ -226,20 +211,21 @@ const Auth = {
 
     TwoFactorAuth: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        const { confirmation_code, action } = req.query as { confirmation_code: string, action: boolean };
+        const { confirmation_code, action } = req.query as { confirmation_code?: string, action: boolean };
         if (action === undefined) {
             return reply.status(400).send({ message: "action is require" });
         }
+
         const user = await userRepository.getCurrentUserById(req.user.id);
 
         if (!user) { // make typescript happy
             return reply.status(404).send({ message: 'User not found' });
         }
+
         if (user.two_factor_enabled === false && action === false) {
             return reply.status(400).send({ message: "Two Factor Auth already Enable" });
         }
-
-        if (!user.two_factor_enabled && !action) {
+        else if (!user.two_factor_enabled && !action) {
             return reply.status(400).send({ message: "Two Factor Auth already disable" });
         }
 
@@ -259,13 +245,7 @@ const Auth = {
 
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
-        // await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
-
-        //
-        // // email is expensive operation, so we will just log it
-        console.log(`-------------------------------`);
-        console.log(`Sending email to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
+        await sendEmail(email, "Two-Factor Authentication Code - Pingo", twoFactorAuthTemplate(code))
 
 
         reply
@@ -437,8 +417,7 @@ const Auth = {
             id: user_id,
         }, {
             expiresIn: env.ACCESS_TOKEN_EXPR
-        },
-        )
+        })
 
         const refresh_token = fastify.jwt.sign({
             id: user_id,
@@ -451,7 +430,7 @@ const Auth = {
             .setCookie('access_token', access_token, {
                 path: '/',
                 secure: true,
-                maxAge: 15 * 60,
+                maxAge: env.ACCESS_TOKEN_EXPR,
                 httpOnly: true,
                 sameSite: 'strict',
             })
@@ -460,7 +439,7 @@ const Auth = {
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
                 secure: true,
-                maxAge: 15 * 60,
+                maxAge: env.REFRESH_TOKEN_EXPR,
                 httpOnly: true,
                 sameSite: 'strict',
             })

@@ -1,6 +1,6 @@
-import jwt, { FastifyJWT } from "@fastify/jwt";
+import jwt from "@fastify/jwt";
 import cors from "@fastify/cors";
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import chatSocket from "./websocket";
 import gameSocket from "./gameSocket";
@@ -13,6 +13,8 @@ import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider, } from "fastify-type-provider-zod";
+
+import jwtConfig from "./auth/jwt";
 
 // This import is essential. It loads the types from the plugin.
 import multipart from '@fastify/multipart';
@@ -78,6 +80,8 @@ fastify.register(jwt, {
     },
 });
 
+fastify.register(jwtConfig);
+
 fastify.register(oauthPlugin, {
     name: "intra42OAuth2",
     credentials: {
@@ -115,7 +119,11 @@ fastify.register(oauthPlugin, {
 });
 
 fastify.register(multipart);
-fastify.register(websocket);
+fastify.register(websocket, {
+    options: {
+        maxPayload: 8 * 1024, // 8 KB
+    },
+});
 
 // Routes
 fastify.register(chatRoute, { prefix: "/api" });
@@ -140,11 +148,11 @@ fastify.register(staticPlugin, {
 
 fastify.register(cors, {
     // Configure CORS options
-    origin: true, // Allow any origin for development (restrict this in production!)
+    origin: true,
     methods: ["GET", "OPTIONS", "POST", "HEAD", "DELETE", "PATCH"], // Include both GET and OPTIONS
     allowedHeaders: ["Content-Type", "Authorization", "Upgrade", "Connection"],
     credentials: true,
-    preflightContinue: true, // Important for WebSocket connections
+    preflightContinue: true,
 });
 
 const uploadDir = path.join(process.cwd(), "/public/uploads");
@@ -153,76 +161,15 @@ mkdir(uploadDir, { recursive: true }, (err) => {
     if (err) throw err;
 });
 
-const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
-    const refreshToken = req.cookies.refresh_token;
-    if (!refreshToken) {
-        return reply.code(401).send({ message: "Unauthorized: Session expired" });
-    }
-
-    try {
-        const decoded = (await fastify.jwt.verify(
-            refreshToken,
-        )) as FastifyJWT["user"];
-        const access_token = fastify.jwt.sign(
-            {
-                id: decoded.id,
-            },
-            {
-                expiresIn: env.ACCESS_TOKEN_EXPR,
-            },
-        );
-
-        reply
-            .setCookie('access_token', access_token, {
-                path: '/',
-                secure: true,
-                maxAge: 15 * 60,
-                httpOnly: true,
-                sameSite: 'strict',
-            })
-        req.user = decoded; // Set the user in the request object
-
-    } catch (error: any) {
-        reply.clearCookie("access_token");
-        reply.clearCookie("refresh_token");
-        return reply
-            .code(401)
-            .send({ message: "Unauthorized: Invalid refresh token" });
-    }
-};
 fastify.setErrorHandler((error, _, reply) => {
-    // Check if the error is a Zod validation error
     if (error.validation) {
-        // Return a 400 response with a simplified message
         reply.status(400).send({
             message: error.validation[0].message,
         });
         return;
     }
-    // For all other errors, use the default handler
     reply.send(error);
 });
 
-fastify.decorate(
-    "authenticate",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-        try {
-            await req.jwtVerify({ onlyCookie: true });
-        } catch (error: any) {
-            // console.debug("JWT verification failed:", error);
-            switch (error.code) {
-                case "FST_JWT_AUTHORIZATION_TOKEN_EXPIRED":
-                case "FST_JWT_NO_AUTHORIZATION_IN_COOKIE":
-                case "FST_JWT_INVALID_AUTHORIZATION_IN_COOKIE":
-                    refreshAcessToken(req, reply);
-                    break;
-                default:
-                    reply.clearCookie("access_token");
-                    reply.clearCookie("refresh_token");
-                    return reply.code(401).send({ message: error.message });
-            }
-        }
-    },
-);
 
 export default fastify;

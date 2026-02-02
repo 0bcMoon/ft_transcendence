@@ -12,7 +12,7 @@ services:
     networks:
       - pingpong
     volumes:
-      - ./database:/app/sqliteDB
+      - database:/app/sqliteDB
       - images:/app/public/uploads
     # depends_on:
     #   logstash:
