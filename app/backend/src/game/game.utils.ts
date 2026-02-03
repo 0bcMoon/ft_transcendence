@@ -14,18 +14,30 @@ const XP_RULES = {
     XP_PER_LEVEL: 1000,
 };
 
-export interface PlayerStats {
-    wins: number;
-    losses: number;
-    level: number;
-    total_xp: number;
-    games_played: number;
-    win_rate: number;
-}
+export function sendMessage(player: Player | undefined, message: Object): boolean {
+    if (!player) {
+        console.warn('Cannot send message: player is undefined');
+        return false;
+    }
 
-export function sendMessage(player: Player | undefined, message: object): void {
-    if (player?.socket?.readyState === WebSocket.OPEN) {
+    if (!player.socket) {
+        console.warn(`Cannot send message to player ${player.id}: no socket`);
+        return false;
+    }
+
+    if (player.socket.readyState !== WebSocket.OPEN) {
+        console.warn(
+            `Cannot send message to player ${player.id}: socket state is ${player.socket.readyState}`
+        );
+        return false;
+    }
+
+    try {
         player.socket.send(JSON.stringify(message));
+        return true;
+    } catch (error) {
+        console.error(`Failed to send message to player ${player.id}:`, error);
+        return false;
     }
 }
 

@@ -14,6 +14,8 @@ export interface User {
     oauth_type: 'intra42' | 'google' | 'local'
     two_factor_enabled: boolean,
     created_at: Date,
+    online_status?: boolean
+
 }
 
 

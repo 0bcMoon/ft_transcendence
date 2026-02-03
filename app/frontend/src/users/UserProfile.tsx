@@ -18,6 +18,7 @@ export default function UserProfile() {
     const isOwnProfile = currentUser?.id === userId
 
     const { data: user, isLoading, isError } = useUserById(userId)
+    console.log("UserProfile render:", { userId, isOwnProfile, user, isLoading, isError })
 
     if (isLoading) {
         return (
@@ -58,15 +59,16 @@ export default function UserProfile() {
                     Back
                 </button>
 
-                {/* Profile */}
-                <ProfileHeader />
+                {/* Profile - Pass user */}
+                <ProfileHeader user={user} />
+                
                 {!isOwnProfile && <ProfileActions user={user} />}
 
                 {/* XP */}
-                <XPLineChart />
+                <XPLineChart userId={userId} />
 
                 {/* Matches */}
-                <RecentMatchesList />
+                <RecentMatchesList userId={userId} />
             </div>
         </div>
     )

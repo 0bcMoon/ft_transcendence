@@ -56,6 +56,10 @@ export function useRemoteGame() {
 
         ws.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
+            if (!msg || !msg.type) {
+                console.log("Received message:", msg.state.score);
+                return;
+            }
 
             switch (msg.type) {
                 case "matchFound":
@@ -71,9 +75,9 @@ export function useRemoteGame() {
                     break;
 
                 case "state":
-                    if (!isGameOverRef.current) {
-                        gameStateRef.current = msg.state;
-                        if (msg.state?.score) setScore(msg.state.score);
+                    gameStateRef.current = msg.state;
+                    if (msg.state?.score) {
+                        setScore(msg.state.score);
                     }
                     break;
 
@@ -117,7 +121,7 @@ export function useRemoteGame() {
 
         const interval = setInterval(() => {
             if (countdownRef.current !== null || isGameOverRef.current) return;
-            
+
             wsRef.current?.send(JSON.stringify({
                 type: "move",
                 up: keysPressed.current.up,

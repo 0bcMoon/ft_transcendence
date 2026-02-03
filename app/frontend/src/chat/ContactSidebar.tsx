@@ -10,6 +10,7 @@ interface ContactSidebarProps {
 }
 
 export function ContactSidebar({ isOpen, onClose }: ContactSidebarProps) {
+
     const setActiveChat = useActiveChatStore((state) => state.setActiveChat)
     const { data: chats, isLoading } = useContacts()
 

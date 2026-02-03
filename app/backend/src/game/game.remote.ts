@@ -35,10 +35,6 @@ export function startRemoteGameLoop(gameId: number): void {
         handlePaddleCollision(match.state);
         handleScoring(match.state.ball, match.state.score);
 
-        if (isGameOver(match.state.score)) {
-            endGame(match);
-            return;
-        }
 
         if (match.players.left?.socket?.readyState === WebSocket.OPEN) {
             sendMessage(match.players.left, { type: 'state', state: match.state });
@@ -46,6 +42,11 @@ export function startRemoteGameLoop(gameId: number): void {
 
         if (match.players.right?.socket?.readyState === WebSocket.OPEN) {
             sendMessage(match.players.right, { type: 'state', state: match.state });
+        }
+
+        if (isGameOver(match.state.score)) {
+            endGame(match);
+            return;
         }
     }, 16);
 }
@@ -65,7 +66,8 @@ export async function endGame(match: Match): Promise<void> {
     else if (match.state.score.right >= MAX_SCORE)
         winner = 'right';
 
-    if (!winner) return; // No winner yet
+    if (!winner) 
+        return;
 
     const winnerPlayer = winner === 'left' ? match.players.left : match.players.right;
     const loserPlayer = winner === 'left' ? match.players.right : match.players.left;
@@ -76,22 +78,15 @@ export async function endGame(match: Match): Promise<void> {
     await gameRepository.SetPlayerScore(match.gameId, 2, match.state.score.right);
     await gameRepository.finishGame(match.gameId, winnerId);
 
-    // Update progress
     await updatePlayerProgress(match, winnerId);
 
-    // Notify winner
-    if (winnerPlayer?.socket?.readyState === WebSocket.OPEN) {
-        sendMessage(winnerPlayer, { type: 'gameOver', winner, score: match.state.score });
-    }
+    sendMessage(winnerPlayer, { type: 'gameOver', winner, score: match.state.score });
+    sendMessage(loserPlayer, { type: 'gameOver', winner, score: match.state.score });
 
-    // Notify loser
-    if (loserPlayer?.socket?.readyState === WebSocket.OPEN) {
-        sendMessage(loserPlayer, { type: 'gameOver', winner, score: match.state.score });
-    }
-
-    // Cleanup
-    if (winnerPlayer) winnerPlayer.gameId = undefined;
-    if (loserPlayer) loserPlayer.gameId = undefined;
+    if (winnerPlayer) 
+        winnerPlayer.gameId = undefined;
+    if (loserPlayer)
+        loserPlayer.gameId = undefined;
 
     remoteMatches.delete(match.gameId);
 }

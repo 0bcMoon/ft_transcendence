@@ -1,12 +1,13 @@
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { History } from "lucide-react";
 import { useGetUserMatches } from "@/game/hooks/queries";
 
-export default function UserRecentMatches() {
-    const { user_id } = useParams<{ user_id: string }>();
-    const userId = Number(user_id);
+interface RecentMatchesListProps {
+    userId: number;
+}
 
-    const { data: matches = [], isLoading, isError } = useGetUserMatches(userId,1, 6);
+export default function RecentMatchesList({ userId }: RecentMatchesListProps) {
+    const { data: matches = [], isLoading, isError } = useGetUserMatches(userId, 1, 6);
 
     return (
         <section className="mb-10">
@@ -17,8 +18,9 @@ export default function UserRecentMatches() {
                     Recent Matches
                 </h2>
                 <Link
-                    to="history"
-                    className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition" >
+                    to={`/profile/${userId}/history`}
+                    className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition"
+                >
                     See all matches
                 </Link>
             </div>
@@ -30,7 +32,8 @@ export default function UserRecentMatches() {
                         {Array.from({ length: 3 }).map((_, i) => (
                             <div
                                 key={i}
-                                className="flex items-center gap-3 py-2 px-4 rounded-xl bg-slate-800/60 animate-pulse" >
+                                className="flex items-center gap-3 py-2 px-4 rounded-xl bg-slate-800/60 animate-pulse"
+                            >
                                 <div className="w-12 h-12 rounded-full bg-slate-700" />
                                 <div className="flex-1 space-y-2">
                                     <div className="h-3 w-24 bg-slate-700 rounded" />
@@ -114,4 +117,3 @@ export default function UserRecentMatches() {
         </section>
     );
 }
-

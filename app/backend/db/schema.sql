@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS game_players (
 CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished')),
+    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished', 'cancelled')),
     created_by INTEGER NOT NULL,
     winner_id INTEGER,
     max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16)),
