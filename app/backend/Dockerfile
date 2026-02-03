@@ -1,33 +1,30 @@
-FROM node:24-alpine
+FROM node:24-alpine as builder
 
 WORKDIR /app
 
-COPY package*.json .
-
+COPY package*.json ./
 RUN npm install
 
 COPY . .
 
-RUN mkdir -p /metrics 
+RUN npm run build
 
-# WORKDIR /tmp
-
-# USER root
-
-# RUN apk update && \
-#     apk add --no-cache wget ca-certificates && \
-#     rm -rf /var/lib/apt/lists/*
-
-# RUN wget https://github.com/prometheus/node_exporter/releases/download/v1.10.2/node_exporter-1.10.2.linux-amd64.tar.gz && \
-#     tar xvf node_exporter-1.10.2.linux-amd64.tar.gz && \
-#     cp node_exporter-1.10.2.linux-amd64/node_exporter /usr/local/bin/
+# Stage 2: Runtime
+FROM node:24-alpine
 
 WORKDIR /app
 
-# CMD sh -c "npm run dev & /usr/local/bin/node_exporter"
+# Only copy production dependencies to keep the image small
+COPY package*.json ./
 
-CMD ["npm", "run", "dev"]
+WORKDIR /app
 
-# CMD ["/usr/local/bin/node_exporter"]
+RUN npm install --omit=dev
 
+# Copy the compiled JS from the builder stage
+COPY --from=builder /app/dist ./
 
+# copy db schema
+COPY --from=builder /app/db/schema.sql /app/db/schema.sql
+
+CMD ["node", "index.js"]
