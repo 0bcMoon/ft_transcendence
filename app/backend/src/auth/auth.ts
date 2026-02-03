@@ -386,6 +386,7 @@ const Auth = {
             reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
         } catch (error: any) {
+            fastify.log.error('Error during Google OAuth2 callback:', error);
             return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },
@@ -415,7 +416,8 @@ const Auth = {
             Auth.grantAccess(reply, id);
             reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
-        } catch (error) {
+        } catch (error: any) {
+            fastify.log.error('Error during Intra42 OAuth2 callback:', error);
             return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },

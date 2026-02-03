@@ -10,7 +10,7 @@ up:
 down:
 	docker compose down -v
 
-re: down up
+re: down all
 
 clean:
 	docker compose down --rmi all --volumes --remove-orphans
