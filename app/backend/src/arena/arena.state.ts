@@ -1,4 +1,3 @@
-// backend/src/arena/arena.state.ts
 
 export type ArenaPlayerState = {
   userId: number;
