@@ -28,7 +28,9 @@ const envSchema = z.object({
         .url(),
     GOOGLE_REDIRECT_URI: z.string()
         .url(),
-    RESEND_API_KEY: z.string()
+    SMTP_USER: z.string(),
+    SMTP_FROM: z.string(),
+    SMTP_PASS: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);

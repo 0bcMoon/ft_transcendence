@@ -10,7 +10,6 @@ import { CreateUser, EmailUpdate, GoogleOAuth2, Intra42OAuth2 } from "../types/t
 import crypto from 'node:crypto';
 import { sendEmail } from "../email-service";
 import { isOnline } from "../notifications";
-import { subscribe } from "../notifications";
 import fastify from "../app";
 import { otpConfirmationTemplate } from "../auth/email-template";
 import {

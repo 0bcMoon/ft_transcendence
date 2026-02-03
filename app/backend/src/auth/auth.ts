@@ -120,7 +120,11 @@ const Auth = {
         }, 15 * 60 * 1000); // 15 minutes expiration
 
 
-        await sendEmail(email, "Password Reset Request - Pingo", resetPasswordEmailTemplate(reset_code))
+        const r = await sendEmail(email, "Password Reset Request - Pingo", resetPasswordEmailTemplate(reset_code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send reset email" });
+        }
+        return reply.status(200).send({ message: "If an account with that email exists, a password reset link has been sent." });
     },
 
     checkUsernameAvailability: async (req: FastifyRequest, reply: FastifyReply) => {
@@ -155,8 +159,10 @@ const Auth = {
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
 
-        await sendEmail(email, "Verify Your Email - Pingo", emailConfirmationTemplate(code))
-
+        const r = await sendEmail(email, "Verify Your Email - Pingo", emailConfirmationTemplate(code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send confirmation email" });
+        }
 
 
         reply
@@ -245,7 +251,10 @@ const Auth = {
 
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
-        await sendEmail(email, "Two-Factor Authentication Code - Pingo", twoFactorAuthTemplate(code))
+        const r = await sendEmail(email, "Two-Factor Authentication Code - Pingo", twoFactorAuthTemplate(code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send two-factor authentication email" });
+        }
 
 
         reply
