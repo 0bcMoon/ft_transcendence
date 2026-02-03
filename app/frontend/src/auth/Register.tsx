@@ -27,10 +27,6 @@ export default function Register() {
         confirmation_code: ''
     });
 
-    const updateFormData = (newData: Partial<IFormData>) => {
-        setFormData(prev => ({ ...prev, ...newData }));
-    };
-
     const handleNext = () => {
         if (currentStep < 3) {
             setCurrentStep(prev => prev + 1);
@@ -46,14 +42,13 @@ export default function Register() {
     const handleComplete = () => {
         setIsCompleted(true);
     };
-    console.log("Form Data:", formData);
 
     const RenderStep = () => {
         switch (currentStep) {
             case 1:
                 return <StepOne formData={formData} updateFormData={setFormData} onNext={handleNext} />;
             case 2:
-                return <StepTwo formData={formData} updateFormData={updateFormData} onNext={handleNext} onBack={handleBack} />;
+                return <StepTwo formData={formData} updateFormData={setFormData} onNext={handleNext} onBack={handleBack} />;
             case 3:
                 return <StepThree formData={formData} onComplete={handleComplete} onBack={handleBack} />;
             default:

@@ -66,7 +66,6 @@ export function StepOne({ updateFormData, formData, onNext }: StepOneProps) {
         if (result.success) {
             onNext()
             updateFormData((p: any) => { return { ...p, username, display_name } })
-            // updateFormData((prev) => {...prev, username, display_name: display_name })
             return
         }
         const fieldErrors = result.error.flatten().fieldErrors
@@ -164,7 +163,7 @@ interface StepTwoProps {
         password: string
         confirm_password: string
     }
-    updateFormData: (data: Partial<any>) => void
+    updateFormData: (data: any) => void
     onNext: () => void
     onBack: () => void
 }
@@ -173,10 +172,12 @@ const passwordSchema = z
     .object({
         password: z
             .string()
+            .trim()
             .min(8, "Password must be at least 8 characters")
             .max(64, "Password cannot exceed 64 characters"),
         confirm_password: z
             .string()
+            .trim()
             .min(8, "Confirm Password must be at least 8 characters")
             .max(64, "Confirm Password cannot exceed 64 characters"),
     })
@@ -198,7 +199,9 @@ export function StepTwo({ formData, updateFormData, onNext, onBack }: StepTwoPro
         const confirm_password = form.get("confirm_password") as string
         const result = passwordSchema.safeParse({ password, confirm_password })
         if (result.success) {
-            updateFormData((p: any) => { return { ...p, password, confirm_password} })
+            updateFormData((p: any) => { 
+                return { ...p, password, confirm_password} 
+            })
             onNext()
             return
         }
@@ -317,6 +320,7 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
             return response.data
         },
         onSuccess: () => {
+            setError(null)
             setIsCodeSent(true)
         },
         onError: (error: any) => {
@@ -344,7 +348,6 @@ export function StepThree({ formData, onComplete, onBack }: StepThreeProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        debugger
         const form = new FormData(e.currentTarget as HTMLFormElement)
         const confirmation_code = form.get("confirmation_code") as string
         formData.confirmation_code = confirmation_code

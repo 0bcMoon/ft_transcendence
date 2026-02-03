@@ -35,3 +35,6 @@ images
 database
 nginx/ssl
 .todos
+*.jpg
+*.jpeg
+*.png
