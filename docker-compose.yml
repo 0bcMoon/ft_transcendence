@@ -29,7 +29,8 @@ services:
       - images:/var/www/uploads
       - ./nginx/ssl:/etc/nginx/ssl
     ports:
-      - 8080:443 # change it to 443
+      # - "443:443"
+      - "8443:443" # change it to 443
   node-exporter:
     image: prom/node-exporter
     container_name: node-exporter
@@ -57,14 +58,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
-    networks: 
-      - pingpong
-      - "8080:443"
+    # networks: 
+    #   - pingpong
+      # - "8080:443"
     networks:
       - pingpong
     depends_on:
       - backend
-    restart: unless-stopped
+    # restart: unless-stopped
 
   es-init:
     build: ./elk-stack/es-init
