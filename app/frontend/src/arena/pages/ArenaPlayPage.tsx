@@ -24,20 +24,16 @@ export default function ArenaPlayPage() {
     p2: "Player 2",
   });
 
-  // countdown UI
-  const [countdown, setCountdown] = useState<number | null>(null); // 3..2..1..0->GO (we'll hide after)
+  const [countdown, setCountdown] = useState<number | null>(null);
   const countdownStartedRef = useRef(false);
 
   const wsRef = useRef<WebSocket | null>(null);
 
-  // input state
   const inputRef = useRef({ up: false, down: false, left: false, right: false });
 
-  // rendering refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
 
-  // smoothing: keep "renderState" separate from latest server state
   const renderPlayersRef = useRef<Map<number, { x: number; y: number; roundsWon: number; position: number }>>(
     new Map()
   );
@@ -48,7 +44,6 @@ export default function ArenaPlayPage() {
 
   const wsUrl = useMemo(() => `${arenaApi.WS_BASE}/arena`, []);
 
-  // allow input only when playing + joined + countdown done
   const canSendInput = () => {
     const s = latestServerStateRef.current;
     if (!s) return false;
@@ -156,11 +151,8 @@ export default function ArenaPlayPage() {
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", onBlur);
     };
-    // countdown + joined are in canSendInput, but we don't want rebind spam
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, joined, countdown]);
 
-  // websocket connect + join
   useEffect(() => {
     if (!gameId || Number.isNaN(gameId)) return;
 
@@ -231,11 +223,9 @@ export default function ArenaPlayPage() {
     clearCountdown();
     setCountdown(null);
     resetInputs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
   
 
-  // init render map when first state arrives
   useEffect(() => {
     if (!serverState) return;
   
@@ -243,20 +233,16 @@ export default function ArenaPlayPage() {
     const next = serverState.status;
     prevStatusRef.current = next;
   
-    // only start countdown when we ENTER playing
     if (prev !== "playing" && next === "playing") {
       startCountdown();
     }
-  
-    // cleanup if match ends
+
     if (next === "finished" || next === "cancelled") {
       clearCountdown();
       setCountdown(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.status]);
   
-  // draw loop (60fps) — keeps your premium style
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -272,7 +258,7 @@ export default function ArenaPlayPage() {
 
       ctx.clearRect(0, 0, W, H);
 
-      // ---------- Background: soft vignette + subtle glow ----------
+      // Background
       ctx.save();
       ctx.fillStyle = "#050a12";
       ctx.fillRect(0, 0, W, H);
@@ -290,7 +276,7 @@ export default function ArenaPlayPage() {
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, W, H);
 
-      // ---------- Arena border: rounded + glow ----------
+      // Arena border
       const r = 18;
       const x = 10, y = 10, w = W - 20, h = H - 20;
 
@@ -315,7 +301,7 @@ export default function ArenaPlayPage() {
 
       ctx.restore();
 
-      // ---------- Smooth players toward server positions ----------
+      // Smoothing players to server positions
       const map = renderPlayersRef.current;
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
@@ -328,7 +314,7 @@ export default function ArenaPlayPage() {
         rp.roundsWon = sp.roundsWon;
       }
 
-      // ---------- Helpers ----------
+      // helper 
       const now = performance.now();
       const pulse = 0.6 + 0.4 * Math.sin(now / 260);
 
@@ -337,7 +323,7 @@ export default function ArenaPlayPage() {
         return { stroke: "rgba(56,189,248,0.95)", glow: "rgba(56,189,248,0.35)" };
       };
 
-      // ---------- Target: glowing orb + ring pulse ----------
+      // Target
       if (s.target) {
         const tx = s.target.x;
         const ty = s.target.y;
@@ -370,7 +356,7 @@ export default function ArenaPlayPage() {
         ctx.restore();
       }
 
-      // ---------- Players: neon ring + inner dot + score tag ----------
+      // Players UI
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
         if (!rp) continue;
@@ -444,11 +430,10 @@ export default function ArenaPlayPage() {
     };
   }, [myPos, countdown, joined]);
 
-  // derive HUD numbers
   const p1 = serverState?.players.find((p) => p.position === 1);
   const p2 = serverState?.players.find((p) => p.position === 2);
 
-  // finish/cancel overlay decision (no backend winner field needed)
+  // finish/cancel
   const isFinished = serverState?.status === "finished";
   const isCancelled = serverState?.status === "cancelled";
 
@@ -464,7 +449,7 @@ export default function ArenaPlayPage() {
     nav("/arena");
   };
 
-  // HUD
+  // Heads-Up Display.
   const hud = serverState ? (
     <div className="grid grid-cols-3 gap-3">
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
@@ -506,7 +491,6 @@ export default function ArenaPlayPage() {
 
   useEffect(() => {
     return () => clearCountdown();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
       
   return (
@@ -586,14 +570,6 @@ export default function ArenaPlayPage() {
             </div>
           )}
         </div>
-
-        {/* Debug (optional) */}
-        {/* <details className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-          <summary className="cursor-pointer text-sm text-slate-300">Debug state</summary>
-          <pre className="mt-2 text-xs overflow-auto whitespace-pre-wrap">
-            {serverState ? JSON.stringify(serverState, null, 2) : "No state yet..."}
-          </pre>
-        </details> */}
       </div>
     </div>
   );

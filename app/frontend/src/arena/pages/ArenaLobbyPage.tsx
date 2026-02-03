@@ -44,9 +44,7 @@ export default function ArenaLobbyPage() {
           setState("idle");
           setGameId(null);
         }
-      } catch {
-        // ignore transient polling errors
-      }
+      } catch {}
     }, 800);
   };
 
@@ -63,7 +61,6 @@ export default function ArenaLobbyPage() {
   const location = useLocation();
   const autoQueue = !!(location.state as any)?.autoQueue;
 
-  // Restore matchmaking status on mount, but avoid racing when autoQueue is requested.
   useEffect(() => {
     let alive = true;
 
@@ -98,9 +95,7 @@ export default function ArenaLobbyPage() {
                 setState("idle");
                 setGameId(null);
               }
-            } catch {
-              // ignore transient polling errors
-            }
+            } catch {}
           }, 800);
 
           return;
@@ -110,7 +105,6 @@ export default function ArenaLobbyPage() {
         setState("idle");
         setGameId(null);
       } catch {
-        // if status fails, keep idle
         setState("idle");
         setGameId(null);
       }
@@ -122,12 +116,10 @@ export default function ArenaLobbyPage() {
     };
   }, [navigate, autoQueue]);
 
-  // Auto start matchmaking when coming back with state.autoQueue
   useEffect(() => {
     if (autoQueue) {
       joinQueue().catch(() => {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

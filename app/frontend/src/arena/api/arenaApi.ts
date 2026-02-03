@@ -5,7 +5,6 @@ export const arenaApi = {
   API_BASE,
   WS_BASE,
   
-  // Matchmaking: STATUS
   async getMatchmakingStatus() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/status`, {
       method: "GET",
@@ -19,7 +18,6 @@ export const arenaApi = {
     return data;
   },
 
-  // Matchmaking: JOIN
   async joinMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/join`, {
       method: "POST",
@@ -33,7 +31,6 @@ export const arenaApi = {
     return data;
   },
 
-  // Matchmaking: LEAVE
   async leaveMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/leave`, {
       method: "POST",
@@ -47,7 +44,6 @@ export const arenaApi = {
     return data;
   },
 
-  // Arena: MY HISTORY
   async getMyHistory() {
     const res = await fetch(`${API_BASE}/arena/me/history`, {
       method: "GET",
@@ -61,7 +57,6 @@ export const arenaApi = {
     return data;
   },
 
-  // Arena: MY STATS
   async getMyStats() {
     const res = await fetch(`${API_BASE}/arena/me/stats`, {
       method: "GET",
@@ -87,8 +82,7 @@ export const arenaApi = {
     }
     return data as { gameId: number };
   },
-  
-  // ✅ list games by status (waiting/playing/finished/cancelled)
+
   async getGamesByStatus(status: "waiting" | "playing" | "finished" | "cancelled") {
     const res = await fetch(`${API_BASE}/arena/games?status=${status}`, {
       method: "GET",
@@ -97,7 +91,6 @@ export const arenaApi = {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.details || data?.error || "Failed to load arena games");
-    // backend returns { games }
     return data as {
       games: Array<{
         id: number;
@@ -111,7 +104,6 @@ export const arenaApi = {
     };
   },
 
-  // ✅ fetch players for a game (for names/avatars)
   async getGamePlayers(gameId: number) {
     const res = await fetch(`${API_BASE}/arena/games/${gameId}/players`, {
       method: "GET",

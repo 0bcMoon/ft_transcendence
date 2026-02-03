@@ -4,8 +4,8 @@ import { arenaApi } from "../api/arenaApi";
 
 type ArenaHistoryItem = {
   matchId: number;
-  date: string; // ISO-ish string from SQL
-  isWin: number | boolean; // SQLite may return 0/1
+  date: string;
+  isWin: number | boolean;
   user_score: number;
   opponent_score: number;
   opponent_name: string | null;
@@ -17,7 +17,7 @@ type ArenaStats = {
   gamesPlayed: number;
   wins: number;
   losses: number;
-  winRate: number; // 0..1
+  winRate: number;
   avgUserRoundsWon: number;
   avgOpponentRoundsWon: number;
   vsAI: number;
@@ -34,15 +34,6 @@ function fmtDate(d: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(dt);
-}
-
-// If profile_picture is a filename served by your backend static "/public",
-// this helps. If yours is already absolute, it keeps it.
-// Adjust base if needed.
-function resolveAvatar(src: string | null) {
-  if (!src) return null;
-  if (src.startsWith("http://") || src.startsWith("https://")) return src;
-  return `http://localhost:3000/public/${src.replace(/^\/+/, "")}`;
 }
 
 function clamp01(n: number) {
@@ -208,9 +199,7 @@ export default function ArenaHistoryPage() {
             <div className="p-4 space-y-3">
               {history.map((m) => {
                 const isWin = !!m.isWin;
-                const oppName = m.opponent_name || "Unknown";
-                const avatar = resolveAvatar(m.opponent_avatar);
-
+                const oppName = m.opponent_name || "AI";
                 return (
                   <div
                     key={m.matchId}
@@ -218,25 +207,6 @@ export default function ArenaHistoryPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        {/* avatar / fallback */}
-                        <div className="relative h-11 w-11 shrink-0 rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden flex items-center justify-center">
-                          {avatar ? (
-                            <img
-                              src={avatar}
-                              alt={oppName}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                // hide broken images; fallback shows initials below
-                                (e.currentTarget as any).style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <span className="text-slate-300 font-bold">
-                              {oppName.slice(0, 1).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span
@@ -266,14 +236,6 @@ export default function ArenaHistoryPage() {
                         <div className="text-lg font-black tracking-tight">
                           {m.user_score} <span className="text-slate-500">—</span> {m.opponent_score}
                         </div>
-
-                        <button
-                          disabled
-                          className="mt-2 text-xs px-3 py-2 rounded-xl border border-slate-800 bg-slate-900/40 text-slate-500 cursor-not-allowed"
-                          title="Spectator / replay coming soon"
-                        >
-                          Watch (soon)
-                        </button>
                       </div>
                     </div>
                   </div>

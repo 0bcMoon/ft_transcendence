@@ -11,8 +11,6 @@ export type AiBrainState = {
   aimOffsetX: number;
   aimOffsetY: number;
   nextOffsetAt: number;
-  speedMul: number;
-  nextSpeedAt: number;
 };
 
 
@@ -37,7 +35,7 @@ const ARENA_W = 800;
 const ARENA_H = 600;
 
 const TICK_MS = 1000 / 30;
-const SPEED = 6;
+const SPEED = 8;
 const PERSIST_EVERY_MS = 700;
 
 const PLAYER_RADIUS = 18;
@@ -215,12 +213,7 @@ function updateAiInputs(room: ArenaRoom) {
   const OFFSET_REFRESH_MAX = 1100;
   const OFFSET_MAX = 46;
 
-  const SPEED_REFRESH_MIN = 900;
-  const SPEED_REFRESH_MAX = 1800;
-  const SPEED_MIN = 0.78;
-  const SPEED_MAX = 0.98;
-
-  const DEADZONE = 14;
+  const DEADZONE = 2;
 
   if (!room.aiBrain) {
     room.aiBrain = {
@@ -231,9 +224,6 @@ function updateAiInputs(room: ArenaRoom) {
       aimOffsetX: rand(-OFFSET_MAX, OFFSET_MAX),
       aimOffsetY: rand(-OFFSET_MAX, OFFSET_MAX),
       nextOffsetAt: now + rand(OFFSET_REFRESH_MIN, OFFSET_REFRESH_MAX),
-
-      speedMul: rand(SPEED_MIN, SPEED_MAX),
-      nextSpeedAt: now + rand(SPEED_REFRESH_MIN, SPEED_REFRESH_MAX),
     };
   }
 
@@ -245,10 +235,6 @@ function updateAiInputs(room: ArenaRoom) {
     brain.nextOffsetAt = now + rand(OFFSET_REFRESH_MIN, OFFSET_REFRESH_MAX);
   }
 
-  if (now >= brain.nextSpeedAt) {
-    brain.speedMul = rand(SPEED_MIN, SPEED_MAX);
-    brain.nextSpeedAt = now + rand(SPEED_REFRESH_MIN, SPEED_REFRESH_MAX);
-  }
 
   if (now < brain.nextThinkAt) {
     room.inputs.set(aiId, brain.input);
@@ -301,11 +287,6 @@ function applyMovement(room: ArenaRoom) {
     const input = room.inputs.get(p.userId) ?? zeroInput();
 
     let speed = SPEED;
-
-    // ✅ only apply speedMul when this game has AI P2 AND this player is P2
-    if (room.p2IsAi && p.position === 2 && room.aiBrain) {
-      speed = SPEED * room.aiBrain.speedMul;
-    }
 
     let dx = 0;
     let dy = 0;
@@ -471,7 +452,7 @@ function getOrCreateRoom(gameId: number, detail: any, dbPlayers: any[]): ArenaRo
     spectators: new Map(),
     inputs: new Map(),
     lastPersistAt: Date.now(),
-    p2IsAi, // ✅
+    p2IsAi,
     _tickBusy: false,
 
     state: {
@@ -486,7 +467,6 @@ function getOrCreateRoom(gameId: number, detail: any, dbPlayers: any[]): ArenaRo
         const x = typeof p.last_x === "number" && p.last_x !== 0 ? p.last_x : defaultX;
         const y = typeof p.last_y === "number" && p.last_y !== 0 ? p.last_y : defaultY;
 
-        // ✅ only virtualize the userId if THIS DB player is AI
         const userIdForState = p.is_ai ? aiVirtualUserId(p.position) : (p.user_id as number);
 
         return {
@@ -510,23 +490,18 @@ function joinAsSpectator(userId: number, socket: WebSocket, room: ArenaRoom) {
   socket.send(JSON.stringify({ type: "arena:joined", role: "spectator", playerPosition: null }));
   broadcastState(room);
 
-  // if game already playing, ensure tick
   if (room.state.status === "playing") ensureTick(room);
 }
 
 async function joinAsPlayerAndMaybeStart(userId: number, socket: WebSocket, room: ArenaRoom, dbPlayers: any[]) {
-  // register player socket + inputs
   room.sockets.set(userId, socket);
   room.inputs.set(userId, zeroInput());
 
-  // ensure inputs exist for everyone in state (including AI virtual id)
   ensureInputsForAllStatePlayers(room);
 
-  // send joined ack (need DB position)
   const me = dbPlayers.find((p) => p.user_id === userId);
   socket.send(JSON.stringify({ type: "arena:joined", role: "player", playerPosition: me?.position ?? null }));
 
-  // compute if match can start
   const allHumansConnected = computeAllHumansConnected(room, dbPlayers);
   const canStart = room.state.players.length === 2 && allHumansConnected;
 
@@ -545,9 +520,6 @@ function ensureInputsForAllStatePlayers(room: ArenaRoom) {
   }
 }
 
-// ✅ AI always P2 rule:
-// - if DB says P2 is AI => only require P1 human socket
-// - else require P1 + P2 human sockets
 function computeAllHumansConnected(room: ArenaRoom, dbPlayers: any[]) {
   const p1Db = dbPlayers.find((p) => p.position === 1);
   const p2Db = dbPlayers.find((p) => p.position === 2);

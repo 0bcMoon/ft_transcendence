@@ -20,7 +20,6 @@ export default function ArenaSpectatePage() {
   const gameId = Number(gameIdParam);
   const nav = useNavigate();
 
-  // const [connected, setConnected] = useState(false);
   const [serverState, setServerState] = useState<ArenaState | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -54,11 +53,6 @@ export default function ArenaSpectatePage() {
         console.error("Arena error:", msg.message);
       }
     };
-    
-    ws.onclose = (evt) => {
-      console.log("close the ")
-    }
-
     return () => {
       try {
         ws.close();
@@ -160,7 +154,7 @@ export default function ArenaSpectatePage() {
 
       ctx.restore();
 
-      // smoothing
+      // smoothing players
       const map = renderPlayersRef.current;
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
@@ -214,7 +208,7 @@ export default function ArenaSpectatePage() {
         ctx.restore();
       }
 
-      // players
+      // players UI
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
         if (!rp) continue;

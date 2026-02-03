@@ -12,24 +12,15 @@ const arenaRoutes: FastifyPluginAsync = async (fastifyInstance, opts): Promise<v
     , { onRequest: [fastify.authenticate], schema: {params: ArenaGameIdCheck} }, Arena.getGamePlayers);
   fastify.get("/arena/games/:gameId/detail", { onRequest: [fastify.authenticate] }, Arena.getGameDetail);
 
-  // Recent / history (independent)
+  // for history
   fastify.get("/arena/users/:user_id/match-history"
       , { onRequest: [fastify.authenticate], schema: {params: ArenaGameIdCheck} }, Arena.getMatchHistory);
-//   fastify.get("/arena/games/user/:userId/recent"
-//       , { onRequest: [fastify.authenticate], schema: {params: ArenaGameIdCheck}}, Arena.getRecentMatches);
-//   fastify.get("/arena/games/recent"
-//       , { onRequest: [fastify.authenticate] }, Arena.getRecentGlobalMatches);
 
   // Lifecycle
   fastify.patch("/arena/games/:id/finish"
       , { onRequest: [fastify.authenticate], schema: {params: ArenaGameIdCheck} }, Arena.finishGame);
-  // fastify.post("/arena/games", { onRequest: [fastify.authenticate] }, Arena.createGame);
-//   fastify.post("/arena/games/start"
-//       , { onRequest: [fastify.authenticate], schema: {body: ArenaGameIdCheck} }, Arena.startGame);
-//   fastify.post("/arena/games/cancel"
-//       , { onRequest: [fastify.authenticate], schema: {body: ArenaGameIdCheck} }, Arena.cancelGame);
 
-  // Optional: list by status
+  // list by status
   fastify.get("/arena/games", { onRequest: [fastify.authenticate] }, Arena.getGamesByStatus);
 
   //Ai:

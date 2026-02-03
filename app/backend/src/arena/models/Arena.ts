@@ -6,7 +6,6 @@ export const Arena = {
     try {
       const { players } = req.body as any;
 
-      // allow both names (you can standardize later)
       const target_round_wins =
         (req.body as any).target_round_wins ??
         (req.body as any).win_target ??
@@ -26,25 +25,10 @@ export const Arena = {
     }
   },
 
-  // startGame: async (req: FastifyRequest, reply: FastifyReply) => {
-  //   try {
-  //     const { game_id } = req.body as any;
-  //     const id = Number(game_id);
-  //     if (!id || Number.isNaN(id)) return reply.status(400).send({ error: "Invalid game ID" });
-
-  //     await arenaRepository.start(id);
-  //     const detail = await arenaRepository.getGameDetail(id);
-  //     return reply.status(200).send({ game: detail });
-  //   } catch (err) {
-  //     return reply.status(400).send({ error: "Failed to start arena game", details: (err as Error).message });
-  //   }
-  // },
-
   finishGame: async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const gameId = Number((req.params as any).id);
 
-      // allow both names
       const winner_user_id =
         (req.body as any).winner_user_id ??
         (req.body as any).winner_id ??
@@ -90,8 +74,6 @@ export const Arena = {
 
   getGamePlayers: async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      // const gameId = Number((req.params as any).gameId);
-      // if (!gameId || Number.isNaN(gameId)) return reply.status(400).send({ error: "Invalid game ID" });
       const gameId  = (req.params as any).gameId;
       const players = await arenaRepository.getGamePlayers(gameId);
       return reply.status(200).send(players);
@@ -100,52 +82,13 @@ export const Arena = {
     }
   },
 
-  // getRecentGlobalMatches: async (req: FastifyRequest, reply: FastifyReply) => {
-  //   try {
-  //     const { limit } = req.query as any;
-  //     const matchLimit = limit ? Number(limit) : 10;
-
-  //     const matches = await arenaRepository.getRecentGlobalMatches(matchLimit);
-
-  //     const formatted = matches.map((m: any) => ({
-  //       matchId: m.game_id,
-  //       mode: "arena",
-  //       date: new Date(m.ended_at || m.created_at).toLocaleDateString(),
-  //       player1_name: m.player1_name,
-  //       player1_avatar: m.player1_avatar,
-  //       player1_score: m.player1_score,
-  //       player2_name: m.player2_name,
-  //       player2_avatar: m.player2_avatar,
-  //       player2_score: m.player2_score,
-  //       winner_user_id: m.winner_user_id, // ✅ fixed
-  //     }));
-
-  //     return reply.status(200).send(formatted);
-  //   } catch (err) {
-  //     return reply.status(500).send({ error: "Failed to fetch arena recent matches", details: (err as Error).message });
-  //   }
-  // },
-
-  // getRecentMatches: async (req: FastifyRequest, reply: FastifyReply) => {
-  //   try {
-  //     const userId = Number((req.params as any).userId);
-  //     const limit = Number((req.query as any).limit) || 10;
-  //     if (!userId || Number.isNaN(userId)) return reply.status(400).send({ error: "Invalid user ID" });
-
-  //     const matches = await arenaRepository.getRecentMatches(userId, limit);
-  //     return reply.status(200).send(matches);
-  //   } catch (err) {
-  //     return reply.status(500).send({ error: "Failed to get arena recent matches", details: (err as Error).message });
-  //   }
-  // },
-
   getMatchHistory: async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { user_id } = req.params as any;
       const uid = Number(user_id);
       if (!uid || Number.isNaN(uid)) return reply.status(400).send({ error: "Invalid user ID" });
   
-      const history = await arenaRepository.getMatchHistoryForUser(uid); // ✅ missing
+      const history = await arenaRepository.getMatchHistoryForUser(uid);
       return reply.status(200).send(history);
     } catch (err) {
       return reply.status(400).send({ error: "Failed to get arena match history", details: (err as Error).message });
