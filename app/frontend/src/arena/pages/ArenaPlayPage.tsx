@@ -6,6 +6,7 @@ import type { ArenaState } from "../types/arena.types";
 const W = 800;
 const H = 600;
 
+
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
@@ -15,25 +16,24 @@ export default function ArenaPlayPage() {
   const gameId = Number(gameIdParam);
   const nav = useNavigate();
 
-  const [connected, setConnected] = useState(false);
   const [joined, setJoined] = useState(false);
   const [myPos, setMyPos] = useState<number | null>(null);
   const [serverState, setServerState] = useState<ArenaState | null>(null);
+  const [names, setNames] = useState<{ p1: string; p2: string }>({
+    p1: "Player 1",
+    p2: "Player 2",
+  });
 
-  // countdown UI
-  const [countdown, setCountdown] = useState<number | null>(null); // 3..2..1..0->GO (we'll hide after)
+  const [countdown, setCountdown] = useState<number | null>(null);
   const countdownStartedRef = useRef(false);
 
   const wsRef = useRef<WebSocket | null>(null);
 
-  // input state
   const inputRef = useRef({ up: false, down: false, left: false, right: false });
 
-  // rendering refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animRef = useRef<number | null>(null);
 
-  // smoothing: keep "renderState" separate from latest server state
   const renderPlayersRef = useRef<Map<number, { x: number; y: number; roundsWon: number; position: number }>>(
     new Map()
   );
@@ -44,7 +44,6 @@ export default function ArenaPlayPage() {
 
   const wsUrl = useMemo(() => `${arenaApi.WS_BASE}/arena`, []);
 
-  // allow input only when playing + joined + countdown done
   const canSendInput = () => {
     const s = latestServerStateRef.current;
     if (!s) return false;
@@ -72,6 +71,7 @@ export default function ArenaPlayPage() {
   const resetInputs = () => {
     inputRef.current = { up: false, down: false, left: false, right: false };
   };
+
   const clearCountdown = () => {
     if (countdownIntervalRef.current) {
       window.clearInterval(countdownIntervalRef.current);
@@ -104,6 +104,10 @@ export default function ArenaPlayPage() {
   // keyboard
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      //stop scroling in broser with arrors
+      if (e.key.startsWith("Arrow")) 
+          e.preventDefault();
+
       // block movement keys while countdown / not playing
       if (!canSendInput()) return;
 
@@ -117,13 +121,15 @@ export default function ArenaPlayPage() {
     };
 
     const up = (e: KeyboardEvent) => {
+      //stop scroling in broser with arrors
+      if (e.key.startsWith("Arrow"))
+          e.preventDefault();
+      
+      
       if (!canSendInput()) return;
 
       let changed = false;
-      if ((e.key === "ArrowUp" || e.key === "w") && inputRef.current.up) { 
-                e.preventDefault();
-                inputRef.current.up = false; changed = true; 
-            }
+      if ((e.key === "ArrowUp" || e.key === "w") && inputRef.current.up) { inputRef.current.up = false; changed = true; }
       if ((e.key === "ArrowDown" || e.key === "s") && inputRef.current.down) { inputRef.current.down = false; changed = true; }
       if ((e.key === "ArrowLeft" || e.key === "a") && inputRef.current.left) { inputRef.current.left = false; changed = true; }
       if ((e.key === "ArrowRight" || e.key === "d") && inputRef.current.right) { inputRef.current.right = false; changed = true; }
@@ -132,9 +138,7 @@ export default function ArenaPlayPage() {
     };
 
     const onBlur = () => {
-      // if user alt-tabs, we don't want sticky movement
       resetInputs();
-      // no sendInput unless canSendInput; but safe to try
       sendInput();
     };
 
@@ -147,11 +151,8 @@ export default function ArenaPlayPage() {
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", onBlur);
     };
-    // countdown + joined are in canSendInput, but we don't want rebind spam
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId, joined, countdown]);
 
-  // websocket connect + join
   useEffect(() => {
     if (!gameId || Number.isNaN(gameId)) return;
 
@@ -159,7 +160,6 @@ export default function ArenaPlayPage() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setConnected(true);
       ws.send(JSON.stringify({ type: "arena:join", gameId }));
     };
 
@@ -180,25 +180,52 @@ export default function ArenaPlayPage() {
         console.error("Arena error:", msg.message);
       }
     };
-
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-
+    
     return () => {
       try { ws.close(); } catch {}
     };
   }, [wsUrl, gameId]);
+
+  useEffect(() => {
+      if (!gameId || Number.isNaN(gameId)) return;
+
+      let alive = true;
+
+      const pickName = (p: any) => p.username || p.display_name || (p.is_ai ? "AI" : "Unknown");
+
+      (async () => {
+        try {
+          const ps = await arenaApi.getGamePlayers(gameId);
+
+          const p1 = ps.find((p) => p.position === 1);
+          const p2 = ps.find((p) => p.position === 2);
+
+          if (!alive) return;
+
+          setNames({
+            p1: p1 ? pickName(p1) : "Player 1",
+            p2: p2 ? pickName(p2) : "Player 2",
+          });
+        } catch {
+          if (!alive) return;
+          setNames({ p1: "Player 1", p2: "Player 2" });
+        }
+      })();
+
+      return () => {
+        alive = false;
+      };
+    }, [gameId]);
+
   useEffect(() => {
     countdownStartedRef.current = false;
     prevStatusRef.current = null;
     clearCountdown();
     setCountdown(null);
     resetInputs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
   
 
-  // init render map when first state arrives
   useEffect(() => {
     if (!serverState) return;
   
@@ -206,20 +233,16 @@ export default function ArenaPlayPage() {
     const next = serverState.status;
     prevStatusRef.current = next;
   
-    // only start countdown when we ENTER playing
     if (prev !== "playing" && next === "playing") {
       startCountdown();
     }
-  
-    // cleanup if match ends
+
     if (next === "finished" || next === "cancelled") {
       clearCountdown();
       setCountdown(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverState?.status]);
   
-  // draw loop (60fps) — keeps your premium style
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -235,7 +258,7 @@ export default function ArenaPlayPage() {
 
       ctx.clearRect(0, 0, W, H);
 
-      // ---------- Background: soft vignette + subtle glow ----------
+      // Background
       ctx.save();
       ctx.fillStyle = "#050a12";
       ctx.fillRect(0, 0, W, H);
@@ -253,7 +276,7 @@ export default function ArenaPlayPage() {
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, W, H);
 
-      // ---------- Arena border: rounded + glow ----------
+      // Arena border
       const r = 18;
       const x = 10, y = 10, w = W - 20, h = H - 20;
 
@@ -278,7 +301,7 @@ export default function ArenaPlayPage() {
 
       ctx.restore();
 
-      // ---------- Smooth players toward server positions ----------
+      // Smoothing players to server positions
       const map = renderPlayersRef.current;
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
@@ -291,7 +314,7 @@ export default function ArenaPlayPage() {
         rp.roundsWon = sp.roundsWon;
       }
 
-      // ---------- Helpers ----------
+      // helper 
       const now = performance.now();
       const pulse = 0.6 + 0.4 * Math.sin(now / 260);
 
@@ -300,7 +323,7 @@ export default function ArenaPlayPage() {
         return { stroke: "rgba(56,189,248,0.95)", glow: "rgba(56,189,248,0.35)" };
       };
 
-      // ---------- Target: glowing orb + ring pulse ----------
+      // Target
       if (s.target) {
         const tx = s.target.x;
         const ty = s.target.y;
@@ -310,7 +333,7 @@ export default function ArenaPlayPage() {
         ctx.shadowBlur = 22;
 
         const g = ctx.createRadialGradient(tx, ty, 2, tx, ty, 22);
-        g.addColorStop(0, "rgba(250, 204, 21, 0.95)");
+        g.addColorStop(0, "rgba(250, 246, 21, 0.95)");
         g.addColorStop(0.55, "rgba(250, 204, 21, 0.22)");
         g.addColorStop(1, "rgba(250, 204, 21, 0.00)");
         ctx.fillStyle = g;
@@ -333,7 +356,7 @@ export default function ArenaPlayPage() {
         ctx.restore();
       }
 
-      // ---------- Players: neon ring + inner dot + score tag ----------
+      // Players UI
       for (const sp of s.players) {
         const rp = map.get(sp.userId);
         if (!rp) continue;
@@ -407,11 +430,10 @@ export default function ArenaPlayPage() {
     };
   }, [myPos, countdown, joined]);
 
-  // derive HUD numbers
   const p1 = serverState?.players.find((p) => p.position === 1);
   const p2 = serverState?.players.find((p) => p.position === 2);
 
-  // finish/cancel overlay decision (no backend winner field needed)
+  // finish/cancel
   const isFinished = serverState?.status === "finished";
   const isCancelled = serverState?.status === "cancelled";
 
@@ -427,11 +449,11 @@ export default function ArenaPlayPage() {
     nav("/arena");
   };
 
-  // HUD
+  // Heads-Up Display.
   const hud = serverState ? (
     <div className="grid grid-cols-3 gap-3">
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-        <div className="text-xs text-slate-400">Player 1</div>
+        <div className="text-xs text-slate-400">{names.p1}</div>
         <div className="text-lg font-semibold">{p1?.roundsWon ?? 0}</div>
       </div>
 
@@ -442,7 +464,7 @@ export default function ArenaPlayPage() {
       </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-right">
-        <div className="text-xs text-slate-400">Player 2</div>
+        <div className="text-xs text-slate-400">{names.p2}</div>
         <div className="text-lg font-semibold">{p2?.roundsWon ?? 0}</div>
       </div>
     </div>
@@ -466,32 +488,21 @@ export default function ArenaPlayPage() {
     : isFinished
       ? `Score ${p1?.roundsWon ?? 0} - ${p2?.roundsWon ?? 0}`
       : "";
+
   useEffect(() => {
     return () => clearCountdown();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
       
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Arena</h1>
-            <div className="text-xs text-slate-400">
-              WS {connected ? "✅" : "❌"} • Joined {joined ? "✅" : "❌"} • You: {myPos ? `P${myPos}` : "-"} • Game {gameId}
-            </div>
-          </div>
-
           <div className="flex items-center gap-3">
-            <div className="text-sm text-slate-300">
-              Move: <span className="font-mono">WASD</span> / <span className="font-mono">Arrows</span>
-            </div>
-
             <button
               onClick={leaveGame}
               className="rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold px-4 py-2"
             >
-              Leave
+              Leave Game
             </button>
           </div>
         </div>
@@ -522,15 +533,17 @@ export default function ArenaPlayPage() {
           {/* Countdown overlay */}
           {showCountdownOverlay && (
             <div className="absolute inset-0 rounded-xl flex items-center justify-center">
+                
               <div className="rounded-3xl border border-slate-800 bg-slate-950/70 px-10 py-8 text-center shadow">
                 <div className="text-xs text-slate-400">Get ready</div>
                 <div className="text-6xl font-black tracking-tight mt-2">
                   {countdown === 0 ? "GO" : countdown}
                 </div>
                 <div className="text-sm text-slate-300 mt-3">
-                  Inputs activate after GO
+                  RUUUUUN!
                 </div>
               </div>
+                
             </div>
           )}
 
@@ -545,19 +558,10 @@ export default function ArenaPlayPage() {
 
                 <div className="mt-5">
                   <button
+                    className=" w-full rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-3 transition"
                     onClick={() => {
                       nav("/arena");
                     }}
-                    className="
-                      w-full
-                      rounded-xl
-                      bg-slate-800
-                      hover:bg-slate-700
-                      text-slate-100
-                      font-semibold
-                      py-3
-                      transition
-                    "
                   >
                     Back to Lobby
                   </button>
@@ -566,14 +570,6 @@ export default function ArenaPlayPage() {
             </div>
           )}
         </div>
-
-        {/* Debug (optional) */}
-        <details className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-          <summary className="cursor-pointer text-sm text-slate-300">Debug state</summary>
-          <pre className="mt-2 text-xs overflow-auto whitespace-pre-wrap">
-            {serverState ? JSON.stringify(serverState, null, 2) : "No state yet..."}
-          </pre>
-        </details>
       </div>
     </div>
   );

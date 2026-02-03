@@ -1,13 +1,10 @@
-const API_BASE = "http://localhost:3000/api";
-const WS_BASE = "ws://localhost:3000/ws";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
+const WS_BASE = `${import.meta.env.VITE_WS_URL}/ws`;
 
 export const arenaApi = {
   API_BASE,
   WS_BASE,
   
-    // --------------------
-  // Matchmaking: STATUS
-  // --------------------
   async getMatchmakingStatus() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/status`, {
       method: "GET",
@@ -21,38 +18,10 @@ export const arenaApi = {
     return data;
   },
 
-  // --------------------
-  // Create arena game
-  // --------------------
-  async createGame(payload: {
-    players: { user_id: number | null; position: 1 | 2; is_ai?: boolean }[];
-    target_round_wins?: number;
-  }) {
-    const res = await fetch(`${API_BASE}/arena/games`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data?.details || data?.error || "Failed to create arena game");
-    }
-    return data;
-  },
-
-  // --------------------
-  // Matchmaking: JOIN
-  // --------------------
   async joinMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/join`, {
       method: "POST",
       credentials: "include",
-      // ❌ NO Content-Type
-      // ❌ NO body
     });
 
     const data = await res.json().catch(() => ({}));
@@ -62,9 +31,6 @@ export const arenaApi = {
     return data;
   },
 
-  // --------------------
-  // Matchmaking: LEAVE
-  // --------------------
   async leaveMatchmaking() {
     const res = await fetch(`${API_BASE}/arena/matchmaking/leave`, {
       method: "POST",
@@ -78,9 +44,6 @@ export const arenaApi = {
     return data;
   },
 
-  // --------------------
-  // Arena: MY HISTORY
-  // --------------------
   async getMyHistory() {
     const res = await fetch(`${API_BASE}/arena/me/history`, {
       method: "GET",
@@ -94,9 +57,6 @@ export const arenaApi = {
     return data;
   },
 
-   // --------------------
-  // Arena: MY STATS
-  // --------------------
   async getMyStats() {
     const res = await fetch(`${API_BASE}/arena/me/stats`, {
       method: "GET",
@@ -114,7 +74,6 @@ export const arenaApi = {
     const res = await fetch(`${API_BASE}/arena/games/ai`, {
       method: "POST",
       credentials: "include",
-      // no body, no Content-Type (avoids empty JSON body issue)
     });
   
     const data = await res.json().catch(() => ({}));
@@ -123,8 +82,7 @@ export const arenaApi = {
     }
     return data as { gameId: number };
   },
-  
-  // ✅ list games by status (waiting/playing/finished/cancelled)
+
   async getGamesByStatus(status: "waiting" | "playing" | "finished" | "cancelled") {
     const res = await fetch(`${API_BASE}/arena/games?status=${status}`, {
       method: "GET",
@@ -133,7 +91,6 @@ export const arenaApi = {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.details || data?.error || "Failed to load arena games");
-    // backend returns { games }
     return data as {
       games: Array<{
         id: number;
@@ -147,7 +104,6 @@ export const arenaApi = {
     };
   },
 
-  // ✅ fetch players for a game (for names/avatars)
   async getGamePlayers(gameId: number) {
     const res = await fetch(`${API_BASE}/arena/games/${gameId}/players`, {
       method: "GET",

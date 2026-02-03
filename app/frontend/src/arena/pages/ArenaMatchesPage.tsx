@@ -1,4 +1,3 @@
-// frontend/src/arena/pages/ArenaMatchesPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { arenaApi } from "../api/arenaApi";
@@ -18,30 +17,6 @@ type PlayerBrief = {
   is_ai: boolean;
 };
 
-function initials(name?: string) {
-  const n = (name ?? "").trim();
-  if (!n) return "?";
-  const parts = n.split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase()).join("") || "?";
-}
-
-function Avatar({ src, label }: { src: string | null; label: string }) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={label}
-        className="h-9 w-9 rounded-full object-cover border border-slate-800"
-      />
-    );
-  }
-
-  return (
-    <div className="h-9 w-9 rounded-full border border-slate-800 bg-slate-900/60 flex items-center justify-center text-xs font-bold text-slate-200">
-      {initials(label)}
-    </div>
-  );
-}
 
 export default function ArenaMatchesPage() {
   const nav = useNavigate();
@@ -60,7 +35,7 @@ export default function ArenaMatchesPage() {
       arenaApi.getGamesByStatus("playing"),
       arenaApi.getGamesByStatus("waiting"),
     ]);
-
+    
     const live: GameRow[] = [
       ...playingRes.games.map((g) => ({
         id: g.id,
@@ -80,14 +55,13 @@ export default function ArenaMatchesPage() {
 
     setGames(live);
 
-    // fetch players for each game (simple + reliable)
     const pairs = await Promise.all(
       live.map(async (g) => {
         try {
           const ps = await arenaApi.getGamePlayers(g.id);
           const brief: PlayerBrief[] = ps.map((p) => ({
             position: p.position,
-            name: p.display_name || p.username || (p.is_ai ? "AI" : "Unknown"),
+            name: p.username || (p.is_ai ? "AI" : "Unknown"),
             avatar: p.profile_picture || p.image_src || null,
             is_ai: !!p.is_ai,
           }));
@@ -119,7 +93,6 @@ export default function ArenaMatchesPage() {
         setLoading(false);
       }
 
-      // polling for live games list
       t = window.setInterval(async () => {
         try {
           await load();
@@ -199,8 +172,7 @@ export default function ArenaMatchesPage() {
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar src={p1?.avatar ?? null} label={p1?.name ?? "Player 1"} />
+                          <div className="flex items-center gap-3">                            
                             <div className="min-w-0">
                               <div className="text-sm font-semibold truncate">
                                 {p1?.name ?? "Player 1"}
@@ -212,8 +184,7 @@ export default function ArenaMatchesPage() {
                         </div>
 
                         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar src={p2?.avatar ?? null} label={p2?.name ?? "Player 2"} />
+                          <div className="flex items-center gap-3">                            
                             <div className="min-w-0">
                               <div className="text-sm font-semibold truncate">
                                 {p2?.name ?? "Player 2"}
