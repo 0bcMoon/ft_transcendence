@@ -11,8 +11,6 @@ export const createTournamentSchema = z.object({
         .refine(val => [4, 8, 16].includes(val), {
             message: "Must be 4, 8, or 16 players"
         }),
-    start_time: z.string(),
-
 });
 
 

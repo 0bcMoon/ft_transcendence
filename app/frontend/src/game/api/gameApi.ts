@@ -17,8 +17,8 @@ import type {
 
 export const gameApi = {
 
-    create: async (params: { name: string; maxPlayers: number; startTime: string }): Promise<void> => {
-        await api.post('/api/tournaments', { name: params.name, max_players: params.maxPlayers, start_time: params.startTime });
+    create: async (params: { name: string; maxPlayers: number}): Promise<void> => {
+        await api.post('/api/tournaments', { name: params.name, max_players: params.maxPlayers});
     },
 
 

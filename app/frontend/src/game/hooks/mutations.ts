@@ -9,9 +9,11 @@ export function useCreateTournament() {
     mutationFn: gameApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tournaments", "list"] });
+      toast.success("Tournament created successfully!");
     },
   });
 }
+
 
 /**
  * Register to tournament mutation

@@ -19,22 +19,21 @@ import {
 
 const tournamentRepository = {
 
-    create: async (name: string, max_players: number, created_by: number, start_time?: string): Promise<number> => {
+    create: async (name: string, max_players: number, created_by: number): Promise<number> => {
         const result = await db.run(
             `INSERT INTO tournaments 
-            (name, max_players, created_by, status, current_round, start_time, created_at) 
-         VALUES (?, ?, ?, 'registration', 1, ?, CURRENT_TIMESTAMP)`,
-            [name, max_players, created_by, start_time || null]
+        (name, max_players, created_by, status, current_round, created_at) 
+        VALUES (?, ?, ?, 'registration', 1, CURRENT_TIMESTAMP)`,
+            [name, max_players, created_by]
         );
         return result.lastID;
     },
 
-    async getTournaments(): Promise<TournamentList[]> {
+    getTournaments: async (): Promise<TournamentList[]> => {
         const rows = await db.all<TournamentList>(
             `SELECT 
             id,
             name,
-            start_time,
             max_players,
             status,
             created_at

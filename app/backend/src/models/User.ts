@@ -105,7 +105,7 @@ const User = {
         const { id } = req.params as { id: number };
         const user = await userRepository.getUserWithRelationStatus(req.user.id, id);
         if (!user) 
-            return reply.status(200).send({ message: "User not found" });
+            return reply.status(404).send({ message: "User not found" });
         user.profile_picture = user.image_src + user.profile_picture;
         user.online_status = isOnline(user.id);
         return reply.status(200).send(user);

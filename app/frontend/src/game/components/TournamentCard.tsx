@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Calendar, Users, Clock } from "lucide-react";
+import { Users, Clock, Calendar } from "lucide-react";
 
 interface TournamentCardProps {
     tournament: {
@@ -13,45 +13,55 @@ interface TournamentCardProps {
 }
 
 export function TournamentCard({ tournament }: TournamentCardProps) {
-    return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-slate-800 transition">
-            {/* Left info */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-8 flex-1 text-white">
-                <div className="font-semibold text-lg truncate">{tournament.name}</div>
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                    <Calendar size={16} />
-                    <span>{tournament.start_time ? new Date(tournament.start_time).toLocaleString() : "Not set"}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                    <Users size={16} />
-                    <span>Max: {tournament.max_players}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                    <Clock size={16} />
-                    <span>Created: {new Date(tournament.created_at).toLocaleDateString()}</span>
-                </div>
-            </div>
+    const getStatusStyle = (status: string) => {
+        switch (status.toLowerCase()) {
+            case "registration":
+                return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+            case "active":
+                return "bg-green-500/20 text-green-400 border-green-500/30";
+        }
+    };
 
-            {/* Right status + view */}
-            <div className="flex items-center gap-4 mt-3 sm:mt-0">
-                <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${tournament.status === "registration"
-                            ? "bg-yellow-500 text-black"
-                            : tournament.status === "active"
-                                ? "bg-green-500 text-black"
-                                : "bg-gray-500 text-white"
-                        }`}
-                >
-                    {tournament.status.toUpperCase()}
-                </span>
-                <Link
-                    to={`/game/tournament/${tournament.id}`}
-                    className="py-1 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition"
-                >
-                    View
-                </Link>
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', });
+    };
+
+    return (
+        <Link
+            to={`/game/tournament/${tournament.id}`}
+            className="block bg-slate-900 border border-slate-800 rounded-xl p-6 hover:bg-slate-800 hover:border-slate-700 transition" >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                <div className="flex-1 space-y-3">
+                    <h3 className="text-lg font-bold text-white truncate">
+                        {tournament.name}
+                    </h3>
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                        <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            <span>{tournament.max_players} players</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span>Starts {formatDate(tournament.start_time)}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span>Created {formatDate(tournament.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <span
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${getStatusStyle( tournament.status)}`} >
+                        {tournament.status.toUpperCase()}
+                    </span>
+                </div>
             </div>
-        </div>
+        </Link>
     );
 }
-

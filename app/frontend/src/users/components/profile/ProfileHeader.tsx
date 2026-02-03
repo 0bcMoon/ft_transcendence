@@ -1,6 +1,9 @@
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, MoreVertical } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useGetUserStats } from "@/game/hooks/queries";
-import { RemoteUser } from "@/types/types"
+import { RemoteUser } from "@/types/types";
+import { ProfileActions } from "./ProfileActions";
+import { useAuthStore } from "@/state/authStore";
 
 interface ProfileHeaderProps {
     user: RemoteUser;
@@ -20,39 +23,49 @@ function StatCard({ label, value }: StatCardProps) {
     );
 }
 
-export function ProfileHeader({ user }: ProfileHeaderProps) {
-    const { 
-        data: stats, 
-        isLoading: statsLoading, 
-        isError: statsError 
-    } = useGetUserStats(user.id);
+export function ProfileHeader({ user}: ProfileHeaderProps) {
+    const [showActionsMenu, setShowActionsMenu] = useState(false);
+    const { data: stats, isLoading, isError } = useGetUserStats(user.id);
+     const currentUser = useAuthStore((s) => s.user)
+    const isOwnProfile = currentUser?.id === user.id;
 
-    // Loading state - only for stats
-    if (statsLoading) {
+
+    useEffect(() => {
+        setShowActionsMenu(false);
+    }, [user.id]);
+
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center p-20 bg-slate-900 rounded-2xl border border-slate-800">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
             </div>
         );
     }
 
-    // Error state
-    if (statsError || !stats) {
+    if (isError || !stats) {
         return (
             <div className="flex flex-col items-center justify-center p-20 bg-slate-900 rounded-2xl border border-slate-800 gap-4">
-                <AlertCircle className="w-12 h-12 text-red-500" />
-                <p className="text-lg text-slate-300">Failed to load stats</p>
-                <p className="text-sm text-slate-500">Please try again later</p>
+                <AlertCircle className="w-16 h-16 text-red-500" />
+                <p className="text-xl text-slate-300">Failed to load stats</p>
             </div>
         );
     }
 
-    // Calculate progress
     const xpInLevel = stats.total_xp % 1000;
     const levelProgress = (xpInLevel / 1000) * 100;
 
     return (
-        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 relative">
+            {/* Actions Menu Button (only for other users) */}
+            {!isOwnProfile && (
+                <button
+                    onClick={() => setShowActionsMenu(!showActionsMenu)}
+                    className="absolute top-6 right-6 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+                >
+                    <MoreVertical className="w-5 h-5" />
+                </button>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
                 {/* Avatar with online indicator */}
                 <div className="relative flex-shrink-0">
@@ -62,9 +75,9 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                         className="w-32 h-32 rounded-full object-cover border-4 border-blue-500"
                     />
                     {user.online_status && (
-                        <div 
+                        <div
                             className="absolute bottom-0 right-8 w-5 h-5 bg-green-500 rounded-full border-4 border-slate-900"
-                            style={{ transform: 'translateY(50%)' }}
+                            style={{ transform: "translateY(50%)" }}
                         />
                     )}
                 </div>
@@ -76,9 +89,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                         <h1 className="text-2xl sm:text-3xl font-bold text-white">
                             {user.display_name}
                         </h1>
-                        {user.username && (
-                            <p className="text-slate-400">@{user.username}</p>
-                        )}
+                        {user.username && <p className="text-slate-400">@{user.username}</p>}
                     </div>
 
                     {/* Level progress */}
@@ -105,6 +116,14 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Actions Menu Dropdown */}
+            {!isOwnProfile && showActionsMenu && (
+                <ProfileActions
+                    user={user}
+                    onClose={() => setShowActionsMenu(false)}
+                />
+            )}
         </div>
     );
 }

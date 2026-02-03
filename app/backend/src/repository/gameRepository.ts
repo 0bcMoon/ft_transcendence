@@ -79,19 +79,15 @@ const gameRepository = {
     async getPlayerStats(userId: number): Promise<PlayerStats | null> {
         const stats = await db.get<PlayerStats>(
             `SELECT 
-            ps.user_id,
-            ps.level,
-            ps.total_xp,
-            ps.wins,
-            ps.losses,
-            ps.games_played,
-            ROUND(CAST(ps.wins AS REAL) / NULLIF(ps.games_played, 0) * 100, 2) as win_rate,
-            ub.badge_name,
-            ub.badge_icon
-         FROM player_stats ps
-         LEFT JOIN user_badges ub ON ps.user_id = ub.user_id
-         WHERE ps.user_id = ?
-         LIMIT 1`,
+            user_id,
+            level,
+            total_xp,
+            wins,
+            losses,
+            games_played,
+            ROUND(CAST(wins AS REAL) / NULLIF(games_played, 0) * 100, 2) as win_rate
+         FROM player_stats
+         WHERE user_id = ?`,
             [userId]
         );
 
@@ -285,7 +281,7 @@ const gameRepository = {
             [userId]
         );
         if (currentBadge?.badge_name === badgeName && currentBadge?.badge_icon === badgeIcon) {
-            return; 
+            return;
         }
         await db.run(
             `INSERT OR REPLACE INTO user_badges (user_id, badge_name, badge_icon)

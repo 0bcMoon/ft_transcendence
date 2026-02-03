@@ -107,9 +107,6 @@ CREATE TABLE IF NOT EXISTS tournaments (
     winner_id INTEGER,
     max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16)),
     current_round INTEGER DEFAULT 1,
-    start_time TIMESTAMP,
-    started_at TIMESTAMP,
-    ended_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL

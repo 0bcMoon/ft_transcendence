@@ -7,10 +7,9 @@ import { notifyTournamentCreated, } from "../notification.service";
 export const Tournament = {
 
     createTournament: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { name, max_players, start_time } = req.body as {
+        const { name, max_players} = req.body as {
             name: string;
             max_players: number;
-            start_time?: string;
         };
 
         const creator = await userRepository.getCurrentUserById(req.user.id);
@@ -18,7 +17,7 @@ export const Tournament = {
             return reply.status(400).send({ error: "Creator user not found" });
         }
 
-        const tournamentId = await tournamentRepository.create(name, max_players, creator.id, start_time);
+        const tournamentId = await tournamentRepository.create(name, max_players, creator.id);
 
         if (!tournamentId) {
             return reply.status(500).send({ error: "Failed to create tournament" });
