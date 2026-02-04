@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS game_players (
 CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished', 'cancelled')),
+    status TEXT NOT NULL DEFAULT 'registration' CHECK(status IN ('registration', 'active', 'finished')),
     created_by INTEGER NOT NULL,
     winner_id INTEGER,
     max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16)),
@@ -203,10 +203,6 @@ CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);
 
 
 
--- =========================
--- Arena (isolated from pong)
--- =========================
-
 CREATE TABLE IF NOT EXISTS arena_games (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   status TEXT NOT NULL DEFAULT 'waiting'
@@ -219,7 +215,6 @@ CREATE TABLE IF NOT EXISTS arena_games (
   FOREIGN KEY (winner_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_arena_games_status ON arena_games(status);
 
 CREATE TABLE IF NOT EXISTS arena_players (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -227,13 +222,9 @@ CREATE TABLE IF NOT EXISTS arena_players (
   user_id INTEGER NULL,
   position INTEGER NOT NULL CHECK(position IN (1,2)),
   is_ai INTEGER NOT NULL DEFAULT 0,
-
   round_wins INTEGER NOT NULL DEFAULT 0,
-
-  -- “stay at last position” between rounds
   last_x REAL NOT NULL DEFAULT 0,
   last_y REAL NOT NULL DEFAULT 0,
-
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (arena_game_id) REFERENCES arena_games(id) ON DELETE CASCADE,
@@ -241,19 +232,19 @@ CREATE TABLE IF NOT EXISTS arena_players (
   UNIQUE(arena_game_id, position)
 );
 
-CREATE INDEX IF NOT EXISTS idx_arena_players_game ON arena_players(arena_game_id);
-CREATE INDEX IF NOT EXISTS idx_arena_players_user ON arena_players(user_id);
 
--- Independent history for arena
 CREATE TABLE IF NOT EXISTS arena_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   arena_game_id INTEGER NOT NULL,
   type TEXT NOT NULL
     CHECK(type IN ('created','started','target_spawned','round_won','finished','cancelled','player_left')),
-  payload TEXT NULL, -- JSON string
+  payload TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (arena_game_id) REFERENCES arena_games(id) ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_arena_players_game ON arena_players(arena_game_id);
+CREATE INDEX IF NOT EXISTS idx_arena_players_user ON arena_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_arena_games_status ON arena_games(status);
 CREATE INDEX IF NOT EXISTS idx_arena_events_game ON arena_events(arena_game_id);
 CREATE INDEX IF NOT EXISTS idx_arena_events_created ON arena_events(created_at);

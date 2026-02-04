@@ -2,7 +2,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import tournamentRepository from "../repository/tournamentRepository";
 import { userRepository } from "../repository/userRepository";
-import { notifyTournamentCreated, } from "../notification.service";
+import { notifyTournamentCreated, notifyTournamentStarted } from "../notification.service";
 
 export const Tournament = {
 
@@ -68,6 +68,9 @@ export const Tournament = {
         await tournamentRepository.register(tournamentId, userId);
         if (count + 1 === max) {
             await tournamentRepository.start(tournamentId);
+            const name = await tournamentRepository.getTournamentName(tournamentId);
+            if (name)
+                notifyTournamentStarted(tournamentId, name);
         }
         return reply.status(200).send({ success: true });
     },
@@ -81,7 +84,6 @@ export const Tournament = {
             return reply.status(404).send({ error: "Tournament not found" });
         }
         const players = await tournamentRepository.getPlayers(tournamentId);
-        console.log(players);
         return reply.status(200).send(players);
     },
 

@@ -55,25 +55,6 @@ export const notifyTournamentStarted = async (tournamentId: number, name: string
     }
 };
 
-export const notifyPlayerMatchReady = async (userId: number, tournamentId: number, matchId: number): Promise<void> => {
-    const notification = await NotificationRepository.create({
-        user_id: userId,
-        title: "Tournament Match Ready",
-        type: "match_ready",
-        message: `Your match in tournament ID ${tournamentId} is ready to start!`,
-        link: `/game/tournament/${tournamentId}/match/${matchId}`,
-        is_read: false,
-    });
-
-    if (!notification)
-        return;
-
-    notifyUser(userId, {
-        type: "notification",
-        userId: userId,
-        notification,
-    });
-};
 /// -----user friend notifications -----
 export const notifyAddFriend = async (userId: number, friend: User): Promise<void> => {
     const notification = await NotificationRepository.create({

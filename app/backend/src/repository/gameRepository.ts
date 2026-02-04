@@ -59,17 +59,19 @@ const gameRepository = {
             u.id,
             u.username,
             (u.image_src || u.profile_picture) AS profile_picture,
-            COUNT(g.id) AS wins,
+            ps.wins,
             ps.total_xp,
+            ps.level,
+            ps.losses,
+            ps.games_played,
             ub.badge_name,
             ub.badge_icon
         FROM users u
-        JOIN games g ON g.winner_id = u.id
-        LEFT JOIN player_stats ps ON ps.user_id = u.id
+        INNER JOIN player_stats ps ON ps.user_id = u.id
         LEFT JOIN user_badges ub ON ub.user_id = u.id
-        WHERE g.status = 'finished'
+        WHERE ps.games_played > 0
         GROUP BY u.id
-        ORDER BY wins DESC
+        ORDER BY ps.wins DESC, ps.total_xp DESC
         LIMIT ?
         `,
             [limit]

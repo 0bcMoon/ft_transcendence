@@ -65,9 +65,5 @@ export const NotificationRepository = {
     markAsRead: async (id: number, userId: number): Promise<void> => {
         await db.run(`UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`, [id, userId]);
     },
-
-    // delete: async (id: number): Promise<void> => {
-    //     await db.run(`DELETE FROM notifications WHERE id = ?`, [id]);
-    // },
 };
 
