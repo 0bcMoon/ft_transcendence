@@ -35,3 +35,4 @@ images
 database
 nginx/ssl
 .todos
+grafana-data

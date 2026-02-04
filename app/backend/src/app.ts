@@ -8,7 +8,7 @@ import metricsPlugin from 'fastify-metrics';
 
 import routes from "./routes";
 import auth from "./auth.routes";
-import game from "./game.routes";
+// import game from "./game.routes";
 import metricsRoutes from "./routes/metrics.routes";
 import PingPongRoutes from "./routes/pingpong.routes";
 import NotificationsRoutes from "./routes/notifications.routes";
