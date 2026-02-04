@@ -2,7 +2,6 @@ import { FastifyPluginAsync } from "fastify";
 import client from "prom-client";
 
 const metricsRoutes: FastifyPluginAsync = async (fastify) => {
-  // fastify.get("/metrics", a)\
   fastify.get("/metrics", async (request, reply) => {
     reply
       .header("Content-Type", client.register.contentType)
@@ -10,11 +9,6 @@ const metricsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   client.collectDefaultMetrics();
-
-  fastify.get("/", async (request, reply) => {
-    return "Hello from backend!";
-  });
-
 
 };
 
