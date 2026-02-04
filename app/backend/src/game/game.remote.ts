@@ -24,7 +24,8 @@ export function startRemoteGameLoop(gameId: number): void {
     if (!match)
         return;
 
-    if (match.loop) clearInterval(match.loop);
+    if (match.loop) 
+        clearInterval(match.loop);
 
     match.loop = setInterval(() => {
 
@@ -49,6 +50,7 @@ export function startRemoteGameLoop(gameId: number): void {
             return;
         }
     }, 16);
+    console.log(match.loop);
 }
 
 export async function endGame(match: Match): Promise<void> {

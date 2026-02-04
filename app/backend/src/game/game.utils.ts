@@ -111,20 +111,22 @@ export async function updatePlayerProgress( match: TournamentMatch | Match, winn
         const winnerXpGain = XP_RULES.WIN + winnerData.score * XP_RULES.PER_POINT;
         const loserXpGain = XP_RULES.LOSS + loserData.score * XP_RULES.PER_POINT;
 
-        const [winnerTotalXp, loserTotalXp] = await Promise.all([
-            gameRepository.updatePlayerStats(winnerId, winnerXpGain, true),
-            gameRepository.updatePlayerStats(loserId, loserXpGain, false),
+        await Promise.all([
+            gameRepository.updateStats(winnerId, winnerXpGain, true),
+            gameRepository.updateStats(loserId, loserXpGain, false),
 
             gameRepository.updatePlayerXpGained(match.gameId, winnerId, winnerXpGain),
             gameRepository.updatePlayerXpGained(match.gameId, loserId, loserXpGain),
         ]);
 
+        const winnerXp = await gameRepository.getTotalXP(winnerId);
+        const loserXp = await gameRepository.getTotalXP(loserId);
+
         await Promise.all([
-            checkAndAwardBadges(winnerId, winnerTotalXp),
-            checkAndAwardBadges(loserId, loserTotalXp),
+            checkAndAwardBadges(winnerId, winnerXp),
+            checkAndAwardBadges(loserId, loserXp),
         ]);
 
-        console.log(`Progress: Winner ${winnerId} (${winnerTotalXp}xp) vs Loser ${loserId} (${loserTotalXp}xp)`);
     } catch (error) {
         console.error("Player progress update failed:", error);
         throw error;

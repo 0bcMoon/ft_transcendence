@@ -26,13 +26,12 @@ function StatCard({ label, value }: StatCardProps) {
 export function ProfileHeader({ user}: ProfileHeaderProps) {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
     const { data: stats, isLoading, isError } = useGetUserStats(user.id);
+    console.log(stats);
      const currentUser = useAuthStore((s) => s.user)
     const isOwnProfile = currentUser?.id === user.id;
 
 
-    useEffect(() => {
-        setShowActionsMenu(false);
-    }, [user.id]);
+    useEffect(() => { setShowActionsMenu(false); }, [user.id]);
 
     if (isLoading) {
         return (
@@ -56,18 +55,15 @@ export function ProfileHeader({ user}: ProfileHeaderProps) {
 
     return (
         <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 relative">
-            {/* Actions Menu Button (only for other users) */}
             {!isOwnProfile && (
                 <button
                     onClick={() => setShowActionsMenu(!showActionsMenu)}
-                    className="absolute top-6 right-6 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
-                >
+                    className="absolute top-6 right-6 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" >
                     <MoreVertical className="w-5 h-5" />
                 </button>
             )}
 
             <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-                {/* Avatar with online indicator */}
                 <div className="relative flex-shrink-0">
                     <img
                         src={user.profile_picture || "/placeholder.svg"}
@@ -82,7 +78,6 @@ export function ProfileHeader({ user}: ProfileHeaderProps) {
                     )}
                 </div>
 
-                {/* User info and stats */}
                 <div className="flex-1 w-full space-y-4">
                     {/* Name */}
                     <div className="text-center sm:text-left">
@@ -92,7 +87,6 @@ export function ProfileHeader({ user}: ProfileHeaderProps) {
                         {user.username && <p className="text-slate-400">@{user.username}</p>}
                     </div>
 
-                    {/* Level progress */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm text-slate-400">
                             <span>Level {stats.level}</span>
@@ -117,7 +111,6 @@ export function ProfileHeader({ user}: ProfileHeaderProps) {
                 </div>
             </div>
 
-            {/* Actions Menu Dropdown */}
             {!isOwnProfile && showActionsMenu && (
                 <ProfileActions
                     user={user}

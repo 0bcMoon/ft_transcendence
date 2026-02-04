@@ -76,7 +76,11 @@ const gameRepository = {
         );
     },
 
-    async getPlayerStats(userId: number): Promise<PlayerStats | null> {
+    async getPlayerStats(userId: number): Promise<PlayerStats> {
+        await db.run(
+            `INSERT OR IGNORE INTO player_stats (user_id) VALUES (?)`,
+            [userId]
+        );
         const stats = await db.get<PlayerStats>(
             `SELECT 
             user_id,
@@ -85,13 +89,15 @@ const gameRepository = {
             wins,
             losses,
             games_played,
-            ROUND(CAST(wins AS REAL) / NULLIF(games_played, 0) * 100, 2) as win_rate
+            CASE 
+                WHEN games_played = 0 THEN 0
+                ELSE ROUND(wins * 100.0 / games_played, 2)
+            END as win_rate
          FROM player_stats
          WHERE user_id = ?`,
             [userId]
         );
-
-        return stats || null;
+        return stats!;
     },
 
     async getRecentMatches(userId: number, limit: number = 10, offset: number = 0): Promise<RecentMatch[]> {
@@ -250,23 +256,25 @@ const gameRepository = {
     },
 
 
-    async updatePlayerStats(userId: number, xpGain: number, isWinner: boolean): Promise<number> {
-        const winsIncrement = isWinner ? 1 : 0;
-        const lossesIncrement = isWinner ? 0 : 1;
-
+    async updateStats(userId: number, xpGained: number, won: boolean): Promise<void> {
         await db.run(
-            `INSERT INTO player_stats (user_id, total_xp, level, wins, losses, games_played, created_at, updated_at)
-         VALUES (?, ?, CAST(? AS REAL) / ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-         ON CONFLICT(user_id) DO UPDATE SET
-             total_xp = player_stats.total_xp + excluded.total_xp,
-             level = CAST((player_stats.total_xp + excluded.total_xp) AS REAL) / ?,
-             wins = player_stats.wins + excluded.wins,
-             losses = player_stats.losses + excluded.losses,
-             games_played = player_stats.games_played + 1,
-             updated_at = CURRENT_TIMESTAMP`,
-            [userId, xpGain, xpGain, 1000, winsIncrement, lossesIncrement, 1000]
+            `INSERT OR IGNORE INTO player_stats (user_id) VALUES (?)`,
+            [userId]
         );
+        await db.run(
+            `UPDATE player_stats 
+             SET total_xp = total_xp + ?,
+                 level = (total_xp + ?) / 1000,
+                 wins = wins + ?,
+                 losses = losses + ?,
+                 games_played = games_played + 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = ?`,
+            [xpGained, xpGained, won ? 1 : 0, won ? 0 : 1, userId]
+        );
+    },
 
+    async getTotalXP(userId: number): Promise<number> {
         const result = await db.get<{ total_xp: number }>(
             `SELECT total_xp FROM player_stats WHERE user_id = ?`,
             [userId]

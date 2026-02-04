@@ -70,17 +70,7 @@ export default function TournamentPage() {
                         <Trophy className="w-16 h-16 text-slate-600" />
                         <div className="text-center">
                             <h2 className="text-xl text-slate-300 mb-2">No Tournaments Yet</h2>
-                            <p className="text-sm text-slate-500">
-                                Create the first tournament to get started
-                            </p>
                         </div>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition mt-2"
-                        >
-                            <Plus className="w-5 h-5" />
-                            Create Tournament
-                        </button>
                     </div>
                 )}
             </div>

@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS "blocks" (
 );
 
 ------------------------Games---------------------
+
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     mode TEXT NOT NULL CHECK(mode IN ('remote', 'tournament')),
@@ -84,7 +85,6 @@ CREATE TABLE IF NOT EXISTS games (
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Game players table (links players to games)
 CREATE TABLE IF NOT EXISTS game_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER NOT NULL,
@@ -98,7 +98,6 @@ CREATE TABLE IF NOT EXISTS game_players (
     UNIQUE(game_id, position)
 );
 
--- Tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -141,8 +140,7 @@ CREATE TABLE IF NOT EXISTS tournament_matches (
     UNIQUE(tournament_id, round, match_number)
 );
 
-------------------------Player Stats---------------------
--- Player statistics
+
 CREATE TABLE IF NOT EXISTS player_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER UNIQUE NOT NULL,
@@ -156,7 +154,6 @@ CREATE TABLE IF NOT EXISTS player_stats (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- User badges/achievements
 CREATE TABLE IF NOT EXISTS user_badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -166,7 +163,6 @@ CREATE TABLE IF NOT EXISTS user_badges (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-------------------------Notifications---------------------
 CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL, 
