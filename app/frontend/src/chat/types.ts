@@ -17,10 +17,3 @@ export interface Contacts {
         messsage_time: string | null
         online_status: boolean
 }
-
-// export interface ChatRequest {
-//     id: string;
-//     user: User;
-//     message: string;
-//     timestamp: string;
-// }

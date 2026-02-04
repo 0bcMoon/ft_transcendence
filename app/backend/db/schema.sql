@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS "blocks" (
 );
 
 ------------------------Games---------------------
+
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     mode TEXT NOT NULL CHECK(mode IN ('remote', 'tournament')),
@@ -84,7 +85,6 @@ CREATE TABLE IF NOT EXISTS games (
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Game players table (links players to games)
 CREATE TABLE IF NOT EXISTS game_players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id INTEGER NOT NULL,
@@ -98,7 +98,6 @@ CREATE TABLE IF NOT EXISTS game_players (
     UNIQUE(game_id, position)
 );
 
--- Tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -107,9 +106,6 @@ CREATE TABLE IF NOT EXISTS tournaments (
     winner_id INTEGER,
     max_players INTEGER NOT NULL CHECK(max_players IN (4, 8, 16)),
     current_round INTEGER DEFAULT 1,
-    start_time TIMESTAMP,
-    started_at TIMESTAMP,
-    ended_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
@@ -144,8 +140,7 @@ CREATE TABLE IF NOT EXISTS tournament_matches (
     UNIQUE(tournament_id, round, match_number)
 );
 
-------------------------Player Stats---------------------
--- Player statistics
+
 CREATE TABLE IF NOT EXISTS player_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER UNIQUE NOT NULL,
@@ -159,7 +154,6 @@ CREATE TABLE IF NOT EXISTS player_stats (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- User badges/achievements
 CREATE TABLE IF NOT EXISTS user_badges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -169,7 +163,6 @@ CREATE TABLE IF NOT EXISTS user_badges (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-------------------------Notifications---------------------
 CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL, 
@@ -210,10 +203,6 @@ CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);
 
 
 
--- =========================
--- Arena (isolated from pong)
--- =========================
-
 CREATE TABLE IF NOT EXISTS arena_games (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   status TEXT NOT NULL DEFAULT 'waiting'
@@ -226,7 +215,6 @@ CREATE TABLE IF NOT EXISTS arena_games (
   FOREIGN KEY (winner_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_arena_games_status ON arena_games(status);
 
 CREATE TABLE IF NOT EXISTS arena_players (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -234,13 +222,9 @@ CREATE TABLE IF NOT EXISTS arena_players (
   user_id INTEGER NULL,
   position INTEGER NOT NULL CHECK(position IN (1,2)),
   is_ai INTEGER NOT NULL DEFAULT 0,
-
   round_wins INTEGER NOT NULL DEFAULT 0,
-
-  -- “stay at last position” between rounds
   last_x REAL NOT NULL DEFAULT 0,
   last_y REAL NOT NULL DEFAULT 0,
-
   joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (arena_game_id) REFERENCES arena_games(id) ON DELETE CASCADE,
@@ -248,19 +232,19 @@ CREATE TABLE IF NOT EXISTS arena_players (
   UNIQUE(arena_game_id, position)
 );
 
-CREATE INDEX IF NOT EXISTS idx_arena_players_game ON arena_players(arena_game_id);
-CREATE INDEX IF NOT EXISTS idx_arena_players_user ON arena_players(user_id);
 
--- Independent history for arena
 CREATE TABLE IF NOT EXISTS arena_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   arena_game_id INTEGER NOT NULL,
   type TEXT NOT NULL
     CHECK(type IN ('created','started','target_spawned','round_won','finished','cancelled','player_left')),
-  payload TEXT NULL, -- JSON string
+  payload TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (arena_game_id) REFERENCES arena_games(id) ON DELETE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_arena_players_game ON arena_players(arena_game_id);
+CREATE INDEX IF NOT EXISTS idx_arena_players_user ON arena_players(user_id);
+CREATE INDEX IF NOT EXISTS idx_arena_games_status ON arena_games(status);
 CREATE INDEX IF NOT EXISTS idx_arena_events_game ON arena_events(arena_game_id);
 CREATE INDEX IF NOT EXISTS idx_arena_events_created ON arena_events(created_at);

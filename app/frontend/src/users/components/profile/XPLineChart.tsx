@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useGetUserXPProgression } from "@/game/hooks/queries";
 
 const PRESET_LIMITS = [5, 10, 30, 100, 500];
 
-export default function XPLineChart() {
-    const { user_id } = useParams<{ user_id: string }>();
-    const userId = Number(user_id);
+interface XPLineChartProps {
+    userId: number;
+}
 
+export default function XPLineChart({ userId }: XPLineChartProps) {
     const [limit, setLimit] = useState<number>(30);
     const { data, isLoading, isError } = useGetUserXPProgression(userId, limit);
 
@@ -49,7 +49,9 @@ export default function XPLineChart() {
                     className="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-sm outline-none focus:border-blue-500 cursor-pointer hover:bg-slate-700"
                 >
                     {PRESET_LIMITS.map((val) => (
-                        <option key={val} value={val}>Last {val} games</option>
+                        <option key={val} value={val}>
+                            Last {val} games
+                        </option>
                     ))}
                 </select>
             </div>
@@ -61,28 +63,50 @@ export default function XPLineChart() {
                     <XAxis
                         dataKey="game"
                         tick={{ fontSize: 12, fill: "#94a3b8" }}
-                        label={{ value: "Games Played", position: "insideBottom", offset: -5, fill: "#94a3b8", fontSize: 12 }}
+                        label={{
+                            value: "Games Played",
+                            position: "insideBottom",
+                            offset: -5,
+                            fill: "#94a3b8",
+                            fontSize: 12,
+                        }}
                         stroke="#475569"
                     />
                     <YAxis
                         tick={{ fontSize: 12, fill: "#94a3b8" }}
                         domain={["auto", "auto"]}
                         allowDecimals={false}
-                        label={{ value: "Total XP", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 12 }}
+                        label={{
+                            value: "Total XP",
+                            angle: -90,
+                            position: "insideLeft",
+                            fill: "#94a3b8",
+                            fontSize: 12,
+                        }}
                         stroke="#475569"
                     />
                     <Tooltip
-                        contentStyle={{ background: "#1e293b", borderRadius: 8, border: "1px solid #334155", fontSize: 13, color: "#f1f5f9", padding: "12px" }}
+                        contentStyle={{
+                            background: "#1e293b",
+                            borderRadius: 8,
+                            border: "1px solid #334155",
+                            fontSize: 13,
+                            color: "#f1f5f9",
+                            padding: "12px",
+                        }}
                         labelStyle={{ color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}
-                        // formatter={(value: any, name: string) => (name === "xp" ? [value.toLocaleString(), "Total XP"] : [value, name])}
-                        labelFormatter={(_, payload: any) => payload?.[0]?.payload ? `Game ${payload[0].payload.game} • ${payload[0].payload.date}` : ""}
                         content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                                 const data = payload[0].payload;
                                 return (
                                     <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl">
-                                        <p className="text-slate-400 text-xs mb-2 font-semibold">Game {data.game} • {data.date}</p>
-                                        <p className="text-white font-bold">{data.xp.toLocaleString()} <span className="text-slate-400 text-xs font-normal">XP</span></p>
+                                        <p className="text-slate-400 text-xs mb-2 font-semibold">
+                                            Game {data.game} • {data.date}
+                                        </p>
+                                        <p className="text-white font-bold">
+                                            {data.xp.toLocaleString()}{" "}
+                                            <span className="text-slate-400 text-xs font-normal">XP</span>
+                                        </p>
                                         <p className="text-blue-400 text-sm">Level {data.level}</p>
                                         <p className="text-green-400 text-xs">+{data.xpGained} XP gained</p>
                                     </div>
@@ -105,4 +129,3 @@ export default function XPLineChart() {
         </div>
     );
 }
-

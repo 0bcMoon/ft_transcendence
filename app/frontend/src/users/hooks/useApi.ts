@@ -49,7 +49,7 @@ export const useSearchUsers = (search: string) => {
             })
             return response.data as RemoteUser[]
         },
-        enabled: search.length > 0, // Only run the query if search term is not empty
+        enabled: search.length > 0,
     })
 }
 
@@ -91,6 +91,7 @@ export const useUserById = (userId: number | undefined) => {
             return response.data as RemoteUser
         },
         enabled: !!userId && !isNaN(userId),
+        retry: false,
     })
 }
 

@@ -14,7 +14,8 @@ import {
     BALL_SPEED_MAX,
     BALL_MIN_ABS_SPEED_X,
     MAX_PADDLE_BOUNCE_ANGLE,
-    SERVE_ANGLE_RANGE
+    SERVE_ANGLE_RANGE,
+    MAX_SCORE
 } from './constants';
 
 import {Ball, Score} from "./game.types";
@@ -35,7 +36,7 @@ export const initState = (): GameState => ({
     },
     rightPaddle: {
         x: CANVAS_WIDTH - PADDLE_OFFSET - PADDLE_WIDTH,
-        y: PADDLE_HEIGHT / 2 - PADDLE_HEIGHT / 2,
+        y: CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2,
         width: PADDLE_WIDTH,
         height: PADDLE_HEIGHT
     },
@@ -121,12 +122,11 @@ export const moveBall = (ball: Ball): void => {
     ball.x += ball.speedX;
     ball.y += ball.speedY;
 
-    // Bounce off top
     if (ball.y - ball.radius <= 0) {
         ball.y = ball.radius;
         ball.speedY *= -1;
     } 
-    // Bounce off bottom
+
     else if (ball.y + ball.radius >= CANVAS_HEIGHT) {
         ball.y = CANVAS_HEIGHT - ball.radius;
         ball.speedY *= -1;
@@ -134,20 +134,22 @@ export const moveBall = (ball: Ball): void => {
 };
 
 export const handleScoring = (ball: Ball, score: Score): void => {
-    // Right player scores
     if (ball.x + BALL_RADIUS < 0) {
         score.right += 1;
-        resetBall(ball, 'right');
+        if (score.right < MAX_SCORE) {
+            resetBall(ball, 'right');
+        }
     } 
-    // Left player scores
     else if (ball.x - BALL_RADIUS > CANVAS_WIDTH) {
         score.left += 1;
-        resetBall(ball, 'left');
+        if (score.left < MAX_SCORE) {
+            resetBall(ball, 'left');
+        }
     }
 };
 
 export const resetBall = (ball: Ball, side: Side): void => {
-    // Center the ball
+
     ball.x = CANVAS_WIDTH / 2;
     ball.y = CANVAS_HEIGHT / 2;
 

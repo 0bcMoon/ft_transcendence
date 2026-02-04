@@ -31,8 +31,6 @@ export interface PlayerStats {
     losses: number;
     games_played: number;
     win_rate: number;
-    badge_name:  string;
-    badge_icon: string;
 }
 
 export interface TopPlayer {

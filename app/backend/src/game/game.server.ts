@@ -12,10 +12,8 @@ import {
     cleanupTournamentPlayer,
     getTournamentMatch
 } from './game.tournament';
-
 import gameRepository from '../repository/gameRepository';
 import { getPlayerSide, handleMove } from './game.utils';
-
 
 const players = new Map<number, Player>();
 
@@ -29,13 +27,11 @@ export function getPlayersMap(): Map<number, Player> {
 
 function cleanupPlayer(userId: number): void {
     const player = getPlayer(userId);
-    if (!player)
-        return;
+    if (!player) return;
 
     if (player.mode === 'remote') {
         cleanupRemotePlayer(userId);
-    }
-    else if (player.mode === 'tournament') {
+    } else if (player.mode === 'tournament') {
         cleanupTournamentPlayer(userId);
     }
 
@@ -44,17 +40,14 @@ function cleanupPlayer(userId: number): void {
 
 async function handleReady(userId: number): Promise<void> {
     const player = getPlayer(userId);
-    if (!player)
-        return;
+    if (!player) return;
 
     if (player.mode === 'remote') {
-        const match = getRemoteMatch(player.id);
-        if (!match)
-            return;
+        const match = getRemoteMatch(userId);
+        if (!match) return;
 
-        const side = getPlayerSide(player.id, match);
-        if (!side)
-            return;
+        const side = getPlayerSide(userId, match);
+        if (!side) return;
 
         match.ready[side] = true;
 
@@ -62,69 +55,56 @@ async function handleReady(userId: number): Promise<void> {
             await gameRepository.start(match.gameId);
             startRemoteGameLoop(match.gameId);
         }
-    }
-
-    else if (player.mode === 'tournament') {
-        const match = getTournamentMatch(player.id);
+    } else if (player.mode === 'tournament') {
+        const match = getTournamentMatch(userId);
         if (!match) return;
 
-        const side = getPlayerSide(player.id, match);
+        const side = getPlayerSide(userId, match);
         if (!side) return;
 
         match.ready[side] = true;
 
         if (match.ready.left && match.ready.right) {
-            try {
-                await gameRepository.start(match.gameId);
-                startTournamentGameLoop(match.gameId);
-            } catch (err) {
-            }
+            await gameRepository.start(match.gameId);
+            startTournamentGameLoop(match.gameId);
         }
     }
 }
 
-
 function handlePlayAgain(userId: number): void {
     const player = getPlayer(userId);
-    if (!player)
-        return;
+    if (!player?.socket) return;
 
-    const { socket } = player;
-
+    const socket = player.socket;
     cleanupPlayer(userId);
-    handleRemoteGame(userId, socket!);
+    handleRemoteGame(userId, socket);
 }
 
 export const handleMessage = (userId: number, data: ClientMessage, socket: WebSocket): void => {
+    switch (data.type) {
+        case "remote":
+            handleRemoteGame(userId, socket);
+            break;
 
-    if (data.type === "remote") {
-        handleRemoteGame(userId, socket);
-        return;
-    }
+        case "tournament":
+            handleTournamentGame(data, userId, socket);
+            break;
 
-    if (data.type === "tournament") {
-        handleTournamentGame(data, userId, socket);
-        return;
-    }
+        case "ready":
+            handleReady(userId);
+            break;
 
-    if (data.type === "ready") {
-        handleReady(userId);
-        return;
-    }
+        case "move":
+            handleMove(userId, data);
+            break;
 
-    if (data.type === "move") {
-        handleMove(userId, data);
-        return;
-    }
+        case "playAgain":
+            handlePlayAgain(userId);
+            break;
 
-    if (data.type === "playAgain") {
-        handlePlayAgain(userId);
-        return;
-    }
-
-    if (data.type === "leaveGame") {
-        cleanupPlayer(userId);
-        return;
+        case "leaveGame":
+            cleanupPlayer(userId);
+            break;
     }
 };
 
@@ -132,4 +112,3 @@ export function removePlayer(userId: number): void {
     cleanupPlayer(userId);
     players.delete(userId);
 }
-

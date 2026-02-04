@@ -1,121 +1,87 @@
-import { Link } from "react-router-dom"
-import { History } from "lucide-react"
-import { useGetGlobalMatches } from "@/game/hooks/queries"
+import { Link } from "react-router-dom";
+import { History, Loader2, AlertCircle } from "lucide-react";
+import { useGetGlobalMatches } from "@/game/hooks/queries";
 
-type Props = {
-    limit?: number
-}
-
-export default function RecentMatches({ limit = 6 }: Props) {
-    const { data: matches = [], isLoading, isError } = useGetGlobalMatches(1, limit)
+export default function RecentMatches() {
+    const { data: matches = [], isLoading, isError } = useGetGlobalMatches(1, 6);
 
     return (
-        <section className="mb-10">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl lg:text-2xl font-bold text-white flex items-center gap-2">
-                    <History className="w-6 h-6 text-blue-400" />
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <History className="w-5 h-5 text-blue-400" />
                     Recent Matches
                 </h2>
-
                 <Link
                     to="/history"
-                    className="text-blue-400 hover:text-blue-300 font-semibold text-sm px-3 transition" >
-                    See all matches
+                    className="text-blue-400 hover:text-blue-300 font-semibold text-sm transition" >
+                    View All
                 </Link>
-
             </div>
 
-            <div className="rounded-2xl bg-slate-900 shadow-xl border border-slate-800 overflow-hidden">
-                {/* Loading */}
-                {isLoading && (
-                    <div className="space-y-3 p-6">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className="flex items-center gap-3 py-2 px-4 rounded-xl bg-slate-800/60 animate-pulse"
-                            >
-                                <div className="w-12 h-12 rounded-full bg-slate-700" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-3 w-24 bg-slate-700 rounded" />
-                                    <div className="h-3 w-16 bg-slate-800 rounded" />
+            {isLoading && (
+                <div className="flex items-center justify-center p-20">
+                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                </div>
+            )}
+
+            {isError && (
+                <div className="flex flex-col items-center justify-center p-20 gap-4">
+                    <AlertCircle className="w-16 h-16 text-red-500" />
+                    <p className="text-xl text-slate-300">Failed to load matches</p>
+                </div>
+            )}
+
+            {!isLoading && !isError && matches.length === 0 && (
+                <div className="flex items-center justify-center p-20">
+                    <p className="text-slate-400">No matches yet</p>
+                </div>
+            )}
+
+            {!isLoading && !isError && matches.length > 0 && (
+                <ul className="divide-y divide-slate-800">
+                    {matches.map((match) => (
+                        <li key={match.id}>
+                            <Link
+                                to={`/history/${match.id}`}
+                                className="flex items-center gap-4 p-6 hover:bg-slate-800 transition" >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <img
+                                        src={match.player1_profile_picture}
+                                        alt={match.player1_username}
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
+                                    />
+                                    <span className="text-sm font-semibold text-slate-300 truncate">
+                                        {match.player1_username}
+                                    </span>
                                 </div>
-                                <div className="w-12 h-5 bg-slate-700 rounded" />
-                                <div className="w-12 h-12 rounded-full bg-slate-700" />
-                            </div>
-                        ))}
-                    </div>
-                )}
 
-                {/* Error */}
-                {isError && (
-                    <div className="py-10 text-center text-red-400 font-semibold">
-                        Failed to load matches
-                    </div>
-                )}
-
-                {/* Empty */}
-                {!isLoading && !isError && matches.length === 0 && (
-                    <div className="py-10 text-center text-slate-400">
-                        No recent matches
-                    </div>
-                )}
-
-                {/* Matches */}
-                {!isLoading && !isError && matches.length > 0 && (
-                    <ul className="divide-y divide-slate-800">
-                        {matches.slice(0, limit).map((match) => (
-                            <li key={match.id}>
-                                <Link
-                                    to={`/history/${match.id}`}
-                                    className="group flex items-center gap-3 py-4 px-6 hover:bg-blue-900/30 transition rounded-xl"
-                                >
-                                    {/* Player 1 */}
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <img
-                                            src={match.player1_profile_picture}
-                                            alt={match.player1_username}
-                                            className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
-                                        />
-                                        <p className="text-sm font-semibold group-hover:text-white transition">
-                                            {match.player1_username}
-                                        </p>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="text-lg font-bold">
+                                        <span className="text-white">{match.player1_score}</span>
+                                        <span className="text-slate-600 mx-2">-</span>
+                                        <span className="text-white">{match.player2_score}</span>
                                     </div>
+                                    <span className="text-xs text-slate-500 uppercase">
+                                        {match.mode}
+                                    </span>
+                                </div>
 
-                                    {/* Score + Mode */}
-                                    <div className="mx-2 flex-shrink-0 flex flex-col items-center">
-                                        <div className="font-extrabold text-lg">
-                                            <span className="text-slate-400">
-                                                {match.player1_score}
-                                            </span>
-                                            <span className="mx-2 text-slate-500">-</span>
-                                            <span className="text-slate-400">
-                                                {match.player2_score}
-                                            </span>
-                                        </div>
-
-                                        <span className="text-xs text-slate-400 uppercase tracking-wide">
-                                            {match.mode}
-                                        </span>
-                                    </div>
-
-                                    {/* Player 2 */}
-                                    <div className="flex items-center gap-3 flex-1 justify-end">
-                                        <p className="text-sm font-semibold group-hover:text-white transition text-right">
-                                            {match.player2_username}
-                                        </p>
-                                        <img
-                                            src={match.player2_profile_picture}
-                                            alt={match.player2_username}
-                                            className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
-                                        />
-                                    </div>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-        </section>
-    )
+                                <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+                                    <span className="text-sm font-semibold text-slate-300 truncate text-right">
+                                        {match.player2_username}
+                                    </span>
+                                    <img
+                                        src={match.player2_profile_picture}
+                                        alt={match.player2_username}
+                                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
+                                    />
+                                </div>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
 }

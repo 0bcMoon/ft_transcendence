@@ -109,6 +109,7 @@ const User = {
         const user = await userRepository.getUserWithRelationStatus(req.user.id, id);
         if (!user) return reply.status(404).send({ message: "user not found" });
         user.profile_picture = user.image_src + user.profile_picture;
+        user.online_status = isOnline(user.id);
         return reply.status(200).send(user);
     },
 
@@ -467,6 +468,7 @@ const User = {
     sendEmailConfirmation: async (id: number, email: string, reply: FastifyReply) => {
 
         const code = generateOTP(8);
+        // TODO: check for email faild
         await sendEmail(email, "Confirmation Code - Pingo", otpConfirmationTemplate(code));
         if (oneTimePass.has(id)) { //  TODO: could applay a cold down may be 
             const existingOTP = oneTimePass.get(id);
