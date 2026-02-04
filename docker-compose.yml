@@ -33,42 +33,45 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
     ports:
       - 8080:443 # change it to 443
-  # node-exporter:
-  #   image: prom/node-exporter
-  #   container_name: node-exporter
-  #   ports:
-  #     - "9101:9100"
-  #   networks: 
-  #     - pingpong
-  # prometheus:
-  #   image: prom/prometheus
-  #   container_name: prometheus
-  #   volumes:
-  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-  #   ports:
-  #     - "9090:9090"
-  #   networks: 
-  #     - pingpong
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   ports:
-  #     - 3000:3000
-  #   restart: unless-stopped
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=admin
-  #     - GF_SECURITY_ADMIN_PASSWORD=admin
-  #   volumes:
-  #     - ./grafana:/etc/grafana/provisioning/datasources
-  #   networks: 
-  #     - pingpong
-  #     - "8080:443"
-  #   networks:
-  #     - pingpong
-  #   depends_on:
-  #     - backend
-  #   restart: unless-stopped
-  #
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    ports:
+      - "9101:9100"
+    networks: 
+      - pingpong
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks: 
+      - pingpong
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+      - grafana_volume:/var/lib/grafana
+    # networks: 
+      # - pingpong
+      # - "8080:443"
+    networks:
+      - pingpong
+    depends_on:
+      - backend
+      - prometheus
+      - node-exporter
+    # restart: unless-stopped
+
   # es-init:
   #   build: ./elk-stack/es-init
   #   container_name: es-init
@@ -80,7 +83,7 @@ services:
   #   networks:
   #     - pingpong
   #   restart: "no"
-  #
+
   # logstash:
   #   build: ./elk-stack/logstash
   #   container_name: logstash
@@ -102,7 +105,7 @@ services:
   #     timeout: 10s
   #     retries: 5
   #     start_period: 60s
-  #
+
   # elasticsearch:
   #   build: ./elk-stack/elasticsearch
   #   container_name: elasticsearch
@@ -126,7 +129,7 @@ services:
   #     timeout: 10s
   #     retries: 10
   #     start_period: 30s
-  #
+
   # kibana:
   #   build: ./elk-stack/kibana
   #   container_name: kibana
@@ -163,6 +166,7 @@ volumes:
       type: none
       o: bind
       device: ${PWD}/database
+  grafana_volume:
 
 networks:
   pingpong:
