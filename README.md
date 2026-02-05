@@ -168,6 +168,7 @@ SQLite was chosen for its:
 | **Arena AI Opponent** | Play against computer | Zakaria |
 | **Arena Statistics** | Arena-specific stats | Zakaria |
 | **Arena Spectating** | Watch live arena games | Zakaria |
+| **Arena Public Api** | A public API to interact with the database with a secured	 | Zakaria |
 | **Prometheus Metrics** | Application monitoring | Ayoub |
 | **Grafana Dashboards** | Metrics visualization | Ayoub |
 | **ELK Stack Logging** | Centralized log management | Mohamed |
@@ -265,13 +266,14 @@ rative drawing, etc.)
 **Justification**: Secure RESTful API for external integrations with proper authentication and authorization.
 
 **Implementation**:
-- RESTful endpoints with `/api` prefix
-- JWT-based authentication
-- Input validation with Zod schemas
-- Rate limiting and security headers
-- Parameterized database queries
+- Public REST endpoints under /api/public
+- API key authentication via X-API-Key header (required for all public routes)
+- Role-based authorization for sensitive actions (admin-only endpoints for write operations)
+- Input/output validation using Zod schemas (query params, route params, request bodies, and response shapes)
+- Rate limiting per API key (fallback to IP) with proper HTTP 429 responses
+- Database access through repository layer using parameterized queries (prevents SQL injection)
 
-**Worked on by**: All team members
+**Worked on by**: zakaria
 
 ---
 
@@ -661,6 +663,15 @@ Authentication security is critical for any web application handling user data a
    # Notifications
    # ===================
    DISCORD_WEBHOOK=              # Discord webhook URL for sending alerts/notifications
+
+   # ==============
+   # Public Api
+   # ==============
+   PUBLIC_API_KEYS=
+   PUBLIC_API_ADMIN_KEYS=
+   PUBLIC_API_RATE_LIMIT_WINDOW=
+   PUBLIC_API_RATE_LIMIT_MAX=
+
    ```
 
 4. **Configure frontend environment** (for development)
@@ -782,5 +793,3 @@ This project was developed as part of the 42 School curriculum.
   <p>Made with ❤️ by the ft_transcendence team</p>
   <p>© 2026</p>
 </div>
-
-
