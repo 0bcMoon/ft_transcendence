@@ -39,7 +39,7 @@ export default function LocalGame() {
                                     gameStateRef={game.gameStateRef}
                                     isGameOver={game.isGameOver}
                                     countdown={game.countdown}
-                                    userSide={"left"}
+                                    userSide={"right"}
                                     winner={game.winner}
                                 />
                             </div>

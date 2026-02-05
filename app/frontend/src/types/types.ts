@@ -140,20 +140,6 @@ export interface LocalGame {
     playerNames: PlayerNames;
 }
 
-export interface GameSession {
-    gameStateRef: React.MutableRefObject<GameState | null>;
-    side: Side | null;
-    countdown: number | null;
-    isGameOver: boolean;
-    winner: Side | null;
-    waiting: boolean;
-    playerNames: PlayerNames | null;
-    playerAvatars: PlayerAvatars | null;
-    finalScore: Scores | null;
-    handlePlayAgain: () => void;
-    handleGoHome: () => void;
-}
-
 export type ServerMessage =
     | {
         type: "matchFound";

@@ -180,7 +180,6 @@ export default function GameCanvas({
                 }
             }
 
-            // Draw countdown **always on top** if active
             if (countdown !== null && countdown > 0) {
                 drawCountdown(countdown);
             }

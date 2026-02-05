@@ -60,7 +60,6 @@ export default function MatchDetailsPage() {
                             isWinner={match.winner_id === match.player1_id}
                         />
 
-                        {/* VS Badge */}
                         <div className="flex items-center justify-center order-first md:order-none">
                             <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center border-2 border-slate-700">
                                 <span className="text-2xl font-bold text-white">VS</span>

@@ -4,117 +4,76 @@ services:
     container_name: backend
     env_file:
       - .env
-    logging:
-      driver: "gelf"
-      options:
-        gelf-address: "udp://localhost:12201"
-        tag: "backend"
     networks:
       - pingpong
     volumes:
-      - ./database:/app/sqliteDB
+      - database:/app/sqliteDB
       - images:/app/public/uploads
-    depends_on:
-      logstash:
-        condition: service_healthy
 
   nginx:
     build:
       context: .
       dockerfile: ./nginx/Dockerfile
+      args:
+        VITE_API_URL: 
+        VITE_WS_URL: 
     container_name: nginx
+    networks: 
+      - pingpong
     volumes:
       - images:/var/www/uploads
       - ./nginx/ssl:/etc/nginx/ssl
     ports:
-      - "8080:443"
-    networks:
-      - pingpong
-    depends_on:
-      - backend
-    restart: unless-stopped
+      - 8080:443
 
-  es-init:
-    build: ./elk-stack/es-init
-    container_name: es-init
-    env_file:
-      - .env
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    networks:
-      - pingpong
-    restart: "no"
+  nginx-exporter:
+      image: nginx/nginx-prometheus-exporter:latest
+      container_name: nginx-exporter
+      command:
+        - "--nginx.scrape-uri=https://nginx:443/stub_status"
+      networks: 
+        - pingpong
+      depends_on:
+        - nginx
 
-  logstash:
-    build: ./elk-stack/logstash
-    container_name: logstash
-    ports:
-      - "12201:12201/udp"
-      - "5044:5044"
-      - "9600:9600"
-    networks:
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    networks: 
       - pingpong
-    env_file:
-      - .env
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9600/_node/stats || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
-  elasticsearch:
-    build: ./elk-stack/elasticsearch
-    container_name: elasticsearch
-    env_file:
-      - .env
-    ports:
-      - "9200:9200"
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "xpack.security.enabled=true"
-    networks:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: 
       - pingpong
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
-  kibana:
-    build: ./elk-stack/kibana
-    container_name: kibana
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
     ports:
-      - "5601:5601"
+      - 9000:3000
     env_file:
       - .env
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_volume:/var/lib/grafana
     networks:
       - pingpong
     depends_on:
-      es-init:
-        condition: service_completed_successfully
+      prometheus:
+        condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
 volumes:
-
-  elasticsearch-data: 
 
   images:
     driver: local
@@ -128,6 +87,7 @@ volumes:
       type: none
       o: bind
       device: ${PWD}/database
+  grafana_volume:
 
 networks:
   pingpong:

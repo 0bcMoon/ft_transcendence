@@ -119,6 +119,7 @@ export function useTournamentBasic(id: number) {
         queryKey: ["tournaments", "players", id],
         queryFn: () => gameApi.getTournamentBasic(id),
         enabled: !!id && id > 0,
+        retry: false,
     });
 }
 

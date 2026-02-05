@@ -26,7 +26,6 @@ function StatCard({ label, value }: StatCardProps) {
 export function ProfileHeader({ user}: ProfileHeaderProps) {
     const [showActionsMenu, setShowActionsMenu] = useState(false);
     const { data: stats, isLoading, isError } = useGetUserStats(user.id);
-    console.log(stats);
      const currentUser = useAuthStore((s) => s.user)
     const isOwnProfile = currentUser?.id === user.id;
 

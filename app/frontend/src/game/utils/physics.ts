@@ -73,7 +73,7 @@ const handlePaddleCollisions = (state: GameState): boolean => {
         }
     }
 
-    else if (ball.speedX > 0 && rightPaddle) { // Ball moving right AND right paddle exists
+    else if (ball.speedX > 0 && rightPaddle) { 
         const paddleTop = rightPaddle.y;
         const paddleBottom = rightPaddle.y + Paddle.HEIGHT;
         const paddleLeftEdge = rightPaddle.x;
@@ -82,7 +82,6 @@ const handlePaddleCollisions = (state: GameState): boolean => {
         const ballBottom = ball.y + Ball.RADIUS;
 
         if (ballRightEdge >= paddleLeftEdge && ball.x < rightPaddle.x + Paddle.WIDTH && ballTop < paddleBottom && ballBottom > paddleTop) {
-            // --- Calculate Bounce Physics ---
             const relativeIntersectY = (ball.y - (paddleTop + Paddle.HEIGHT / 2)) / (Paddle.HEIGHT / 2);
             const normalizedIntersect = clamp(relativeIntersectY, -1, 1);
             const bounceAngle = normalizedIntersect * toRad(Physics.MAX_PADDLE_BOUNCE_ANGLE);
@@ -104,7 +103,6 @@ export const moveBall = (state: GameState, onScore: (scorer: Side) => void) => {
     state.ball.x += state.ball.speedX;
     state.ball.y += state.ball.speedY;
 
-    // Wall Collision (Top/Bottom)
     if (state.ball.y - Ball.RADIUS <= 0) {
         state.ball.y = Ball.RADIUS;
         state.ball.speedY *= -1;

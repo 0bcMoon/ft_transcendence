@@ -1,5 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Loader2, AlertCircle } from "lucide-react"
+import { useParams} from "react-router-dom"
+import {Loader2, AlertCircle } from "lucide-react"
 
 import { useUserById } from "./hooks/useApi"
 import { ProfileHeader } from "./components/profile/ProfileHeader"
@@ -8,7 +8,6 @@ import XPLineChart from "./components/profile/XPLineChart"
 
 export default function UserProfile() {
     const { user_id } = useParams<{ user_id: string }>()
-    const navigate = useNavigate()
 
     const userId = Number(user_id)
 
@@ -34,12 +33,6 @@ export default function UserProfile() {
     return (
         <div className="min-h-screen bg-slate-950 px-4 py-6 sm:py-8">
             <div className="max-w-6xl mx-auto space-y-6">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition" >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </button>
 
                 <ProfileHeader user={user} />
                 

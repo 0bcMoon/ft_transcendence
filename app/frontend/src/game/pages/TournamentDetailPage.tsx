@@ -1,47 +1,43 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, Navigate } from "react-router-dom";
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { TournamentHeader } from "../components/tournament/TournamentHeader";
 import { TournamentTabs } from "../components/tournament/TournamentTabs";
+import { useTournamentBasic } from "../hooks/queries";
+import { toast } from "react-hot-toast";
 
-type TabType = 'overview' | 'bracket' | 'players';
+type TabType = "overview" | "bracket" | "players";
 
 export default function TournamentDetailPage() {
     const { id } = useParams<{ id: string }>();
-    const tournamentId = parseInt(id || '0', 10);
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const tournamentId = parseInt(id || "0", 10);
+    const [activeTab, setActiveTab] = useState<TabType>("overview");
+    const { data: tournament, isLoading, isError } = useTournamentBasic(tournamentId);
 
-    if (isNaN(tournamentId) || tournamentId <= 0) {
+    if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 max-w-md w-full text-center">
-                    <h2 className="text-2xl font-bold text-white mb-2">Tournament Not Found</h2>
-                    <p className="text-slate-400 mb-8">
-                        Tournament doesn't exist or ID is invalid.
-                    </p>
-                    <Link
-                        to="/game/tournaments"
-                        className="inline-flex items-center gap-2 px-5 py-3 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 hover:text-white transition"
-                    >
-                        <ArrowLeft size={18} />
-                        Back to Tournaments
-                    </Link>
-                </div>
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
             </div>
         );
     }
 
+    if (isError || !tournament) {
+        toast.error("Tournament not found");
+        return <Navigate to="/game/tournaments" replace />;
+    }
+
     return (
         <div className="min-h-screen bg-slate-950 py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-6">
-                    <Link
-                        to="/game/tournaments"
-                        className="inline-flex items-center gap-2 px-5 py-3 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700 hover:text-white transition" >
-                        <ArrowLeft size={18} />
-                        Back to Tournaments
-                    </Link>
-                </div>
+            <div className="max-w-7xl mx-auto space-y-6">
+                <Link
+                    to="/game/tournaments"
+                    className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition" >
+                    <ArrowLeft className="w-4 h-4" />
+
+                    Back
+                </Link>
+
                 <TournamentHeader tournamentId={tournamentId} />
                 <TournamentTabs
                     tournamentId={tournamentId}

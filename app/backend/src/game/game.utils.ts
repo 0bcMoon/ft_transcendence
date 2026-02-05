@@ -1,18 +1,19 @@
 import { Player } from './game.types';
-import { Paddle, Canvas } from './game.config';
 import gameRepository from '../repository/gameRepository';
 import { TournamentMatch, Match, Side } from './game.types';
 import { getPlayer } from './game.server';
 import { getRemoteMatch } from './game.remote';
 import { getTournamentMatch } from './game.tournament';
+import {
+    PADDLE_SPEED,
+    PADDLE_HEIGHT,
+    CANVAS_HEIGHT,
+    XP_WIN,
+    XP_LOSS,
+    XP_PER_POINT,
+} from './constants';
 
 
-const XP_RULES = {
-    WIN: 100,
-    LOSS: 30,
-    PER_POINT: 5,
-    XP_PER_LEVEL: 1000,
-};
 
 export function sendMessage(player: Player | undefined, message: Object): boolean {
     if (!player) {
@@ -46,11 +47,11 @@ export function updatePaddle(paddle: { y: number } | undefined, keys: { up: bool
         return;
 
     if (keys.up)
-        paddle.y -= Paddle.SPEED;
+        paddle.y -= PADDLE_SPEED;
     if (keys.down)
-        paddle.y += Paddle.SPEED;
+        paddle.y += PADDLE_SPEED;
 
-    paddle.y = Math.max(0, Math.min(Canvas.HEIGHT - Paddle.HEIGHT, paddle.y));
+    paddle.y = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, paddle.y));
 }
 
 export function getPlayerSide(userId: number, match: Match | TournamentMatch): Side | null {
@@ -92,10 +93,10 @@ export function handleMove(userId: number, data: { up: boolean; down: boolean })
     }
 }
 
-export async function updatePlayerProgress( match: TournamentMatch | Match, winnerId: number): Promise<void> {
+export async function updatePlayerProgress(match: TournamentMatch | Match, winnerId: number): Promise<void> {
     try {
         const playerScores = await gameRepository.getPlayerScores(match.gameId);
-        
+
         if (playerScores.length !== 2) {
             throw new Error("Game must have exactly two players");
         }
@@ -108,8 +109,8 @@ export async function updatePlayerProgress( match: TournamentMatch | Match, winn
         }
 
         const loserId = loserData.user_id;
-        const winnerXpGain = XP_RULES.WIN + winnerData.score * XP_RULES.PER_POINT;
-        const loserXpGain = XP_RULES.LOSS + loserData.score * XP_RULES.PER_POINT;
+        const winnerXpGain = XP_WIN + winnerData.score * XP_PER_POINT;
+        const loserXpGain = XP_LOSS + loserData.score * XP_PER_POINT;
 
         await Promise.all([
             gameRepository.updateStats(winnerId, winnerXpGain, true),
