@@ -1,4 +1,3 @@
-// @ts-ignore
 import './index.css'
 
 import { createRoot } from 'react-dom/client'
@@ -19,29 +18,34 @@ import LeaderboardPage from './home/LeaderboardPage';
 import Register from './auth/Register';
 
 import GameModes from './game/pages/GameModes';
-
 import RemoteGame from './game/pages/RemoteGamePage';
 import LocalGame from './game/pages/LocalGamePage';
-import AIGame from './game/pages/AIGamePage';
 import Tournaments from './game/pages/TournamentPage';
 import TournamentMatch from './game/pages/TournamentMatch';
 import TournamentDetailPage from './game/pages/TournamentDetailPage';
 import HistoryPage from './game/pages/HistoryPage';
+import UserMatchHistoryPage from './game/pages/UserMatchHistoryPage';
+
 
 import FriendsPage from './users/FriendsPage';
 import { WebSocketProvider } from './context/WebSocketContext';
 import MatchDetailsPage from './game/pages/MatchDetailsPage';
 import PasswordReset from './auth/components/PasswordReset';
 
-// import ArenaStartPage from "./arena/pages/ArenaStartPage";
 import ArenaPlayPage from "./arena/pages/ArenaPlayPage";
 import ArenaLobbyPage from "./arena/pages/ArenaLobbyPage";
 import ArenaHistoryPage from "./arena/pages/ArenaHistoryPage";
 import ArenaSpectatePage from "./arena/pages/ArenaSpectatePage";
 import ArenaMatchesPage from "./arena/pages/ArenaMatchesPage";
+import AllNotificationsPage$1 from './notifications/AllNotificationsPage';
+
+import PrivacyPolicy from './landingpage/pages/PrivacyPolicy';
+import TermsOfService from './landingpage/pages/TermsOfService';
 
 
 const router = createBrowserRouter([
+    { path: "/privacy-policy", element: <PrivacyPolicy /> },
+    { path: "/terms-of-service", element: <TermsOfService /> },
     {
         path: "/",
         element: <RootLayout />,
@@ -55,8 +59,11 @@ const router = createBrowserRouter([
             { path: "history", element: <HistoryPage /> },
             { path: "settings", element: <Settings /> },
             { path: "history/:matchId", element: <MatchDetailsPage /> },
+            { path: "users/:userId/history", element: <UserMatchHistoryPage /> },
             { path: "game/tournaments", element: <Tournaments /> },
             { path: "game/tournament/:id", element: <TournamentDetailPage /> },
+            { path: "notifications", element: <AllNotificationsPage$1 /> },
+
 
             // { path: "game/arena/start", element: <ArenaStartPage /> },
             { path: "arena", element: <ArenaLobbyPage /> },
@@ -76,7 +83,6 @@ const router = createBrowserRouter([
     { path: "/reset-password", element: <PasswordReset /> },
     { path: "game/quick/play", element: <RemoteGame /> },
     { path: "game/local/play", element: <LocalGame /> },
-    { path: "game/ai/play", element: <AIGame /> },
     { path: "*", element: <NotFound /> },
 ]);
 
@@ -95,4 +101,3 @@ createRoot(document.getElementById("root")!).render(
         />
     </QueryClientProvider>
 );
-

@@ -60,12 +60,10 @@ export default function SideBar({ isSidebarOpen, onClose }: SideBarProps) {
                                               ${isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white"}`}
                                 />
 
-                                {/* Tooltip */}
                                 <div
                                     className="absolute left-full ml-4 px-3 py-2 bg-slate-900 border border-slate-700 
                                               rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                              transition-all duration-200 whitespace-nowrap z-50 pointer-events-none"
-                                >
+                                              transition-all duration-200 whitespace-nowrap z-50 pointer-events-none" >
                                     <span className="text-sm font-medium text-white">{item.label}</span>
                                 </div>
                             </Link>

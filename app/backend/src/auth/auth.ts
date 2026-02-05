@@ -1,5 +1,6 @@
 import { userRepository } from '../repository/userRepository';
-import fastify, { BACKEND_URL, FRONTEND_URL } from '../app';
+import fastify from '../app';
+import env from '../env';
 
 import bcrypt from 'bcrypt';
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -7,9 +8,12 @@ import { GoogleOAuth2, Intra42OAuth2 } from '../types/types';
 import User from '../models/User';
 import crypto from 'crypto';
 import z from 'zod';
+import { sendEmail } from '../email-service';
+import { emailConfirmationTemplate, resetPasswordEmailTemplate, twoFactorAuthTemplate } from './email-template';
+import { usernameSchema } from '../schema/user.schema';
 
 interface LoginBody {
-    username: string;
+    identifier: string;
     password: string;
 }
 interface ITwoFactorAuth {
@@ -45,29 +49,21 @@ function generateRandomKey(length = 8) {
 }
 
 const emailSchema = z.object({
-    email: z.string({ required_error: "Email is require" }).email(),
+    email: z
+        .string({ required_error: "Email is require" })
+        .trim()
+        .email('invalid email format')
+        .max(128, "Email too long"),
 });
 
 const passwordSchema = z.object({
     password: z
         .string({ required_error: "Password is required" })
-        .min(8)
-        .max(32),
+        .trim()
+        .min(8, "Password must be at least 8 characters long.")
+        .max(64, "Password too long"),
 });
 
-function resetPasswordEmailTemplate(reset_code: string) {
-    return `
-    <html>
-        <body>
-            <h1>Password Reset Request</h1>
-            <p>You have requested to reset your password. Please use the following code to reset your password:</p>
-            <a href=${BACKEND_URL}/reset-password?rest_code=${reset_code}> Reset Password</a>
-            <p>This code will expires In 15 min.</p>
-            <p>If you did not request this, please ignore this email.</p>
-        </body>
-    </html>
-    `;
-}
 
 const Auth = {
 
@@ -123,22 +119,26 @@ const Auth = {
             userPasswordResetRequests.delete(user.id);
         }, 15 * 60 * 1000); // 15 minutes expiration
 
-        console.log(`-------------------------------`);
-        console.log(`Sending password reset email to ${email} with code: ${reset_code}`);
-        console.log(`-------------------------------`);
 
-        // await sendEmail(email, "Password Reset", resetPasswordEmailTemplate(reset_code))
+        const r = await sendEmail(email, "Password Reset Request - Pingo", resetPasswordEmailTemplate(reset_code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send reset email" });
+        }
+        return reply.status(200).send({ message: "If an account with that email exists, a password reset link has been sent." });
     },
 
     checkUsernameAvailability: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { username } = req.query as { username: string };
-        if (!username) {
-            return reply.status(400).send({ message: "username is require" });
+
+        const resutl  = usernameSchema.safeParse(req.query);
+        if (!resutl.success) {
+            return reply.status(400).send({ message: resutl.error.errors[0].message });
         }
+        const { username } = req.query as { username: string };
         const existingUser = await userRepository.getUserByUsername(username);
         if (existingUser) {
-            return reply.status(409).send({ message: 'Username already exists' });
+            return reply.status(409).send({ message: 'username already exists' });
         }
+
         return reply.status(200).send({ message: 'username is available' });
     },
 
@@ -159,22 +159,19 @@ const Auth = {
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
 
-        // const _ = await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
-
-        // email is expensive operation, so we will just log it
-        console.log(`-------------------------------`);
-        console.log(`Sending email2 to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
-
+        const r = await sendEmail(email, "Verify Your Email - Pingo", emailConfirmationTemplate(code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send confirmation email" });
+        }
 
 
         reply
             .setCookie('session_key', session_key, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                maxAge: 15 * 60, // 15 minutes
-                sameSite: true, // TODO: whats is CSRF alternative CSRF protection
+                secure: true,
+                maxAge: 15 * 60,
+                httpOnly: true,
+                sameSite: 'strict',
             })
         register.set(session_key, { confirmation_code: code, email: email });
         setTimeout(() => {
@@ -220,22 +217,21 @@ const Auth = {
 
     TwoFactorAuth: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        // TODO: add a cooldown time using redis
-
-        const { confirmation_code, action } = req.query as { confirmation_code: string, action: boolean };
+        const { confirmation_code, action } = req.query as { confirmation_code?: string, action: boolean };
         if (action === undefined) {
             return reply.status(400).send({ message: "action is require" });
         }
+
         const user = await userRepository.getCurrentUserById(req.user.id);
 
         if (!user) { // make typescript happy
             return reply.status(404).send({ message: 'User not found' });
         }
+
         if (user.two_factor_enabled === false && action === false) {
             return reply.status(400).send({ message: "Two Factor Auth already Enable" });
         }
-
-        if (!user.two_factor_enabled && !action) {
+        else if (!user.two_factor_enabled && !action) {
             return reply.status(400).send({ message: "Two Factor Auth already disable" });
         }
 
@@ -255,22 +251,18 @@ const Auth = {
 
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
-        // await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
-
-        //
-        // // email is expensive operation, so we will just log it
-        console.log(`-------------------------------`);
-        console.log(`Sending email to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
+        const r = await sendEmail(email, "Two-Factor Authentication Code - Pingo", twoFactorAuthTemplate(code))
+        if (!r.success) {
+            return reply.status(500).send({ message: "Failed to send two-factor authentication email" });
+        }
 
 
         reply
             .setCookie('session_key', session_key, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                maxAge: 15 * 60, // 15 minutes
-                sameSite: true, // TODO: whats is CSRF alternative CSRF protection
+                secure: true,
+                maxAge: 15 * 60,
+                sameSite: 'strict', // TODO: whats is CSRF alternative CSRF protection
             })
         if (userSessions.has(id)) {
             const old_session_key = userSessions.get(id)!;
@@ -295,18 +287,15 @@ const Auth = {
 
     login: async (req: FastifyRequest, reply: FastifyReply) => {
 
-        console.log("hello world!!!!!!!!!!!!!!!!!!")
-        const { username, password } = req.body as LoginBody;
-        if (!username || !password) {
-            return reply.status(400).send({ message: 'Invalid username or password' });
-        }
-        const user = await userRepository.getUserByUsername(username);
+        const { identifier, password } = req.body as LoginBody;
+        let user: User | undefined;
+        user = await userRepository.getUserByIdentifier(identifier);
         if (!user) {
-            return reply.status(401).send({ message: 'Invalid username or password' });
+            return reply.status(401).send({ message: 'Invalid identifier or password' });
         }
         const isPasswordValid = await bcrypt.compare(password, user.password!);
         if (!isPasswordValid) {
-            return reply.status(401).send({ message: 'Invalid username or password' });
+            return reply.status(401).send({ message: 'Invalid identifier or password' });
         }
 
         if (user.two_factor_enabled) {
@@ -327,13 +316,13 @@ const Auth = {
         if (!session_key) {
             return reply.status(401).send({ message: 'Unauthorized: No session key provided' });
         }
-
         const session_data = register.get(session_key);
-        register.delete(session_key);
 
         if (!session_data) {
             return reply.status(401).send({ message: 'Unauthorized: Invalid session key' });
         }
+
+
         if (session_data.email !== email) {
             return reply.status(400).send({ message: 'Email does not match the one used for confirmation code' });
         }
@@ -355,10 +344,13 @@ const Auth = {
             display_name,
             password: hashedPassword,
             email,
+            image_src: '/public/',
             profile_picture: 'default.jpg',
             oauth_type: 'local'
         });
 
+        register.delete(session_key);
+        reply.clearCookie('session_key');
         return reply.status(201).send({ message: 'User registered successfully' });
     },
 
@@ -383,18 +375,19 @@ const Auth = {
             });
 
             if (!response.ok) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=Unable to create or authenticate user`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=Unable to create or authenticate user`);
             }
             const user_data = await response.json() as GoogleOAuth2;
             const id = await User.googleLogin(user_data)
             if (!id) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=email already exists with another account`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=email already exists with another account`);
             }
             Auth.grantAccess(reply, id);
-            reply.redirect(FRONTEND_URL); // Redirect to the home page or any other page after successful login
+            reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
         } catch (error: any) {
-            return reply.redirect(`${FRONTEND_URL}/login?error=An error occurred during authentication`);
+            fastify.log.error('Error during Google OAuth2 callback:', error);
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },
 
@@ -411,20 +404,21 @@ const Auth = {
             })
 
             if (!response.ok) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=Unable to create or authenticate user`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=Unable to create or authenticate user`);
             }
 
             const user_data = await response.json() as Intra42OAuth2;
             const id = await User.intraLogin(user_data)
 
             if (!id) {
-                return reply.redirect(`${FRONTEND_URL}/login?error=email already exists with another account`);
+                return reply.redirect(`${env.FRONTEND_URL}/login?error=email already exists with another account`);
             }
             Auth.grantAccess(reply, id);
-            reply.redirect(FRONTEND_URL); // Redirect to the home page or any other page after successful login
+            reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
-        } catch (error) {
-            return reply.redirect(`${FRONTEND_URL}/login?error=An error occurred during authentication`);
+        } catch (error: any) {
+            fastify.log.error('Error during Intra42 OAuth2 callback:', error);
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=An error occurred during authentication`);
         }
     },
 
@@ -433,34 +427,32 @@ const Auth = {
         const access_token = fastify.jwt.sign({
             id: user_id,
         }, {
-            expiresIn: process.env.ACCESS_TOKEN_EXPR || '10m' // Token expiration time
-        },
-        )
+            expiresIn: env.ACCESS_TOKEN_EXPR
+        })
 
         const refresh_token = fastify.jwt.sign({
             id: user_id,
         }, {
-            expiresIn: process.env.REFRESH_TOEKN_EXPR || '30d' // Token expiration time
+            expiresIn: env.REFRESH_TOKEN_EXPR
         },
         )
 
         reply
             .setCookie('access_token', access_token, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                maxAge: 30 * 24 * 60 * 60, // 30 days
-                sameSite: true, // alternative CSRF protection
+                secure: true,
+                maxAge: env.ACCESS_TOKEN_EXPR,
+                httpOnly: true,
+                sameSite: 'strict',
             })
 
         reply
             .setCookie('refresh_token', refresh_token, {
                 path: '/',
-                secure: true, // send cookie over HTTPS only
+                secure: true,
+                maxAge: env.REFRESH_TOKEN_EXPR,
                 httpOnly: true,
-                maxAge: 30 * 24 * 60 * 60, // 30 days
-                domain: process.env.COOKIE_DOMAIN || 'localhost', // set the domain for the cookie
-                sameSite: true // alternative CSRF protection
+                sameSite: 'strict',
             })
         reply.clearCookie('session_key');
     },

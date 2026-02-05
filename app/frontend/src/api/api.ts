@@ -20,16 +20,12 @@ export const login_api = axios.create({
     },
 });
 
-export function deleteCookie(name: string): void {
-    document.cookie = `${name}=; Max-Age=0; path=/;`;
-}
 
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            deleteCookie("access_token");
-            window.location.href = "/login"; // Redirect to login page
+            window.location.href = "/login";
         }
         return Promise.reject(error);
     },

@@ -24,8 +24,6 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
     const [finalScore, setFinalScore] = useState<Scores | null>(null);
     const [score, setScore] = useState<Scores>({ left: 0, right: 0 });
     const [waiting, setWaiting] = useState(true);
-    const [round, setRound] = useState<number>(1);
-    const [matchNumber, setMatchNumber] = useState<number>(1);
 
     const isGameOverRef = useRef(isGameOver);
     const countdownRef = useRef(countdown);
@@ -66,14 +64,7 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
         websocket.onopen = () => {
             console.log(`WebSocket connected. Joining tournament match...`);
             websocket.send(
-                JSON.stringify({
-                    type: "joinGame",
-                    mode: "tournament",
-                    username: username,
-                    avatar: avatar,
-                    tournamentId,
-                    matchId,
-                })
+                JSON.stringify({ type: "tournament", username: username, avatar: avatar, tournamentId, matchId, })
             );
         };
 
@@ -81,13 +72,8 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
-                case "tournamentInfo":
-                    setRound(msg.round);
-                    setMatchNumber(msg.matchNumber);
-                    setSide(msg.side);
-                    break;
-
                 case "matchFound":
+                    setSide(msg.side);
                     setWaiting(false);
                     setPlayerNames(msg.playerNames);
                     setPlayerAvatars(msg.playerAvatars);
@@ -222,7 +208,5 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
         finalScore,
         score,
         waiting,
-        round,
-        matchNumber,
     };
 }

@@ -1,405 +1,247 @@
-// game/game.remote.ts
-
+import { getPlayersMap, getPlayer } from './game.server';
 import { WebSocket } from 'ws';
-import { ClientMessage, GameMode, Player, Side, GameState } from './game.types';
-import { initState, moveBall, checkGameOver, resetBall } from './game.physics';
-import { Rules, Paddle, Canvas } from './game.config';
+import { Player, Side, Match } from './game.types';
+import { initState, moveBall, isGameOver, handlePaddleCollision, handleScoring } from './game.physics';
 import gameRepository from '../repository/gameRepository';
-import { getPlayer } from './game.server';
+import { userRepository } from '../repository/userRepository';
+import { updatePaddle, updatePlayerProgress } from './game.utils';
+import { sendMessage } from './game.utils';
+import { MAX_SCORE } from './constants';
 
-// TYPES
-
-interface RemoteMatch {
-    gameId: number;
-    mode: 'remote';
-    players: { left: Player; right: Player };
-    ready: { left: boolean; right: boolean };
-    state: GameState;
-    startTime: number;
-    keys: {
-        left: { up: boolean; down: boolean };
-        right: { up: boolean; down: boolean };
-    };
-    loop?: NodeJS.Timeout;
-}
-
-// STATE
-
-const remoteMatches = new Map<number, RemoteMatch>();
+const remoteMatches = new Map<number, Match>();
 const remoteQueue: Player[] = [];
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
-
-function getRemoteMatch(userId: number): RemoteMatch | undefined {
+export function getRemoteMatch(userId: number): Match | undefined {
     const player = getPlayer(userId);
     return player?.gameId ? remoteMatches.get(player.gameId) : undefined;
 }
 
-function getPlayerSide(userId: number, match: RemoteMatch): Side | null {
-    if (match.players.left?.id === userId) return 'left';
-    if (match.players.right?.id === userId) return 'right';
-    return null;
-}
-
-function sendMessage(player: Player | undefined, message: object): void {
-    if (player?.socket?.readyState === WebSocket.OPEN) {
-        player.socket.send(JSON.stringify(message));
-    }
-}
-
-function broadcastToMatch(match: RemoteMatch, message: object): void {
-    sendMessage(match.players.left, message);
-    sendMessage(match.players.right, message);
-}
-
-// ============================================================================
-// GAME PHYSICS
-// ============================================================================
-
-function clamp(value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
-}
-
-function updatePaddle(
-    paddle: { y: number } | undefined,
-    keys: { up: boolean; down: boolean }
-): void {
-    if (!paddle) return;
-
-    if (keys.up) paddle.y -= Paddle.SPEED;
-    if (keys.down) paddle.y += Paddle.SPEED;
-    paddle.y = clamp(paddle.y, 0, Canvas.HEIGHT - Paddle.HEIGHT);
-}
-
-function updatePaddles(state: GameState, keys: RemoteMatch['keys']): void {
-    updatePaddle(state.leftPaddle, keys.left);
-    updatePaddle(state.rightPaddle, keys.right);
-}
-
-function startGameLoop(gameId: number): void {
+export function startRemoteGameLoop(gameId: number): void {
     const match = remoteMatches.get(gameId);
     if (!match) return;
 
+    if (match.loop) 
+        clearInterval(match.loop);
+
     match.loop = setInterval(() => {
-        updatePaddles(match.state, match.keys);
+        try {
+            updatePaddle(match.state.leftPaddle, match.keys.left);
+            updatePaddle(match.state.rightPaddle, match.keys.right);
 
-        moveBall(match.state, (scorer: Side) => {
-            if (checkGameOver(match.state)) {
-                const winner = match.state.score.left >= Rules.MAX_SCORE ? 'left' : 'right';
-                void endGame(match, winner);
-            } else {
-                resetBall(match.state, scorer);
+            moveBall(match.state.ball);
+            handlePaddleCollision(match.state);
+            handleScoring(match.state.ball, match.state.score);
+
+            if (match.players.left?.socket?.readyState === WebSocket.OPEN) {
+                sendMessage(match.players.left, { type: 'state', state: match.state });
             }
-        });
 
-        broadcastToMatch(match, { type: 'state', state: match.state });
+            if (match.players.right?.socket?.readyState === WebSocket.OPEN) {
+                sendMessage(match.players.right, { type: 'state', state: match.state });
+            }
+
+            if (isGameOver(match.state.score)) {
+                endGame(match);
+            }
+        } catch (error) {
+            console.error('Error in game loop:', error);
+            endGame(match);
+        }
     }, 16);
 }
 
-function stopGameLoop(match: RemoteMatch): void {
+export async function endGame(match: Match): Promise<void> {
+    if (!match) return;
+
     if (match.loop) {
         clearInterval(match.loop);
         match.loop = undefined;
     }
-}
 
-// ============================================================================
-// GAME PERSISTENCE
-// ============================================================================
+    let winner: Side | undefined;
+    if (match.state.score.left >= MAX_SCORE) winner = 'left';
+    else if (match.state.score.right >= MAX_SCORE) winner = 'right';
 
-async function saveGameScores(match: RemoteMatch): Promise<void> {
-    await gameRepository.updatePlayerScore(match.gameId, 1, match.state.score.left);
-    await gameRepository.updatePlayerScore(match.gameId, 2, match.state.score.right);
-}
+    if (!winner) 
+        return;
 
-async function saveGameResult(gameId: number, winnerId: number | null): Promise<void> {
-    await gameRepository.finish(gameId, winnerId);
-}
-
-async function cancelGame(gameId: number): Promise<void> {
-    try {
-        await gameRepository.cancel(gameId);
-        console.log(`✅ Game ${gameId} cancelled`);
-    } catch (err) {
-        console.error(`❌ Failed to cancel game ${gameId}:`, err);
-    }
-}
-
-// ============================================================================
-// ELO SYSTEM
-// ============================================================================
-
-async function updateEloRatings(match: RemoteMatch, winnerId: number): Promise<void> {
-    try {
-        const gamePlayers = await gameRepository.getPlayers(match.gameId);
-        if (!gamePlayers || gamePlayers.length !== 2) {
-            throw new Error("Could not find both players in game_players for ELO update");
-        }
-
-        const [gp1, gp2] = gamePlayers;
-        const userIds = [gp1.user_id, gp2.user_id].filter(Boolean) as number[];
-        
-        if (userIds.length === 2) {
-            const [uid1, uid2] = userIds;
-            const loserId = uid1 === winnerId ? uid2 : uid1;
-            
-            console.log(`🔄 Updating ELO for winner ${winnerId} and loser ${loserId}`);
-
-            const [winnerStats, loserStats] = await Promise.all([
-                gameRepository.getPlayerStats(winnerId),
-                gameRepository.getPlayerStats(loserId),
-            ]);
-
-            if (winnerStats && loserStats) {
-                console.log(`[ELO] Before - Winner ${winnerId}: ${winnerStats.elo_rating}, Loser ${loserId}: ${loserStats.elo_rating}`);
-                
-                // ELO formula
-                const K = 24;
-                const expected = 1 / (1 + Math.pow(10, (loserStats.elo_rating - winnerStats.elo_rating) / 400));
-                const diff = Math.round(K * (1 - expected));
-                const newWinnerElo = winnerStats.elo_rating + diff;
-                const newLoserElo = loserStats.elo_rating - diff;
-                
-                const getRank = (elo: number) => {
-                    if (elo >= 1600) return "Master";
-                    if (elo >= 1400) return "Platinum";
-                    if (elo >= 1200) return "Gold";
-                    if (elo >= 1000) return "Silver";
-                    return "Bronze";
-                };
-
-                await Promise.all([
-                    gameRepository.updatePlayerStats(
-                        winnerId,
-                        newWinnerElo,
-                        getRank(newWinnerElo),
-                        winnerStats.wins + 1,
-                        winnerStats.losses
-                    ),
-                    gameRepository.updatePlayerStats(
-                        loserId,
-                        newLoserElo,
-                        getRank(newLoserElo),
-                        loserStats.wins,
-                        loserStats.losses + 1
-                    ),
-                    gameRepository.insertEloHistory({
-                        user_id: winnerId,
-                        game_id: match.gameId,
-                        elo_change: diff,
-                        new_elo: newWinnerElo,
-                        result: "win",
-                    }),
-                    gameRepository.insertEloHistory({
-                        user_id: loserId,
-                        game_id: match.gameId,
-                        elo_change: -diff,
-                        new_elo: newLoserElo,
-                        result: "loss",
-                    }),
-                ]);
-
-                console.log(`[ELO] Winner ${winnerId} -> ${newWinnerElo} (+${diff}), Loser ${loserId} -> ${newLoserElo} (${-diff})`);
-            }
-        } else {
-            throw new Error("game_players has less than 2 human users for this game.");
-        }
-    } catch (err) {
-        console.error("ELO/rank update failed:", err);
-    }
-}
-
-// ============================================================================
-// GAME END
-// ============================================================================
-
-async function endGame(match: RemoteMatch, winner: Side): Promise<void> {
-    stopGameLoop(match);
-
-    const winnerId = winner === 'left'
-        ? match.players.left?.id
-        : match.players.right?.id;
+    const winnerPlayer = winner === 'left' ? match.players.left : match.players.right;
+    const loserPlayer = winner === 'left' ? match.players.right : match.players.left;
+    const winnerId = winnerPlayer?.id;
 
     try {
-        await saveGameScores(match);
-        await saveGameResult(match.gameId, winnerId ?? null);
+        await gameRepository.SetPlayerScore(match.gameId, 1, match.state.score.left);
+        await gameRepository.SetPlayerScore(match.gameId, 2, match.state.score.right);
+        await gameRepository.finishGame(match.gameId, winnerId);
 
-        if (winnerId) {
-            await updateEloRatings(match, winnerId);
-        }
+        await updatePlayerProgress(match, winnerId);
 
-        broadcastToMatch(match, {
-            type: 'gameOver',
-            winner,
-            score: match.state.score
-        });
+        sendMessage(winnerPlayer, { type: 'gameOver', winner, score: match.state.score });
+        sendMessage(loserPlayer, { type: 'gameOver', winner, score: match.state.score });
+    } 
+    catch (error) {
 
+        sendMessage(winnerPlayer, { type: 'gameOver', winner, score: match.state.score });
+        sendMessage(loserPlayer, { type: 'gameOver', winner, score: match.state.score });
+    } 
+    finally {
+        if (winnerPlayer) 
+            winnerPlayer.gameId = undefined;
+        if (loserPlayer)
+            loserPlayer.gameId = undefined;
         remoteMatches.delete(match.gameId);
-        console.log(`✅ Game ${match.gameId} ended. Winner: ${winnerId}`);
-    } catch (err) {
-        console.error(`❌ Failed to end game ${match.gameId}:`, err);
     }
 }
 
-// ============================================================================
-// REMOTE GAME CREATION
-// ============================================================================
-
-async function createRemoteGame(player1: Player, player2: Player): Promise<number> {
-    return await gameRepository.createGameAndAddPlayers('remote', [
-        { user_id: player1.id, position: 1 },
-        { user_id: player2.id, position: 2 }
-    ]);
-}
-
-function createRemoteMatch(gameId: number, player1: Player, player2: Player): RemoteMatch {
-    console.log('Creating remote match:', { gameId, player1, player2 });
+function createRemoteMatch(gameId: number, player1: Player, player2: Player): Match {
     return {
         gameId,
-        mode: 'remote',
         players: { left: player1, right: player2 },
         ready: { left: false, right: false },
         state: initState(),
-        startTime: Date.now(),
         keys: {
             left: { up: false, down: false },
-            right: { up: false, down: false }
-        }
+            right: { up: false, down: false },
+        },
     };
 }
 
-function notifyRemoteMatchFound(match: RemoteMatch): void {
-    const { left, right } = match.players;
-
-    const baseMessage = {
-        type: 'matchFound',
-        id: match.gameId.toString(),
-        mode: 'remote' as GameMode,
-        playerNames: { left: left.username, right: right.username },
-        playerAvatars: { left: left.avatar, right: right.avatar }
-    };
-
-    sendMessage(left, { ...baseMessage, side: 'left' });
-    sendMessage(right, { ...baseMessage, side: 'right' });
-}
-
-async function matchRemotePlayers(player1: Player, player2: Player): Promise<void> {
-    try {
-        const gameId = await createRemoteGame(player1, player2);
-        const match = createRemoteMatch(gameId, player1, player2);
-
-        remoteMatches.set(gameId, match);
-        player1.gameId = gameId;
-        player2.gameId = gameId;
-
-        notifyRemoteMatchFound(match);
-        console.log(`✅ Remote match ${gameId}: ${player1.username} vs ${player2.username}`);
-    } catch (err) {
-        console.error('❌ Failed to create remote match:', err);
-    }
-}
-
-// ============================================================================
-// QUEUE MANAGEMENT
-// ============================================================================
-
-function addToRemoteQueue(player: Player): void {
-    console.log(`🎮 ${player.username} joining remote queue...`);
-    remoteQueue.push(player);
-
-    if (remoteQueue.length >= 2) {
-        const player1 = remoteQueue.shift()!;
-        const player2 = remoteQueue.shift()!;
-        void matchRemotePlayers(player1, player2);
-    }
-}
-
-export function removeFromRemoteQueue(userId: number): void {
-    const index = remoteQueue.findIndex(p => p.id === userId);
+function removeFromQueue(userId: number): void {
+    const index = remoteQueue.findIndex((p) => p.id === userId);
     if (index > -1) {
         remoteQueue.splice(index, 1);
     }
 }
 
-// ============================================================================
-// PLAYER DISCONNECT
-// ============================================================================
-
-function handlePlayerDisconnect(userId: number, match: RemoteMatch): void {
-    stopGameLoop(match);
-
-    const remainingSide: Side = match.players.left?.id === userId ? 'right' : 'left';
-    const remainingPlayer = match.players[remainingSide];
-
-    if (remainingPlayer?.socket?.readyState === WebSocket.OPEN) {
-        sendMessage(remainingPlayer, { type: 'opponentLeft' });
-        void endGame(match, remainingSide);
-        console.log(`✅ Player ${userId} left. ${remainingPlayer.id} wins by forfeit`);
-    } else {
-        void cancelGame(match.gameId);
-        remoteMatches.delete(match.gameId);
-        console.log(`✅ Both players disconnected from match ${match.gameId}`);
-    }
-}
-
 export function cleanupRemotePlayer(userId: number): void {
     const match = getRemoteMatch(userId);
+
     if (match) {
-        handlePlayerDisconnect(userId, match);
+        const loserSide = match.players.left?.id === userId ? 'left' : 'right';
+        const winnerSide: Side = loserSide === 'left' ? 'right' : 'left';
+
+        match.state.score[winnerSide] = MAX_SCORE;
+        endGame(match);
     }
 
-    removeFromRemoteQueue(userId);
+    removeFromQueue(userId);
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
+export async function handleRemoteGame(userId: number, socket: WebSocket): Promise<void> {
+    try {
+        const user = await userRepository.getCurrentUserById(userId);
 
-export async function handleRemoteGame(
-    player: Player,
-    action: 'join' | 'ready' | 'move',
-    tournamentId?: number,
-    matchId?: number,
-    moveData?: ClientMessage & { type: 'move' }
-): Promise<void> {
-    switch (action) {
-        case 'join':
-            addToRemoteQueue(player);
-            break;
+        if (!user) {
+            sendMessage({ id: userId, socket } as Player, {
+                type: 'error',
+                message: 'User not found',
+            });
+            socket.close();
+            return;
+        }
 
-        case 'ready': {
-            const match = getRemoteMatch(player.id);
-            if (!match) return;
+        // Handle existing game forfeit
+        const existingPlayer = getPlayer(userId);
+        if (existingPlayer?.gameId) {
+            const existingMatch = remoteMatches.get(existingPlayer.gameId);
 
-            const side = getPlayerSide(player.id, match);
-            if (!side) return;
+            if (existingMatch) {
+                const loserSide = existingMatch.players.left?.id === userId ? 'left' : 'right';
+                const winnerSide: Side = loserSide === 'left' ? 'right' : 'left';
 
-            match.ready[side] = true;
-
-            if (match.ready.left && match.ready.right) {
-                try {
-                    await gameRepository.start(match.gameId);
-                    console.log(`✅ Remote match ${match.gameId} starting!`);
-                    startGameLoop(match.gameId);
-                } catch (err) {
-                    console.error('❌ Failed to start game:', err);
+                if (existingPlayer.socket?.readyState === WebSocket.OPEN) {
+                    existingPlayer.socket.close();
                 }
+
+                existingMatch.state.score[winnerSide] = MAX_SCORE;
+                await endGame(existingMatch);
             }
-            break;
         }
 
-        case 'move': {
-            const match = getRemoteMatch(player.id);
-            if (!match || !moveData) return;
+        removeFromQueue(userId);
 
-            const side = getPlayerSide(player.id, match);
-            if (!side) return;
+        const player: Player = {
+            id: userId,
+            username: user.username,
+            avatar: user.image_src + user.profile_picture,
+            socket: socket,
+            mode: 'remote',
+            gameId: undefined,
+        };
 
-            match.keys[side].up = moveData.up ?? false;
-            match.keys[side].down = moveData.down ?? false;
-            break;
+        getPlayersMap().set(userId, player);
+        remoteQueue.push(player);
+
+        await matchPlayers();
+    } catch (error) {
+        console.error('Error in handleRemoteGame:', error);
+        sendMessage({ id: userId, socket } as Player, {
+            type: 'error',
+            message: 'Failed to join game. Please try again.',
+        });
+        socket.close();
+    }
+}
+
+async function matchPlayers(): Promise<void> {
+    if (remoteQueue.length < 2) return;
+
+    const player1 = remoteQueue.shift()!;
+    const player2 = remoteQueue.shift()!;
+
+    try {
+        // Validate sockets are still open
+        if (player1.socket?.readyState !== WebSocket.OPEN) {
+            console.log('Player 1 socket closed, re-adding player 2 to queue');
+            if (player2.socket?.readyState === WebSocket.OPEN) {
+                remoteQueue.unshift(player2);
+            }
+            return;
         }
+
+        if (player2.socket?.readyState !== WebSocket.OPEN) {
+            console.log('Player 2 socket closed, re-adding player 1 to queue');
+            if (player1.socket?.readyState === WebSocket.OPEN) {
+                remoteQueue.unshift(player1);
+            }
+            return;
+        }
+
+        const gameId = await gameRepository.createGame('remote');
+        await gameRepository.addPlayer(gameId, player1.id, 1);
+        await gameRepository.addPlayer(gameId, player2.id, 2);
+
+        const match = createRemoteMatch(gameId, player1, player2);
+        remoteMatches.set(gameId, match);
+
+        player1.gameId = gameId;
+        player2.gameId = gameId;
+
+        sendMessage(player1, {
+            type: 'matchFound',
+            side: 'left',
+            playerNames: { left: player1.username, right: player2.username },
+            playerAvatars: { left: player1.avatar, right: player2.avatar },
+        });
+
+        sendMessage(player2, {
+            type: 'matchFound',
+            side: 'right',
+            playerNames: { left: player1.username, right: player2.username },
+            playerAvatars: { left: player1.avatar, right: player2.avatar },
+        });
+    } catch (error) {
+
+        sendMessage(player1, {
+            type: 'error',
+            message: 'Failed to create match. Please try again.',
+        });
+        sendMessage(player2, {
+            type: 'error',
+            message: 'Failed to create match. Please try again.',
+        });
+
+        player1.socket?.close();
+        player2.socket?.close();
     }
 }

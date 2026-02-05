@@ -67,8 +67,6 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
         if (websocket === null || websocket?.readyState !== WebSocket.OPEN) {
             throw new Error("WebSocket is not connected")
         }
-        console.log("Sending message:", payload)
-        console.log("WebSocket state:", websocket.onmessage)
         websocket?.send(JSON.stringify(payload))
     }
 
@@ -95,13 +93,18 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
     }
 
     useEffect(() => {
-        console.log("WebSocket onmessage set up", ws.current)
-        console.log("WebSocket active set up", active_chat)
         if (!ws.current || !active_chat) return
 
         ws.current.onmessage = (event) => {
-            const data: Message = JSON.parse(event.data)
-            console.log("Received message:", data)
+            let data: Message
+
+            try{
+
+                data= JSON.parse(event.data)
+            } catch (error) {
+                console.error("Failed to parse message:", error)
+                return
+            }
 
             queryClient.setQueryData<Message[]>(["messages", active_chat?.id], (oldMessages) => {
                 if (!oldMessages) return [data]
@@ -232,6 +235,7 @@ export function ChatArea({ onSidebarToggle, ws }: ChatAreaProps) {
                         <div className="flex items-end space-x-3">
                             <div className="flex-1">
                                 <input
+                                maxLength={255}
                                     name="message"
                                     placeholder="Type a message..."
                                     className="w-full p-3 bg-slate-900 border border-slate-700 rounded-2xl 

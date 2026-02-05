@@ -1,10 +1,23 @@
-FROM alpine:3.21
+FROM node:24-alpine AS build
 
-RUN apk update && apk add nginx 
+ARG VITE_API_URL
+ARG VITE_WS_URL
 
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_WS_URL=${VITE_WS_URL}
 
-RUN mkdir -p /var/www/html;
+WORKDIR /app
 
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY ./app/frontend/package*.json ./
+RUN npm ci
 
-CMD ["nginx"]
+COPY ./app/frontend .
+
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,5 +1,5 @@
-const API_BASE = "http://localhost:3000/api";
-const WS_BASE = "ws://localhost:3000/ws";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
+const WS_BASE = `${import.meta.env.VITE_WS_URL}/ws`;
 
 export const arenaApi = {
   API_BASE,

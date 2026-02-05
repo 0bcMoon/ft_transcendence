@@ -2,7 +2,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import Auth from './auth/auth';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { loginSchema, registerSchema } from './schema/zod-schema';
+import { loginSchema, registerSchema } from './schema/user.schema';
 
 
 
@@ -10,7 +10,7 @@ const auth: FastifyPluginAsync = async (fastifyInstance, opts): Promise<void> =>
 
     const fastify = fastifyInstance.withTypeProvider<ZodTypeProvider>();
 
-    fastify.post('/auth/login', { schema: { body: loginSchema } }, Auth.login)
+    fastify.post('/auth/login', { schema: { body: loginSchema, } }, Auth.login)
     fastify.post('/auth/register', { schema: { body: registerSchema } }, Auth.register)
     fastify.get('/auth/logout', Auth.logout)
     fastify.get('/auth/oauth/42/callback', Auth.Intra42OAuth2)

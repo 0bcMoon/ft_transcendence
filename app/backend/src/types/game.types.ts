@@ -1,52 +1,82 @@
-// types/game.types.ts
-
-export type GameMode = 'local' | 'remote' | 'ai' | 'tournament';
 export type GameStatus = 'waiting' | 'playing' | 'finished' | 'cancelled';
+export type GameMode = 'local' | 'remote' | 'tournament';
 
 export interface RecentMatch {
-    game_id: number;
-    mode: GameMode;
-    winner_id: number | null;
-    ended_at: string | null;
-    created_at: string;
-    player1_score: number;
-    player1_name: string;
-    player1_avatar: string | null;
-    player2_score: number;
-    player2_name: string;
-    player2_avatar: string | null;
+    id: number
+    mode: string
+    player1_username: string
+    player1_profile_picture: string;
+    player1_score: number
+    player2_username: string
+    player2_profile_picture: string;
+    player2_score: number
 }
 
+export interface GlobalMatch {
+    id: number;
+    mode: string;
+    player1_username: string;
+    player1_profile_picture: string;
+    player1_score: number;
+    player2_username: string;
+    player2_profile_picture: string;
+    player2_score: number;
+}
 
-export interface GameDetail {
+export interface PlayerStats {
+    user_id: number;
+    level: number;
+    total_xp: number;
+    wins:  number;
+    losses: number;
+    games_played: number;
+    win_rate: number;
+}
+
+export interface TopPlayer {
+    id: number
+    username: string
+    profile_picture: string;
+    total_xp: number
+    badge_name?: string | null
+    badge_icon?: string | null
+}
+
+export interface MatchDetail {
     id: number;
     mode: string;
     status: string;
     winner_id: number | null;
-    started_at: string | null;
+    started_at: string;
     ended_at: string | null;
     created_at: string;
+    tournament_id?: number | null;
+    
+    // Player 1
+    player1_id:  number;
+    player1_username: string;
+    player1_display_name: string;
+    profile_picture: string;
+    player1_score:  number;
+    player1_xp_gained: number;
+    
+    // Player 2
+    player2_id: number | null;
+    player2_username: string | null;
+    player2_display_name: string | null;
+    player2_avatar: string | null;
+    player2_score: number;
+    player2_xp_gained: number;
 }
 
-export interface GamePlayerDetail {
-    position: number;
-    user_id: number | null;
-    username: string | null;
-    display_name: string | null;
-    profile_picture: string | null;
-    image_src: string | null;
-    score: number | null;
-    is_ai: boolean;
-    joined_at: string;
-    elo_change: number | null;
-    new_elo: number | null;
-    result: string | null;
-}
 
-export type EloProgressPoint = {
-    new_elo: number;
+export interface XPProgressPoint {
+    total_xp: number;
+    xp_gained: number;
+    level: number;
     created_at: string;
-};
+}
+
 export interface Game {
     id: number;
     mode: GameMode;
@@ -67,15 +97,6 @@ export interface GamePlayer {
     joined_at: string;
 }
 
-export interface GamePlayerWithUser extends GamePlayer {
-    username?: string;
-    avatar?: string;
-    profile_picture?: string;
-}
-
-export interface GameWithPlayers extends Game {
-    players: GamePlayerWithUser[];
-}
 
 export interface CreateGameOptions {
     mode: GameMode;
@@ -93,12 +114,6 @@ export interface UserStats {
     winRate: number;
     score: number;
     rank: number | null;
-}
-
-export interface ScoreProgressionPoint {
-    matchId: number;
-    date: string;
-    score: number;
 }
 
 export interface MatchHistoryItem {
@@ -158,3 +173,4 @@ export interface GamesByStatusQuery {
     status: GameStatus;
     mode?: GameMode;
 }
+

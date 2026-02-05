@@ -5,7 +5,10 @@ import { X, Mail, ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { login_api } from '@/api/api';
 
 const forgotPasswordSchema = z.object({
-    email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
+    email: z
+        .string()
+        .email('Please enter a valid email')
+        .max(128, 'Email cannot exceed 128 characters')
 });
 
 type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
@@ -104,12 +107,12 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
                             Enter your email and we'll send a link to reset your password.
                         </p>
 
-                    {errors.email &&
-                        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-red-400" />
-                            <p className="text-sm text-red-400">{errors.email}</p>
-                        </div>
-                    }
+                        {errors.email &&
+                            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-400" />
+                                <p className="text-sm text-red-400">{errors.email}</p>
+                            </div>
+                        }
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <div className="relative">

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import ProfilePhoto from "./ProfilePhoto"
 import PersonalInformation from "./PersonalInformation"
 import PasswordSettings from "./PasswordSettings"
-import updateProfile, { type IFormData, profilePictureValidate } from "@/zod/zod-schema"
+import updateProfile, { type IFormData, profilePictureValidate } from "@/zod/user.schema"
 import { useValidationStore } from "@/state/Store"
 import { useUpdateProfilePicture, useUpdateUserProfile } from "@/users/hooks/useApi"
 import { useAuthStore } from "@/state/authStore"
@@ -68,7 +68,6 @@ function Settings() {
         if (!data.username && !data.display_name && !data.current_password) {
             return
         }
-        window.scrollTo(0, 0)
         updateUserProfile(data)
     }
 

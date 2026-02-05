@@ -1,152 +1,119 @@
-import { useNavigate, Link } from "react-router-dom"
-import { History, ArrowLeft, Gamepad2 } from "lucide-react"
-import { useAuthStore } from "@/state/authStore"
-import { useGetGlobalMatches } from "@/game/api/queries"
-import type { GlobalMatchData } from "@/game/types/types"
+import { Link, useNavigate } from "react-router-dom";
+import { History, ArrowLeft, Gamepad2, Loader2, AlertCircle } from "lucide-react";
+import { useGetGlobalMatches } from "@/game/hooks/queries";
+import { useState } from "react";
+import Pagination from "@/component/Pagination";
 
-function HistoryPage() {
-    const navigate = useNavigate()
-    const user = useAuthStore((state) => state.user)
-    const { data: matches = [], isLoading } = useGetGlobalMatches()
+export default function HistoryPage() {
+    const navigate = useNavigate();
+    const [page, setPage] = useState(1);
+    const limit = 15;
 
-    const getWinner = (match: GlobalMatchData) => {
-        if (match.player1_score > match.player2_score) return "p1"
-        if (match.player2_score > match.player1_score) return "p2"
-        return "draw"
-    }
+    const { data: matches = [], isLoading, isError } = useGetGlobalMatches(page, limit);
 
-    const getAvatar = (avatar: string | null, name: string) =>
-        avatar
-            ? `${import.meta.env.VITE_API_URL}/public/${avatar}`
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=64`
-
-    const getModeLabel = (mode: string) => {
-        const labels = { remote: "1v1", local: "Local", ai: "AI", tournament: "Tournament" }
-        return labels[mode as keyof typeof labels] || mode
-    }
+    const hasMatches = matches.length > 0;
+    const hasNextPage = matches.length === limit;
 
     return (
-        <div className="h-full overflow-y-auto no-scrollbar bg-slate-950 py-6 px-4">
-            <div className="max-w-5xl mx-auto">
-                {/* Back Button */}
+        <div className="min-h-screen bg-slate-950 px-4 py-6 sm:py-8">
+            <div className="max-w-6xl mx-auto space-y-6">
+
                 <button
                     onClick={() => navigate(-1)}
-                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-slate-400 
-                               hover:text-white hover:bg-slate-900 
-                               rounded-lg transition-all font-medium"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back</span>
+                    className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition" >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
                 </button>
 
-                {/* Header */}
-                <div className="mb-8">
-                    <div className="flex items-center gap-4 mb-3">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                            <History className="w-7 h-7 text-white" strokeWidth={2} />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl sm:text-4xl font-bold text-white">Match History</h1>
-                            <p className="text-base text-slate-400 mt-1">
-                                {matches.length || 0} {matches.length === 1 ? "match" : "matches"} played
-                            </p>
-                        </div>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <History className="w-6 h-6 text-blue-400" />
+                    <h1 className="text-3xl font-bold text-white">
+                        Global Match History
+                    </h1>
                 </div>
 
-                {/* Match List */}
-                <div className="rounded-2xl bg-slate-900 shadow-xl border border-slate-800 overflow-hidden p-0">
+                <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
                     {isLoading && (
-                        <div className="space-y-3 p-6">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 py-6 px-8 rounded-xl bg-slate-800/60 animate-pulse">
-                                    <div className="w-16 h-16 rounded-full bg-slate-700" />
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 w-32 bg-slate-700 rounded" />
-                                        <div className="h-3 w-20 bg-slate-800 rounded" />
-                                    </div>
-                                    <div className="w-16 h-6 bg-slate-700 rounded" />
-                                    <div className="w-16 h-16 rounded-full bg-slate-700" />
-                                </div>
-                            ))}
+                        <div className="flex items-center justify-center p-20">
+                            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
                         </div>
                     )}
-                    {!isLoading && matches.length > 0 && (
-                        <ul className="divide-y divide-slate-800">
-                            {matches.map((match) => {
-                                const winner = getWinner(match)
-                                const p1Win = winner === "p1"
-                                const p2Win = winner === "p2"
-                                const isPlayer1 = match.player1_name === user?.username
-                                const userName = isPlayer1 ? match.player1_name : match.player2_name
-                                const userAvatar = isPlayer1 ? match.player1_avatar : match.player2_avatar
-                                const opponentName = isPlayer1 ? match.player2_name : match.player1_name
-                                const opponentAvatar = isPlayer1 ? match.player2_avatar : match.player1_avatar
-                                const userScore = isPlayer1 ? match.player1_score : match.player2_score
-                                const opponentScore = isPlayer1 ? match.player2_score : match.player1_score
-                                const isWin = isPlayer1 ? p1Win : p2Win
 
-                                return (
-                                    <li key={match.matchId}>
-                                        <Link
-                                            to={`/history/${match.matchId}`}
-                                            className="flex items-center gap-4 py-6 px-8 bg-transparent hover:bg-blue-900/30 transition rounded-xl block"
-                                        >
-                                            <div className="flex items-center gap-4 flex-1">
-                                                <img
-                                                    src={getAvatar(userAvatar, userName) || "/placeholder.svg"}
-                                                    alt={userName}
-                                                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-700"
-                                                />
-                                                <div>
-                                                    <p
-                                                        className={`text-base font-semibold ${isWin ? "text-blue-200" : "text-slate-400"} transition`}
-                                                    >
-                                                        {userName}
-                                                    </p>
-                                                    <p className="text-sm text-slate-400">
-                                                        {getModeLabel(match.mode)} &bull; {match.date}
-                                                    </p>
-                                                </div>
+                    {isError && (
+                        <div className="flex flex-col items-center justify-center p-20 gap-4">
+                            <AlertCircle className="w-16 h-16 text-red-500" />
+                            <p className="text-xl text-slate-300">Failed to load matches</p>
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && !hasMatches && (
+                        <div className="flex flex-col items-center justify-center p-20 gap-4">
+                            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center">
+                                <Gamepad2 className="w-8 h-8 text-slate-600" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xl text-slate-300 mb-2">No Matches Yet</p>
+                                <p className="text-sm text-slate-500">
+                                    No matches have been played yet
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && hasMatches && (
+                        <ul className="divide-y divide-slate-800">
+                            {matches.map((match) => (
+                                <li key={match.id}>
+                                    <Link
+                                        to={`/history/${match.id}`}
+                                        className="flex items-center gap-4 p-6 hover:bg-slate-800 transition" >
+
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <img
+                                                src={match.player1_profile_picture}
+                                                alt={match.player1_username}
+                                                className="w-12 h-12 rounded-full object-cover border-2 border-slate-700" />
+                                            <span className="text-sm font-semibold text-slate-300 truncate">
+                                                {match.player1_username}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-1">
+                                            <div className="text-lg font-bold">
+                                                <span className="text-white">{match.player1_score}</span>
+                                                <span className="text-slate-600 mx-2">-</span>
+                                                <span className="text-white">{match.player2_score}</span>
                                             </div>
-                                            <div className="font-extrabold text-2xl mx-3 flex-shrink-0">
-                                                <span className={isWin ? "text-blue-300" : "text-slate-400"}>{userScore}</span>
-                                                <span className="mx-2 text-slate-500">-</span>
-                                                <span className={!isWin ? "text-blue-300" : "text-slate-400"}>{opponentScore}</span>
-                                            </div>
-                                            <div className="flex items-center gap-4 flex-1 justify-end">
-                                                <div className="text-right">
-                                                    <p
-                                                        className={`text-base font-semibold ${!isWin ? "text-blue-200" : "text-slate-400"} transition`}
-                                                    >
-                                                        {opponentName}
-                                                    </p>
-                                                    <p className="text-sm text-slate-400">Opponent</p>
-                                                </div>
-                                                <img
-                                                    src={getAvatar(opponentAvatar, opponentName) || "/placeholder.svg"}
-                                                    alt={opponentName}
-                                                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-700"
-                                                />
-                                            </div>
-                                        </Link>
-                                    </li>
-                                )
-                            })}
+                                            <span className="text-xs text-slate-500 uppercase">
+                                                {match.mode}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+                                            <span className="text-sm font-semibold text-slate-300 truncate text-right">
+                                                {match.player2_username}
+                                            </span>
+                                            <img
+                                                src={match.player2_profile_picture}
+                                                alt={match.player2_username}
+                                                className="w-12 h-12 rounded-full object-cover border-2 border-slate-700"
+                                            />
+                                        </div>
+                                    </Link>
+                                </li>
+                            ))}
                         </ul>
                     )}
-                    {!isLoading && matches.length === 0 && (
-                        <div className="py-10 text-center">
-                            <Gamepad2 className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                            <p className="text-slate-400 text-base mb-2">No Matches Yet</p>
-                            <p className="text-sm text-slate-500 mb-4">Start playing to see your match history</p>
-                        </div>
-                    )}
                 </div>
+
+                {!isLoading && !isError && hasMatches && (
+                    <Pagination
+                        currentPage={page}
+                        onPageChange={setPage}
+                        hasNextPage={hasNextPage}
+                    />
+                )}
             </div>
         </div>
-    )
+    );
 }
-
-export default HistoryPage
-

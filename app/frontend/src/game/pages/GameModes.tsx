@@ -54,7 +54,7 @@ export default function GameModesPage() {
                             to="/arena"
                             icon={<X size={24} />}
                             title="Arena"
-                            description="Hahia a kha Mohamed"
+                            description="Remote Arena Game with an AI opponent and spectator mode for watching live matches."
                             colorClass="purple"
                         />
                     </div>

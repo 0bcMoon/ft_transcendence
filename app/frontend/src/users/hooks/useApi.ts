@@ -4,7 +4,7 @@ import type { Request } from "../types/User"
 import type { RemoteUser } from "@/types/types"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
-import { IFormData } from "@/zod/zod-schema";
+import { IFormData } from "@/zod/user.schema";
 
 interface IUpdateState {
     type: "error" | "success"
@@ -49,7 +49,7 @@ export const useSearchUsers = (search: string) => {
             })
             return response.data as RemoteUser[]
         },
-        enabled: search.length > 0, // Only run the query if search term is not empty
+        enabled: search.length > 0,
     })
 }
 
@@ -91,6 +91,7 @@ export const useUserById = (userId: number | undefined) => {
             return response.data as RemoteUser
         },
         enabled: !!userId && !isNaN(userId),
+        retry: false,
     })
 }
 
@@ -289,11 +290,15 @@ export const useUpdateProfilePicture = ({ setUpdateState }: IUpdateProfilePictur
     })
 }
 
-export const useLogin = () => {
+export const useLogin = (callback: (error: string) => void) => {
     return useMutation({
-        mutationFn: async (data: { username: string; password: string }) => {
+        mutationFn: async (data: { identifier: string; password: string }) => {
             const response = await login_api.post("/api/auth/login", data)
             return response.data
+        },
+        onError: (error: any) => {
+            const errorMessage = error.response?.data?.message || "Login failed. Please try again."
+            callback(errorMessage)
         },
     })
 }

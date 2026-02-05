@@ -10,8 +10,12 @@ import { CreateUser, EmailUpdate, GoogleOAuth2, Intra42OAuth2 } from "../types/t
 import crypto from 'node:crypto';
 import { sendEmail } from "../email-service";
 import { isOnline } from "../notifications";
-import { subscribe } from "../notifications";
 import fastify from "../app";
+import { otpConfirmationTemplate } from "../auth/email-template";
+import {
+    notifyFriendRequest,
+    acceptFriendRequest
+} from "../notification.service";
 
 interface IUserUpdateInfo {
     display_name?: string;
@@ -36,16 +40,20 @@ interface ICreateRequestBody {
     user_id: number;
     type: 'friend' | 'chat'
 }
-function generateUUIDUsername() {
+
+function sanitizeName(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function generateUUIDUsername(name: string): string {
     const uuid = crypto.randomUUID();
-    // Take first 8 characters and add prefix
-    return `user_${uuid.substring(0, 8)}`;
+    name = sanitizeName(name);
+    return `${name}_${uuid.substring(0, 8)}`;
 }
 
 function generateUUIDPassword() {
     const uuid = crypto.randomUUID();
-    // Take first 8 characters and add prefix
-    return `pass_${uuid}`;
+    return `pass_${uuid}_pass`;
 }
 
 interface OTPMap {
@@ -93,15 +101,15 @@ const User = {
             friend.image_src = undefined;
             friend.online_status = isOnline(friend.id);
         });
-        subscribe(req.user.id, friends?.map(friend => friend.id) || []);
         return reply.status(200).send(friends || []);
     },
 
     getUsersProfile: async (req: FastifyRequest, reply: FastifyReply) => {
         const { id } = req.params as { id: number };
         const user = await userRepository.getUserWithRelationStatus(req.user.id, id);
-        if (!user) return reply.status(200).send({ message: "User not found" });
+        if (!user) return reply.status(404).send({ message: "user not found" });
         user.profile_picture = user.image_src + user.profile_picture;
+        user.online_status = isOnline(user.id);
         return reply.status(200).send(user);
     },
 
@@ -139,6 +147,7 @@ const User = {
         if (!result) {
             return reply.status(400).send({ message: "friend request already exists" });
         }
+        notifyFriendRequest(req.user.id, user_id);
 
         return reply.status(200).send({ message: 'friend request sent' });
     },
@@ -227,6 +236,7 @@ const User = {
                     return reply.status(404).send({ message: 'no friends request found' });
                 }
                 await userRepository.createContactIfNotExist(req.user.id, user_id);
+                acceptFriendRequest(req.user.id, user_id);
                 return reply.status(200).send({ message: 'friends request has been accepted' });
             case false:
                 const deleteResult = await userRepository.deleteFriendRequest(req_id, req.user.id);
@@ -330,9 +340,7 @@ const User = {
 
 
     updateProfilePicture: async (req: FastifyRequest, reply: FastifyReply) => {
-
         const data = await req.file();
-
         if (!data) {
             return reply.status(400).send({ message: 'No file uploaded' });
         }
@@ -418,7 +426,7 @@ const User = {
     },
 
     updateEmail: async (req: FastifyRequest, reply: FastifyReply) => {
-        const { email, confirmtion_code } = req.body as EmailUpdate;
+        const { email, confirmation_code } = req.body as EmailUpdate;
 
         const existing_user = await userRepository.getUserByEmail(email);
         if (existing_user) {
@@ -429,10 +437,10 @@ const User = {
         if (user?.oauth_type !== 'local') {
             return reply.status(400).send({ message: "you cannot update email for oauth users" });
         }
-        else if (!confirmtion_code) {
+        else if (!confirmation_code) {
             return await User.sendEmailConfirmation(req.user.id, email, reply);
         }
-        else if (!User.confirmtion_code_match(req.user.id, email, confirmtion_code)) {
+        else if (!User.confirmtion_code_match(req.user.id, email, confirmation_code)) {
             return reply.status(400).send({ message: "invalid confirmation code" });
         }
 
@@ -460,15 +468,9 @@ const User = {
     sendEmailConfirmation: async (id: number, email: string, reply: FastifyReply) => {
 
         const code = generateOTP(8);
-        // const _ = await sendEmail(email, "Email Confirmation", `Your confirmation code is: ${code}`)
-
-        // email is expensive operation, so we will just log it
-        console.log(`-------------------------------`);
-        console.log(`Sending email to ${email} with code: ${code}`);
-        console.log(`-------------------------------`);
-
-
-        if (oneTimePass.has(id)) {
+        // TODO: check for email faild
+        await sendEmail(email, "Confirmation Code - Pingo", otpConfirmationTemplate(code));
+        if (oneTimePass.has(id)) { //  TODO: could applay a cold down may be 
             const existingOTP = oneTimePass.get(id);
             if (existingOTP) {
                 clearTimeout(existingOTP.timeout);
@@ -477,7 +479,7 @@ const User = {
 
         const timeout = setTimeout(() => {
             oneTimePass.delete(id);
-        }, 10 * 60 * 1000); // 10 minutes
+        }, 15 * 60 * 1000); // 10 minutes
 
         oneTimePass.set(id, {
             email: email,
@@ -506,7 +508,7 @@ const User = {
             display_name: user.name,
             image_src: user.picture,
             email: user.email,
-            username: generateUUIDUsername(), // Generate a unique username
+            username: generateUUIDUsername(user.given_name),
             password: await bcrypt.hash(generateUUIDPassword(), 10),
             oauth_type: 'google'
         };
@@ -529,7 +531,7 @@ const User = {
             display_name: user.displayname,
             image_src: user.image.link,
             email: user.email,
-            username: generateUUIDUsername(), // Generate a unique username
+            username: generateUUIDUsername(user.login), // Generate a unique username
             password: await bcrypt.hash(generateUUIDPassword(), 10),
             oauth_type: 'intra42'
         };

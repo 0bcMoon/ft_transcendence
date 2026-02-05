@@ -1,18 +1,22 @@
-import jwt, { FastifyJWT } from "@fastify/jwt";
+import jwt from "@fastify/jwt";
 import cors from "@fastify/cors";
-import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import Fastify, { FastifyError } from "fastify";
 import websocket from "@fastify/websocket";
 import chatSocket from "./websocket";
 import gameSocket from "./gameSocket";
-import metricsPlugin from 'fastify-metrics';
 
 import routes from "./routes";
 import auth from "./auth.routes";
-import game from "./game.routes";
+import metricsRoutes from "./routes/metrics.routes";
+import PingPongRoutes from "./routes/pingpong.routes";
+import NotificationsRoutes from "./routes/notifications.routes";
+
 import cookie from "@fastify/cookie";
 import { mkdir } from "fs";
 import staticPlugin from "@fastify/static";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider, } from "fastify-type-provider-zod";
+
+import jwtConfig from "./auth/jwt";
 
 // This import is essential. It loads the types from the plugin.
 import multipart from '@fastify/multipart';
@@ -21,19 +25,12 @@ import path from 'path';
 import oauthPlugin, { OAuth2Namespace } from '@fastify/oauth2';
 import chatRoute from "./chat.routes";
 import notifications from "./notifications";
-
 import arenaRoutes from "./arena/arenaRoutes";
 import arenaSocket from "./arena/arenaSocket";
 import arenaMatchmakingRoutes from "./arena/matchmaking/arenaMatchmakingRoutes";
 import arenaStatsRoutes from "./arena/stats/arenaStats.routes";
-
-export const FRONTEND_URL: string = process.env.FRONTEND_URL!;
-export const BACKEND_URL: string = process.env.BACKEND_URL!;
-
-if (!FRONTEND_URL || !BACKEND_URL) {
-    
-    throw new Error("FRONTEND_URL and BACKEND_URL must be defined in environment variables");
-}
+import env from "./env";
+import publicApiRoutes from "./publicApi/publicApiRoutes";
 
 declare module "@fastify/jwt" {
     interface FastifyJWT {
@@ -73,27 +70,24 @@ const fastify = Fastify({
 fastify.setValidatorCompiler(validatorCompiler);
 fastify.setSerializerCompiler(serializerCompiler);
 
-fastify.register(metricsPlugin, { endpoint: '/metrics' });
-
-fastify.register(cookie, {
-    secret: process.env.JWT_SECRET!,
-    parseOptions: {},
-});
+fastify.register(cookie);
 
 fastify.register(jwt, {
-    secret: process.env.JWT_SECRET!,
+    secret: env.JWT_SECRET,
     cookie: {
         cookieName: "access_token",
         signed: false,
     },
 });
 
+fastify.register(jwtConfig);
+
 fastify.register(oauthPlugin, {
     name: "intra42OAuth2",
     credentials: {
         client: {
-            id: process.env.INTRA_CLIENT_ID!,
-            secret: process.env.INTRA_CLIENT_SECRET!,
+            id: env.INTRA_CLIENT_ID,
+            secret: env.INTRA_CLIENT_SECRET,
         },
         auth: {
             authorizeHost: "https://api.intra.42.fr",
@@ -103,7 +97,7 @@ fastify.register(oauthPlugin, {
         },
     },
     startRedirectPath: "/api/auth/oauth/42",
-    callbackUri: "http://localhost:3000/api/auth/oauth/42/callback",
+    callbackUri: env.INTRA_REDIRECT_URI,
     scope: ["public"],
 });
 
@@ -111,13 +105,13 @@ fastify.register(oauthPlugin, {
     name: "googleOAuth2",
     credentials: {
         client: {
-            id: process.env.GOOGLE_CLIENT_ID!,
-            secret: process.env.GOOGLE_CLIENT_SECRET!,
+            id: env.GOOGLE_CLIENT_ID,
+            secret: env.GOOGLE_CLIENT_SECRET,
         },
         auth: oauthPlugin.GOOGLE_CONFIGURATION,
     },
     startRedirectPath: "/api/auth/oauth/google",
-    callbackUri: "http://localhost:3000/api/auth/oauth/google/callback",
+    callbackUri: env.GOOGLE_REDIRECT_URI,
     scope: [
         "https://www.googleapis.com/auth/userinfo.profile",
         "https://www.googleapis.com/auth/userinfo.email",
@@ -125,13 +119,21 @@ fastify.register(oauthPlugin, {
 });
 
 fastify.register(multipart);
-fastify.register(websocket);
+fastify.register(websocket, {
+    options: {
+        maxPayload: 8 * 1024, // 8 KB
+    },
+});
 
 // Routes
+fastify.register(publicApiRoutes, { prefix: "/api/public" });
 fastify.register(chatRoute, { prefix: "/api" });
 fastify.register(routes, { prefix: "/api" });
 fastify.register(auth, { prefix: "/api" });
-fastify.register(game, { prefix: "/api" });
+
+fastify.register(PingPongRoutes, { prefix: "/api" });
+fastify.register(NotificationsRoutes, { prefix: "/api" });
+fastify.register(metricsRoutes);
 
 fastify.register(arenaRoutes, { prefix: "/api" });
 fastify.register(arenaMatchmakingRoutes, { prefix: "/api" });
@@ -150,11 +152,11 @@ fastify.register(staticPlugin, {
 
 fastify.register(cors, {
     // Configure CORS options
-    origin: true, // Allow any origin for development (restrict this in production!)
+    origin: true,
     methods: ["GET", "OPTIONS", "POST", "HEAD", "DELETE", "PATCH"], // Include both GET and OPTIONS
-    allowedHeaders: ["Content-Type", "Authorization", "Upgrade", "Connection"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key", "Upgrade", "Connection"],
     credentials: true,
-    preflightContinue: true, // Important for WebSocket connections
+    preflightContinue: true,
 });
 
 const uploadDir = path.join(process.cwd(), "/public/uploads");
@@ -163,73 +165,42 @@ mkdir(uploadDir, { recursive: true }, (err) => {
     if (err) throw err;
 });
 
-const refreshAcessToken = async (req: FastifyRequest, reply: FastifyReply) => {
-    const refreshToken = req.cookies.refresh_token;
-    if (!refreshToken) {
-        return reply.code(401).send({ message: "Unauthorized: Session expired" });
-    }
+// fastify.setErrorHandler((error, _, reply) => {
+//     if (error.validation) {
+//         reply.status(400).send({
+//             message: error.validation[0].message,
+//         });
+//         return;
+//     }
+//     reply.send(error);
+// });
+fastify.setErrorHandler((err: unknown, req, reply) => {
+  const error = err as any;
 
-    try {
-        const decoded = (await fastify.jwt.verify(
-            refreshToken,
-        )) as FastifyJWT["user"];
-        const newAccessToken = fastify.jwt.sign(
-            {
-                id: decoded.id,
-            },
-            {
-                expiresIn: process.env.ACCESS_TOKEN_EXPR || "10m", // Token expiration time
-            },
-        );
+  if (error?.validation?.length) {
+    return reply.status(400).send({ message: error.validation[0]?.message ?? "Invalid request" });
+  }
 
-        reply.setCookie("access_token", newAccessToken, {
-            path: "/",
-            secure: true, // send cookie over HTTPS only
-            domain: process.env.COOKIE_DOMAIN || "localhost", // set the domain for the cookie
-            sameSite: true, // alternative CSRF protection
-        });
-        req.user = decoded; // Set the user in the request object
-    } catch (error: any) {
-        reply.clearCookie("access_token");
-        reply.clearCookie("refresh_token");
-        return reply
-            .code(401)
-            .send({ message: "Unauthorized: Invalid refresh token" });
-    }
-};
-fastify.setErrorHandler((error, _, reply) => {
-    // Check if the error is a Zod validation error
-    if (error.validation) {
-        // Return a 400 response with a simplified message
-        reply.status(400).send({
-            message: error.validation[0].message,
-        });
-        return;
-    }
-    // For all other errors, use the default handler
-    reply.send(error);
+  if (error?.code === "FST_ERR_RATE_LIMIT" || error?.statusCode === 429 || error?.message === "Rate limit exceeded") {
+    return reply.status(429).send({ message: "Rate limit exceeded" });
+  }
+
+  const status = typeof error?.statusCode === "number" ? error.statusCode : 500;
+
+  req.log.error(
+    {
+      type: error?.constructor?.name,
+      code: error?.code,
+      statusCode: error?.statusCode,
+      message: error?.message,
+    },
+    "Unhandled error"
+  );
+
+  return reply.status(status).send({ message: error?.message ?? "Internal Server Error" });
 });
 
-fastify.decorate(
-    "authenticate",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-        try {
-            await req.jwtVerify({ onlyCookie: true });
-        } catch (error: any) {
-            // console.debug("JWT verification failed:", error);
-            switch (error.code) {
-                case "FST_JWT_AUTHORIZATION_TOKEN_EXPIRED":
-                case "FST_JWT_NO_AUTHORIZATION_IN_COOKIE":
-                case "FST_JWT_INVALID_AUTHORIZATION_IN_COOKIE":
-                    refreshAcessToken(req, reply);
-                    break;
-                default:
-                    reply.clearCookie("access_token");
-                    reply.clearCookie("refresh_token");
-                    return reply.code(401).send({ message: error.message });
-            }
-        }
-    },
-);
+
+
 
 export default fastify;

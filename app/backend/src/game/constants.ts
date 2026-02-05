@@ -1,17 +1,31 @@
-export const MAX_SCORE = 5;
-export const GAME_SIZE = 30;
+export const CANVAS_WIDTH = 1280;
+export const CANVAS_HEIGHT = 720;
+export const MAX_SCORE = 5
 
-export const GAME_WIDTH = 1000;
-export const GAME_HEIGHT = 600;
+// Ball constants
+export const BALL_RADIUS = 12;
+export const BALL_SPEED_X = 4;
+export const BALL_SPEED_Y = 4;
+export const BALL_INCREMENT = 0.4;
+export const BALL_SPEED_MAX = 11;
+export const BALL_MIN_ABS_SPEED_X = 2.5;
 
-export const PADDLE_WIDTH = 10;
-export const PADDLE_HEIGHT = 80;
+// Paddle constants
+export const PADDLE_WIDTH = 16;
+export const PADDLE_HEIGHT = 120;
+export const PADDLE_SPEED = 8;
+export const PADDLE_OFFSET = 40;
 
-export const BALL_RADIUS = 10;
-export const BALL_SPEED_X = 6;
-export const BALL_SPEED_Y = 6;
+// Physics
+export const MAX_PADDLE_BOUNCE_ANGLE = 60;
+export const SERVE_ANGLE_RANGE = { min: 10, max: 25 };
 
-export const RESET_BALL_SPEED_Y = 4;
-export const RESET_BALL_SPEED_X = { left: -4, right: 4, };
+// XP rules
+export const XP_WIN = 100;
+export const XP_LOSS = 30;
+export const XP_PER_POINT = 5;
+export const XP_PER_LEVEL = 1000;
 
-export const TICK_RATE = 1000 / 60;
+// Helper
+export const calculateLevel = (totalXP: number) => totalXP / XP_PER_LEVEL;
+

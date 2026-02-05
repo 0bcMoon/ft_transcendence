@@ -14,10 +14,17 @@ export interface User {
     oauth_type: 'intra42' | 'google' | 'local'
     two_factor_enabled: boolean,
     created_at: Date,
+    online_status?: boolean
+
 }
 
 
 export const userRepository = {
+    getUserByIdentifier: async (identifier: string): Promise<User | undefined> => {
+        const query: string = `SELECT * FROM users WHERE username = ? OR email = ?`;
+        return await db.get(query, [identifier, identifier]);
+    },
+
     updateUserPassword: async (id: number, password: string): Promise<boolean> => {
         const query: string = `UPDATE users SET password = ? WHERE id = ?`;
         const result = await db.run(query, [password, id]);
