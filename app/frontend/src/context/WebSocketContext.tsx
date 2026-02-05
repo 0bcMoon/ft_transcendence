@@ -26,7 +26,6 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         ws.onmessage = (event: MessageEvent) => {
             try {
                 const data = JSON.parse(event.data) as IEvent;
-                console.log('[WebSocket] 📨', data.type);
                 handleWebSocketEvent(data, queryClient);
             } catch (error) {
                 console.error('[WebSocket] Parse error:', error);

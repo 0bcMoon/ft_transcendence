@@ -10,7 +10,6 @@ const LandingPage: React.FC = () => {
 
       <Navbar />
       
-      {/* Main Content - grows to push footer down */}
       <div className="flex-grow">
         <HeroSection />
         <GameModesSection />

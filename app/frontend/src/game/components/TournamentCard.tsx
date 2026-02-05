@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Users, Clock, Calendar } from "lucide-react";
+import { Users, Clock} from "lucide-react";
 
 interface TournamentCardProps {
     tournament: {
@@ -41,11 +41,6 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
                         <div className="flex items-center gap-2">
                             <Users className="w-4 h-4" />
                             <span>{tournament.max_players} players</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>Starts {formatDate(tournament.start_time)}</span>
                         </div>
 
                         <div className="flex items-center gap-2">

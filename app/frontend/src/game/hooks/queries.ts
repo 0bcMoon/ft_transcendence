@@ -14,7 +14,6 @@ import type {
 
 } from '../types/types';
 
-// ==================== TOURNAMENT QUERIES ============================
 
 export const useGetGameDetail = (gameId: number) => {
     return useQuery<MatchDetail, Error>({
@@ -119,6 +118,7 @@ export function useTournamentBasic(id: number) {
         queryKey: ["tournaments", "players", id],
         queryFn: () => gameApi.getTournamentBasic(id),
         enabled: !!id && id > 0,
+        retry: false,
     });
 }
 

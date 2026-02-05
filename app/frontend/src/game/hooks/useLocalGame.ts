@@ -73,7 +73,6 @@ export function useLocalGame() {
     const ensureCreatedAndStart = useCallback(() => {
         if (hasStartedRef.current) return;
         hasStartedRef.current = true;
-        // No backend call! Local only
         startLoop();
     }, [startLoop]);
 

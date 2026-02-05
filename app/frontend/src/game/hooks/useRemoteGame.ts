@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 type KeysPressed = { up: boolean; down: boolean };
 
@@ -56,10 +57,7 @@ export function useRemoteGame() {
 
         ws.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
-            if (!msg || !msg.type) {
-                console.log("Received message:", msg.state.score);
-                return;
-            }
+            if (!msg?.type) return;
 
             switch (msg.type) {
                 case "matchFound":
@@ -81,30 +79,38 @@ export function useRemoteGame() {
                     }
                     break;
 
+                case "error":
+                    toast.error(msg.message || "An error occurred");
+                    break;
+
                 case "gameOver":
                     setIsGameOver(true);
                     setWinner(msg.winner);
                     setFinalScore(msg.score);
                     setCountdown(null);
                     break;
-
-                case "leaveGame":
-                    resetGameState();
-                    break;
             }
         };
 
-        ws.onclose = () => wsRef.current = null;
+        ws.onclose = () => {
+            wsRef.current = null;
+            if (!isGameOverRef.current) {
+                navigate("/game");
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
 
         return () => {
             ws.close();
             wsRef.current = null;
         };
-    }, [userId]);
+    }, [userId, navigate]);
 
     useEffect(() => {
-        if (countdown === null)
-            return;
+        if (countdown === null) return;
 
         if (countdown === 0) {
             wsRef.current?.send(JSON.stringify({ type: "ready" }));

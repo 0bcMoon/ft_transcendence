@@ -23,7 +23,7 @@ export function TournamentTabs({ tournamentId, activeTab, onTabChange }: Tournam
 
     return (
         <div className="mt-8 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl shadow-black/20">
-            {/* Tab Headers */}
+
             <div className="flex border-b border-slate-800">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -34,15 +34,13 @@ export function TournamentTabs({ tournamentId, activeTab, onTabChange }: Tournam
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-semibold text-sm transition-colors relative
-                                ${isActive ?  'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
-                        >
+                                ${isActive ?  'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`} >
                             <Icon size={18} />
                             <span>{tab.label}</span>
 
                             {tab.count !== undefined && (
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold
-                                    ${isActive ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}`}
-                                >
+                                    ${isActive ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}`} >
                                     {tab. count}
                                 </span>
                             )}

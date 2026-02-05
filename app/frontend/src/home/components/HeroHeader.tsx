@@ -1,4 +1,4 @@
-import { Play, Trophy, Sparkles } from "lucide-react";
+import { Play, Trophy} from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function HeroHeader() {
@@ -6,13 +6,6 @@ export default function HeroHeader() {
         <div className="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 sm:py-24">
                 <div className="flex flex-col items-center text-center space-y-8">
-
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
-                        <Sparkles className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-semibold text-blue-300">
-                            Real-time Multiplayer Action
-                        </span>
-                    </div>
 
                     <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-tight">
                         PingPong

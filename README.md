@@ -782,5 +782,3 @@ This project was developed as part of the 42 School curriculum.
   <p>Made with ❤️ by the ft_transcendence team</p>
   <p>© 2026</p>
 </div>
-
-

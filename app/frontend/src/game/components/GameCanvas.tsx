@@ -11,14 +11,7 @@ interface GameCanvasProps {
     winner?: "left" | "right" | null;
 }
 
-export default function GameCanvas({
-    gameStateRef,
-    isGameOver,
-    countdown,
-    waiting,
-    userSide,
-    winner
-}: GameCanvasProps) {
+export default function GameCanvas({ gameStateRef, isGameOver, countdown, waiting, userSide, winner }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationTimeRef = useRef<number>(0);
 
@@ -180,7 +173,6 @@ export default function GameCanvas({
                 }
             }
 
-            // Draw countdown **always on top** if active
             if (countdown !== null && countdown > 0) {
                 drawCountdown(countdown);
             }

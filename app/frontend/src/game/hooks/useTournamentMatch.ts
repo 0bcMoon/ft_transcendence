@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GameState, ServerMessage, Side, PlayerNames, PlayerAvatars, Scores } from "../types/types";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 type KeysPressed = { up: boolean; down: boolean };
 
@@ -54,21 +55,20 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
 
     useEffect(() => {
         if (!userId || !username) {
-            console.log("User not loaded, WebSocket connection aborted.");
             return;
         }
 
-        const websocket = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/game`);
-        wsRef.current = websocket;
+        const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/game`);
+        wsRef.current = ws;
 
-        websocket.onopen = () => {
+        ws.onopen = () => {
             console.log(`WebSocket connected. Joining tournament match...`);
-            websocket.send(
+            ws.send(
                 JSON.stringify({ type: "tournament", username: username, avatar: avatar, tournamentId, matchId, })
             );
         };
 
-        websocket.onmessage = ({ data }) => {
+        ws.onmessage = ({ data }) => {
             const msg: ServerMessage = JSON.parse(data);
 
             switch (msg.type) {
@@ -84,10 +84,6 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
                     setScore({ left: 0, right: 0 });
                     break;
 
-                case "countdown":
-                    setCountdownState(msg.count);
-                    break;
-
                 case "state":
                     if (!isGameOverRef.current) {
                         gameStateRef.current = msg.state;
@@ -97,39 +93,36 @@ export function useTournamentMatch(tournamentId: number, matchId: number) {
                     }
                     break;
 
+                case "error":
+                    toast.error(msg.message);
+                    break;
+
                 case "gameOver":
                     setIsGameOverState(true);
                     setWinner(msg.winner);
                     setFinalScore(msg.score);
                     setCountdownState(null);
                     break;
-
-                case "leaveGame":
-                    resetGameState();
-                    break;
-
-                case "error":
-                    setTimeout(() => {
-                        navigate(`/game/tournaments/${tournamentId}`);
-                    }, 2000);
-                    break;
             }
         };
 
-        websocket.onerror = (error) => {
+        ws.onclose = () => {
+            wsRef.current = null;
+            if (!isGameOverRef.current) {
+                navigate(`/game/tournament/${tournamentId}`);
+            }
+        };
+
+        ws.onerror = (error) => {
             console.error("WebSocket error:", error);
         };
 
-        websocket.onclose = () => {
-            console.log("WebSocket disconnected");
-            wsRef.current = null;
-        };
 
         return () => {
-            if (websocket.readyState === WebSocket.OPEN) {
-                websocket.send(JSON.stringify({ type: "leaveGame" }));
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "leaveGame" }));
             }
-            websocket.close();
+            ws.close();
             wsRef.current = null;
         };
     }, [userId, username, avatar, tournamentId, matchId, resetGameState, navigate]);

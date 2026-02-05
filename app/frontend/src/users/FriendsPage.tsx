@@ -39,24 +39,12 @@ const FriendsPage = () => {
     return (
         <div className="h-full overflow-y-auto no-scrollbar bg-slate-950 py-6 px-4">
             <div className="max-w-6xl mx-auto">
-                {/* Back Button */}
-                <button
-                    onClick={handleGoBack}
-                    className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-slate-400 
-                               hover:text-white hover:bg-slate-900 
-                               rounded-lg transition-all font-medium"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back</span>
-                </button>
 
-                {/* Page Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Friends</h1>
                     <p className="text-base text-slate-400">Manage your connections and discover new people</p>
                 </div>
 
-                {/* Tabs Navigation */}
                 <div className="bg-slate-900 rounded-xl border border-slate-800 mb-6 overflow-hidden shadow-sm">
                     <div className="flex overflow-x-auto no-scrollbar">
                         {tabs.map((tab) => {
@@ -82,7 +70,6 @@ const FriendsPage = () => {
                     </div>
                 </div>
 
-                {/* Content Area */}
                 <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 sm:p-8 shadow-sm">
                     <RenderContent />
                 </div>

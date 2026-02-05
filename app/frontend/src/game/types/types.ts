@@ -1,6 +1,6 @@
-export type GameMode = "1v1" | "ai" | "tournament" | "local";
-export type GameStatus = 'waiting' | 'playing' | 'finished' | 'cancelled';
-export type TournamentStatus = 'registration' | 'active' | 'finished' | 'cancelled';
+export type GameMode = "1v1" | "tournament";
+export type GameStatus = 'waiting' | 'playing' | 'finished';
+export type TournamentStatus = 'registration' | 'active' | 'finished';
 
 
 export type Side = "left" | "right";
@@ -24,7 +24,6 @@ export interface Champion {
     profile_picture: string;
 }
 
-// types/types.ts
 
 export interface PlayerStats {
     user_id: number;
@@ -47,21 +46,6 @@ export interface Game {
     created_at: string;
 }
 
-export interface AvailableTournament {
-    id: number;
-    name: string;
-    status: string;
-    created_by: number;
-    winner_id: number | null;
-    max_players: number;
-    current_round: number;
-    started_at: string | null;
-    ended_at: string | null;
-    created_at: string;
-    creator_username: string;
-    player_count: number;
-    is_registered: boolean;
-}
 export interface GamePlayer {
     id: number;
     game_id: number;
@@ -72,70 +56,12 @@ export interface GamePlayer {
     joined_at: string;
 }
 
-export interface GamePlayerDetails extends GamePlayer {
-    username: string | null;
-    avatar: string | null;
-}
-
 export interface BracketPlayer {
     id: number;
     username: string;
     seed?: number;
 }
 
-// export interface BracketMatch {
-//     id: number;
-//     tournament_id: number;
-//     round: number;
-//     match_number: number;
-//     status: string;
-//     player1?: BracketPlayer;
-//     player2?: BracketPlayer;
-//     winner?: BracketPlayer;
-//     game_id: number | null;
-//     scheduled_at: string | null;
-//     completed_at: string | null;
-//     created_at: string;
-// }
-
-export interface BracketRound {
-    round: number;
-    name: string;
-    matches: BracketMatch[];
-}
-
-export interface BracketData {
-    rounds: BracketRound[];
-    champion?: {
-        id: number;
-        username: string;
-    };
-}
-
-
-// ==================== REQUEST TYPES ====================
-
-// export type UserMatchResponse = {
-//     id: number;
-//     round: number;
-//     match_number: number;
-//     status: 'pending' | 'playing' | 'completed';
-//     player1: {
-//         id: number;
-//         user_id: number;
-//         username: string;
-//     };
-//     player2: {
-//         id: number;
-//         user_id: number;
-//         username: string;
-//     };
-//     game_id: number;
-//     created_at: string;
-// } | null;
-
-
-// types/types.ts
 
 export interface XPProgressPoint {
     total_xp: number;
@@ -154,17 +80,6 @@ export interface KeysPressed {
 export interface BracketPlayer {
     id: number;
     name: string;
-}
-
-export interface LeaderboardPlayer {
-    user_id: number
-    username: string
-    display_name: string | null
-    avatar: string | null
-    elo_rating: number
-    rank: "Bronze" | "Silver" | "Gold" | "Platinum" | "Master"
-    wins: number
-    losses: number
 }
 
 
@@ -204,7 +119,7 @@ export interface Player {
     username: string;
     socket: WebSocket | null;
     mode?: GameMode;
-    side?: Side; // Changed from 'position'
+    side?: Side;
     avatar?: string;
 }
 
@@ -261,19 +176,6 @@ export interface LocalGame {
     playerNames: PlayerNames;
 }
 
-export interface GameSession {
-    gameStateRef: React.MutableRefObject<GameState | null>;
-    side: Side | null;
-    countdown: number | null;
-    isGameOver: boolean;
-    winner: Side | null;
-    waiting: boolean;
-    playerNames: PlayerNames | null;
-    playerAvatars: PlayerAvatars | null;
-    finalScore: Scores | null;
-    handlePlayAgain: () => void;
-    handleGoHome: () => void;
-}
 
 export type ServerMessage =
     | {
@@ -299,11 +201,8 @@ export type ServerMessage =
     | { type: "countdown"; count: number }
     | { type: "state"; state: GameState }
     | { type: "gameOver"; winner: Side; score: Scores }
-    | { type: "opponentLeft" }            
     | { type: "leaveGame" }
     | { type: "error"; message: string };
-
-// src/types/game.types.ts
 
 export interface GlobalMatch {
     id: number;
@@ -317,25 +216,6 @@ export interface GlobalMatch {
 }
 
 
-
-export interface ScoreProgressionPoint {
-    matchId: number;
-    date: string;
-    score: number;
-}
-
-export interface MatchHistoryItem {
-    matchId: number;
-    mode: GameMode;
-    date: string;
-    isWin: number;
-    user_score: number;
-    opponent_score: number;
-    opponent_name: string | null;
-    opponent_avatar: string | null;
-}
-
-//--------------------------------------------
 
 export interface MatchDetail {
     // Game Info
@@ -363,27 +243,6 @@ export interface MatchDetail {
     player2_xp_gained: number;
 }
 
-export interface GamePlayerDetail {
-    position: number;
-    user_id: number | null;
-    username: string | null;
-    display_name: string | null;
-    avatar: string | null;
-    score: number | null;
-    elo_change: number | null;
-    new_elo: number | null;
-    result: string | null;
-}
-
-
-export interface CreateMatch {
-    mode: string;
-    players: { user_id: number; position: number; }[];
-
-}
-
-// types/tournament.ts
-
 export interface Tournament {
     id: number;
     name: string;
@@ -410,7 +269,7 @@ export interface TournamentList {
 export interface TournamentBasic {
     id: number;
     name: string;
-    status: 'registration' | 'active' | 'finished' | 'cancelled';
+    status: 'registration' | 'active' | 'finished';
     is_registered: boolean;
 }
 
@@ -442,9 +301,9 @@ export interface TournamentCreator {
 export interface TournamentOverview {
     id: number;
     name: string;
-    status: 'registration' | 'active' | 'finished' | 'cancelled';
-    created_by: number;              // Keep as number
-    creator_username?: string;        // Add this
+    status: 'registration' | 'active' | 'finished';
+    created_by: number;  
+    creator_username?: string; 
     winner_id: number | null;
     winner_username?: string | null;
     winner_display_name?: string | null;
@@ -454,79 +313,6 @@ export interface TournamentOverview {
     ended_at: string | null;
     created_at: string;
 }
-
-export interface TournamentPlayer {
-    id: number;
-    tournament_id: number;
-    user_id: number;
-    seed: number;
-    eliminated: number;
-    registered_at: string;
-    username: string;
-    avatar: string;
-}
-
-export interface TournamentDetails extends Tournament {
-    creator: TournamentCreator;
-    players: TournamentPlayer[];
-    player_count: number;
-    is_registered: boolean;
-    can_start: boolean;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-    success: boolean;
-    data?: T;
-    error?: string;
-    message?: string;
-}
-
-export interface TournamentResponse {
-    success: boolean;
-    tournament: Tournament;
-}
-
-
-export interface TournamentsListResponse {
-    success: boolean;
-    tournaments: Tournament[];
-}
-
-export interface PlayersListResponse {
-    success: boolean;
-    players: TournamentPlayer[];
-}
-export type UserMatchResponse = {
-    id: number;
-    round: number;
-    match_number: number;
-    status: 'pending' | 'playing' | 'completed';
-    player1: {
-        id: number;
-        user_id: number;
-        username: string;
-    };
-    player2: {
-        id: number;
-        user_id: number;
-        username: string;
-    };
-    game_id: number;
-    created_at: string;
-} | null;
-
-export interface MatchHistoryItem {
-    matchId: number;
-    mode: GameMode;
-    date: string;
-    isWin: number;
-    user_score: number;
-    opponent_score: number;
-    opponent_name: string | null;
-    opponent_avatar: string | null;
-}
-
 
 export interface TopPlayer {
     id: number

@@ -6,8 +6,8 @@ type PlayersHeaderProps = {
 };
 
 export default function PlayersHeader({ playerNames, playerAvatars }: PlayersHeaderProps) {
-    if (!playerNames) return null;
-console.log("Rendering PlayersHeader with:", { playerNames, playerAvatars });
+    if (!playerNames) 
+        return null;
 
     return (
         <div className="relative w-full max-w-5xl mx-auto flex items-center justify-between px-4 py-3 pointer-events-none">

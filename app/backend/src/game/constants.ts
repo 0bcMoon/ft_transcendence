@@ -20,12 +20,11 @@ export const PADDLE_OFFSET = 40;
 export const MAX_PADDLE_BOUNCE_ANGLE = 60;
 export const SERVE_ANGLE_RANGE = { min: 10, max: 25 };
 
-// XP rules
+// XP
 export const XP_WIN = 100;
 export const XP_LOSS = 30;
 export const XP_PER_POINT = 5;
 export const XP_PER_LEVEL = 1000;
 
-// Helper
 export const calculateLevel = (totalXP: number) => totalXP / XP_PER_LEVEL;
 
