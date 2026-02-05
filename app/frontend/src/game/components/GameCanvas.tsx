@@ -11,14 +11,7 @@ interface GameCanvasProps {
     winner?: "left" | "right" | null;
 }
 
-export default function GameCanvas({
-    gameStateRef,
-    isGameOver,
-    countdown,
-    waiting,
-    userSide,
-    winner
-}: GameCanvasProps) {
+export default function GameCanvas({ gameStateRef, isGameOver, countdown, waiting, userSide, winner }: GameCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationTimeRef = useRef<number>(0);
 

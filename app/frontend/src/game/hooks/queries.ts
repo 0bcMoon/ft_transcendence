@@ -14,7 +14,6 @@ import type {
 
 } from '../types/types';
 
-// ==================== TOURNAMENT QUERIES ============================
 
 export const useGetGameDetail = (gameId: number) => {
     return useQuery<MatchDetail, Error>({

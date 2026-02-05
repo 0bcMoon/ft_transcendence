@@ -1,3 +1,4 @@
+*This project has been created as part of the 42 curriculum by hibenouk, mregrag, zel-oirg, ael-garr*
 # 🏓 ft_transcendence - PingPong Arena
 
 A modern, full-stack real-time multiplayer Pong game platform with chat, tournaments, and comprehensive monitoring.
@@ -178,29 +179,39 @@ SQLite was chosen for its:
 ## 📦 Modules
 
 ### Module Summary
+Minor: Real-time collaborative features (shared workspaces, live editing, collabo-
+rative drawing, etc.)
 
 | Category | Module | Type | Points |
 |----------|--------|------|--------|
-| Web | Backend Framework (Fastify) | Major | 2 |
+| Web | Backend Framework (Fastify) | Minor | 1 |
 | Web | Frontend Framework (React) | Minor | 1 |
+| Web | Implement real-time features using WebSockets  | Major | 2 |
+| Web | Support for additional browsers. | Minor | 1 |
+| Web | A public API to interact with the database with a secured | Major | 2|
+| User Management | Remote Authentication (OAuth2) | Minor | 1 |
 | User Management | Standard User Management | Major | 2 |
-| User Management | Remote Authentication (OAuth2) | Major | 2 |
+| User Management| Implement a complete 2FA | Minor | 1 | 
+| Gameplay | Game statistics and match history | Minor | 1 |
+| Gameplay | Introduce an AI Opponent for games | Major | 2 |
+| Gameplay |Implement a complete web-based game where users can play | Major | 2 |
 | Gameplay | Remote Players | Major | 2 |
-| Gameplay | Multiple Players (Tournaments) | Major | 2 |
 | Gameplay | Another Game (Arena) | Major | 2 |
-| Cybersecurity | 2FA & JWT | Major | 2 |
-| DevOps | ELK Stack | Major | 2 |
-| DevOps | Monitoring (Prometheus/Grafana) | Minor | 1 |
-| **Total** | | | **18 pts** |
+| Gameplay | Multiple Players (Tournaments) | Minor | 1 |
+| Gameplay | A gamification system to reward users for their actions. | Minor | 1 |
+| Gameplay | Implement spectator mode for games | Minor | 1 |
+| DevOps | Monitoring (Prometheus/Grafana) | Major  | 2 |
+| Custom | JWT Secure Token Management (Access & Refresh Tokens) | Major | 2 |
+| **Total** | | | **27 pts** |
+
 
 ### Module Details
 
-#### 1. Backend Framework - Fastify (Major - 2pts)
+#### 1. Backend Framework - Fastify (Minor - 1pt)
 **Justification**: Fastify provides excellent TypeScript support, built-in schema validation with Zod, and superior performance compared to Express.
 
 **Implementation**:
 - RESTful API with `/api` prefix
-- WebSocket integration for real-time features
 - JWT authentication middleware
 - Request/response validation with Zod schemas
 - Plugin-based architecture
@@ -223,7 +234,61 @@ SQLite was chosen for its:
 
 ---
 
-#### 3. Standard User Management (Major - 2pts)
+#### 3. Real-time Features with WebSockets (Major - 2pts)
+**Justification**: WebSockets enable instant bidirectional communication for chat, game state, and notifications.
+
+**Implementation**:
+- Real-time chat messaging
+- Live game state synchronization
+- Instant notifications delivery
+- Online/offline status tracking
+- WebSocket connection management
+
+**Worked on by**: Hicham, Mohamed
+
+---
+
+#### 4. Support for Additional Browsers (Minor - 1pt)
+**Justification**: Cross-browser compatibility ensures all users can access the platform.
+
+**Implementation**:
+- Tested on Chrome, Firefox, Safari, and Edge
+- Polyfills for older browser features
+- Responsive design for various screen sizes
+- CSS vendor prefixes where needed
+
+**Worked on by**: All team members
+
+---
+
+#### 5. Public API with Database Security (Major - 2pts)
+**Justification**: Secure RESTful API for external integrations with proper authentication and authorization.
+
+**Implementation**:
+- RESTful endpoints with `/api` prefix
+- JWT-based authentication
+- Input validation with Zod schemas
+- Rate limiting and security headers
+- Parameterized database queries
+
+**Worked on by**: All team members
+
+---
+
+#### 6. Remote Authentication - OAuth2 (Minor - 1pt)
+**Justification**: Secure third-party authentication with 42 Intra and Google.
+
+**Implementation**:
+- 42 Intra OAuth2 integration
+- Google OAuth2 integration
+- Automatic account creation/linking
+- Session management with JWT cookies
+
+**Worked on by**: Hicham
+
+---
+
+#### 7. Standard User Management (Major - 2pts)
 **Justification**: Comprehensive user system with profiles, avatars, friends, and blocking.
 
 **Implementation**:
@@ -238,20 +303,60 @@ SQLite was chosen for its:
 
 ---
 
-#### 4. Remote Authentication - OAuth2 (Major - 2pts)
-**Justification**: Secure third-party authentication with 42 Intra and Google.
+#### 8. Two-Factor Authentication (Minor - 1pt)
+**Justification**: Enhanced account security with email-based OTP verification.
 
 **Implementation**:
-- 42 Intra OAuth2 integration
-- Google OAuth2 integration
-- Automatic account creation/linking
-- Session management with JWT cookies
+- Email-based OTP for 2FA
+- Enable/disable 2FA in settings
+- Secure verification flow
+- Time-limited OTP codes
 
 **Worked on by**: Hicham
 
 ---
 
-#### 5. Remote Players (Major - 2pts)
+#### 9. Game Statistics and Match History (Minor - 1pt)
+**Justification**: Track player performance and game history for competitive gameplay.
+
+**Implementation**:
+- Match history per user
+- Win/loss statistics
+- XP and level progression
+- Personal performance dashboard
+
+**Worked on by**: Mohamed
+
+---
+
+#### 10. AI Opponent for Games (Major - 2pts)
+**Justification**: Allows single players to practice and play against computer-controlled opponents.
+
+**Implementation**:
+- AI paddle movement algorithms
+- Difficulty scaling
+- Realistic ball prediction
+- Integration with Arena mode
+
+**Worked on by**: Zakaria
+
+---
+
+#### 11. Web-based Pong Game (Major - 2pts)
+**Justification**: Core gameplay implementation with canvas-based rendering and physics.
+
+**Implementation**:
+- Canvas-based game rendering
+- Ball physics and collision detection
+- Paddle controls (keyboard/touch)
+- Score tracking and game completion
+- Local 2-player mode
+
+**Worked on by**: Mohamed
+
+---
+
+#### 12. Remote Players (Major - 2pts)
 **Justification**: Core multiplayer functionality with real-time game synchronization.
 
 **Implementation**:
@@ -264,7 +369,20 @@ SQLite was chosen for its:
 
 ---
 
-#### 6. Multiple Players - Tournaments (Major - 2pts)
+#### 13. Another Game - Arena Mode (Major - 2pts)
+**Justification**: Alternative game mode with different mechanics and separate statistics.
+
+**Implementation**:
+- Round-based gameplay (first to X wins)
+- Dedicated matchmaking queue
+- Separate leaderboard and statistics
+- Arena-specific game mechanics
+
+**Worked on by**: Zakaria
+
+---
+
+#### 14. Multiple Players - Tournaments (Minor - 1pt)
 **Justification**: Competitive tournament system with bracket management.
 
 **Implementation**:
@@ -278,49 +396,33 @@ SQLite was chosen for its:
 
 ---
 
-#### 7. Another Game - Arena Mode (Major - 2pts)
-**Justification**: Alternative game mode with different mechanics and separate statistics.
+#### 15. Gamification System (Minor - 1pt)
+**Justification**: Reward users for their actions to increase engagement.
 
 **Implementation**:
-- Round-based gameplay (first to X wins)
-- Dedicated matchmaking queue
-- AI opponent option
-- Spectator mode
-- Separate leaderboard and statistics
-
-**Worked on by**: Zakaria
-
----
-
-#### 8. Two-Factor Authentication & JWT (Major - 2pts)
-**Justification**: Enhanced security with 2FA and secure session management.
-
-**Implementation**:
-- Email-based OTP for 2FA
-- Enable/disable 2FA in settings
-- JWT tokens in HTTP-only cookies
-- Token refresh mechanism
-- Secure password hashing with bcrypt
-
-**Worked on by**: Hicham
-
----
-
-#### 9. ELK Stack - Log Management (Major - 2pts)
-**Justification**: Centralized logging for debugging and monitoring.
-
-**Implementation**:
-- Elasticsearch for log storage
-- Logstash for log processing (GELF input)
-- Kibana for log visualization
-- Docker logging driver integration
-- Health checks and automatic restart
+- XP and leveling system
+- Achievements and badges
+- Leaderboard rankings
+- Progress tracking
 
 **Worked on by**: Mohamed
 
 ---
 
-#### 10. Monitoring - Prometheus & Grafana (Minor - 1pt)
+#### 16. Spectator Mode for Games (Minor - 1pt)
+**Justification**: Allow users to watch live games without participating.
+
+**Implementation**:
+- Real-time game streaming to spectators
+- Spectator-only WebSocket connections
+- No interference with active gameplay
+- Live score updates
+
+**Worked on by**: Zakaria
+
+---
+
+#### 17. Monitoring - Prometheus & Grafana (Major - 2pts)
 **Justification**: Application performance monitoring and alerting.
 
 **Implementation**:
@@ -328,8 +430,61 @@ SQLite was chosen for its:
 - Node exporter for system metrics
 - Grafana dashboards
 - Custom application metrics
+- Alerting configuration
 
 **Worked on by**: Ayoub
+
+---
+
+#### 18. JWT Secure Token Management - Custom Module (Major - 2pts)
+
+**Why We Chose This Module**:
+Authentication security is critical for any web application handling user data and real-time gaming sessions. Rather than using basic session-based authentication or storing tokens in localStorage (which is vulnerable to XSS attacks), we implemented a robust JWT-based authentication system with dual-token architecture that addresses modern web security challenges.
+
+**Technical Challenges Addressed**:
+
+1. **XSS (Cross-Site Scripting) Prevention**:
+   - Tokens stored in `HttpOnly` cookies are inaccessible to JavaScript, preventing malicious scripts from stealing authentication credentials
+   - Even if an attacker injects JavaScript into the page, they cannot read or exfiltrate the tokens
+
+2. **CSRF (Cross-Site Request Forgery) Prevention**:
+   - Cookies configured with `SameSite=Strict` attribute prevent browsers from sending cookies with cross-origin requests
+   - Combined with `Secure` flag to ensure cookies are only transmitted over HTTPS
+
+3. **Token Expiration & Rotation**:
+   - Short-lived access tokens (15 minutes) limit the window of opportunity if a token is compromised
+   - Long-lived refresh tokens (7 days) stored securely allow seamless token renewal without re-authentication
+   - Automatic token refresh mechanism maintains user sessions without interruption
+
+4. **Secure Cookie Configuration**:
+   - `HttpOnly`: Prevents JavaScript access to cookies
+   - `Secure`: Ensures cookies only sent over HTTPS
+   - `SameSite=Strict`: Blocks cross-origin cookie transmission
+   - `Path=/`: Scopes cookies appropriately
+
+**How It Adds Value**:
+- **User Trust**: Users can confidently use the platform knowing their sessions are protected against common web attacks
+- **Seamless Experience**: Automatic token refresh provides uninterrupted gaming and chat sessions
+- **Compliance Ready**: Follows security best practices recommended by OWASP for token-based authentication
+- **Scalable Architecture**: Stateless JWT tokens allow horizontal scaling without shared session storage
+
+**Why It Deserves Major Module Status (2 points)**:
+1. **Technical Complexity**: Implementing dual-token architecture with automatic refresh, secure cookie handling, and proper expiration management requires deep understanding of web security, HTTP protocols, and browser behavior
+2. **Security Critical**: Authentication is the gateway to all protected resources; a flaw here compromises the entire application
+3. **Integration Depth**: The system integrates with OAuth2 providers, 2FA, WebSocket authentication, and all protected API endpoints
+4. **Production-Grade Implementation**: Includes edge cases like token revocation, concurrent session handling, and graceful degradation
+
+**Implementation**:
+- Access tokens (JWT) with 15-minute expiration for API authorization
+- Refresh tokens with 7-day expiration for session continuity
+- Tokens stored in `HttpOnly`, `Secure`, `SameSite=Strict` cookies
+- Automatic silent refresh before access token expiration
+- Token refresh endpoint with refresh token rotation
+- Secure logout with cookie invalidation
+- Integration with @fastify/jwt for token signing and verification
+- bcrypt password hashing with configurable salt rounds
+
+**Worked on by**: Hicham
 
 ---
 
@@ -427,7 +582,7 @@ SQLite was chosen for its:
 ### Prerequisites
 
 - **Docker** (v20.10+) and **Docker Compose** (v2.0+)
-- **Node.js** (v18+) - for local development only
+- **Node.js** (v24) - for local development only
 - **Git**
 - Modern web browser (Chrome, Firefox, Safari, Edge)
 
@@ -446,25 +601,66 @@ SQLite was chosen for its:
 
 3. **Configure the `.env` file**
    ```env
-   # JWT Secret (generate a strong random string)
-   JWT_SECRET=your-super-secret-jwt-key-here
+   # ===================
+   # Server Configuration
+   # ===================
+   PORT=                         # Backend server port (e.g., 3000)
+   DB_NAME=                      # SQLite database filename (e.g., pingo.db)
+   DB_SCHEMA=                    # Path to the SQL schema file (e.g., ./db/schema.sql)
 
-   # OAuth2 - 42 Intra (get from 42 intra settings)
-   INTRA_CLIENT_ID=your-42-client-id
-   INTRA_CLIENT_SECRET=your-42-client-secret
-   INTRA_REDIRECT_URI=https://localhost:8443/api/auth/oauth/42/callback
+   # ===================
+   # JWT Authentication
+   # ===================
+   JWT_SECRET=                   # Secret key for signing JWTs (use a long random string, min 32 chars)
+   ACCESS_TOKEN_EXPR=            # Access token expiry duration (e.g., 15m, 1h)
+   REFRESH_TOKEN_EXPR=           # Refresh token expiry duration (e.g., 7d, 30d)
 
-   # OAuth2 - Google (get from Google Cloud Console)
-   GOOGLE_CLIENT_ID=your-google-client-id
-   GOOGLE_CLIENT_SECRET=your-google-client-secret
-   GOOGLE_REDIRECT_URI=https://localhost:8443/api/auth/oauth/google/callback
+   # ===================
+   # Application URLs
+   # ===================
+   FRONTEND_URL=                 # Frontend app URL (e.g., https://localhost:8080)
+   BACKEND_URL=                  # Backend API URL (e.g., https://localhost:3000)
 
-   # Email Service (for 2FA and password reset)
-   RESEND_API_KEY=your-resend-api-key
-   EMAIL_FROM=noreply@yourdomain.com
+   # ===================
+   # Google OAuth2
+   # ===================
+   GOOGLE_CLIENT_ID=             # Google OAuth client ID from Google Cloud Console
+   GOOGLE_CLIENT_SECRET=         # Google OAuth client secret from Google Cloud Console
+   GOOGLE_REDIRECT_URI=          # OAuth callback URL (e.g., https://localhost:8080/api/auth/google/callback)
 
-   # ELK Stack
-   ELASTIC_PASSWORD=your-elastic-password
+   # ===================
+   # 42 Intra OAuth2
+   # ===================
+   INTRA_CLIENT_ID=              # 42 Intra OAuth client ID from 42 API settings
+   INTRA_CLIENT_SECRET=          # 42 Intra OAuth client secret from 42 API settings
+   INTRA_REDIRECT_URI=           # OAuth callback URL (e.g., https://localhost:8080/api/auth/42/callback)
+
+   # ===================
+   # ELK Stack (Logging)
+   # ===================
+   ES_HOST=                      # Elasticsearch host URL (e.g., http://elasticsearch:9200)
+   ELASTIC_USER=                 # Elasticsearch username (default: elastic)
+   ELASTIC_PASSWORD=             # Elasticsearch password (set a strong password)
+   KIBANA_PASSWORD=              # Kibana admin password for login
+
+   # ===================
+   # Email (SMTP)
+   # ===================
+   SMTP_USER=                    # SMTP username/email for sending emails (e.g., your-email@gmail.com)
+   SMTP_FROM=                    # "From" address displayed in emails (e.g., noreply@pingo.com)
+   SMTP_PASS=                    # SMTP password or app-specific password
+
+   # ===================
+   # Grafana Monitoring
+   # ===================
+   GF_SECURITY_ADMIN_USER=       # Grafana admin username (e.g., admin)
+   GF_SECURITY_ADMIN_PASSWORD=   # Grafana admin password (set a strong password)
+   GF_USERS_ALLOW_SIGN_UP=       # Allow user registration in Grafana (true/false)
+
+   # ===================
+   # Notifications
+   # ===================
+   DISCORD_WEBHOOK=              # Discord webhook URL for sending alerts/notifications
    ```
 
 4. **Configure frontend environment** (for development)
@@ -480,10 +676,9 @@ SQLite was chosen for its:
    ```
 
 2. **Access the application**
-   - **Frontend**: https://localhost:8443
-   - **Grafana**: http://localhost:3000 (admin/admin)
+   - **Frontend**: https://localhost:8080
+   - **Grafana**: http://localhost:9000
    - **Kibana**: http://localhost:5601
-   - **Prometheus**: http://localhost:9090
 
 3. **Stop all services**
    ```bash
@@ -587,5 +782,3 @@ This project was developed as part of the 42 School curriculum.
   <p>Made with ❤️ by the ft_transcendence team</p>
   <p>© 2026</p>
 </div>
-
-

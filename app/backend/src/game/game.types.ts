@@ -9,15 +9,6 @@ export interface Scores {
     right: number;
 }
 
-export interface BadgeCheckStats {
-    wins: number;
-    losses:  number;
-    level: number;
-    total_xp: number;
-    games_played: number;
-    win_rate: number;
-}
-
 export interface TournamentMatch {
     gameId: number;
     players: { left: Player; right: Player };
