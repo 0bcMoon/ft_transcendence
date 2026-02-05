@@ -50,6 +50,12 @@ export default function LoginPage() {
         if (!error) {
             return
         }
+        if (error === "two_factor_required") {
+            setCurrentStep("two_factor_auth")
+            searchParams.delete('error');
+            setSearchParams(searchParams, { replace: true });
+            return
+        }
 
         setErrorMessage(error);
         searchParams.delete('error');

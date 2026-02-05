@@ -179,8 +179,6 @@ SQLite was chosen for its:
 ## 📦 Modules
 
 ### Module Summary
-Minor: Real-time collaborative features (shared workspaces, live editing, collabo-
-rative drawing, etc.)
 
 | Category | Module | Type | Points |
 |----------|--------|------|--------|
@@ -188,7 +186,6 @@ rative drawing, etc.)
 | Web | Frontend Framework (React) | Minor | 1 |
 | Web | Implement real-time features using WebSockets  | Major | 2 |
 | Web | Support for additional browsers. | Minor | 1 |
-| Web | A public API to interact with the database with a secured | Major | 2|
 | User Management | Remote Authentication (OAuth2) | Minor | 1 |
 | User Management | Standard User Management | Major | 2 |
 | User Management| Implement a complete 2FA | Minor | 1 | 
@@ -202,7 +199,7 @@ rative drawing, etc.)
 | Gameplay | Implement spectator mode for games | Minor | 1 |
 | DevOps | Monitoring (Prometheus/Grafana) | Major  | 2 |
 | Custom | JWT Secure Token Management (Access & Refresh Tokens) | Major | 2 |
-| **Total** | | | **27 pts** |
+| **Total** | | | **25 pts** |
 
 
 ### Module Details
@@ -256,20 +253,6 @@ rative drawing, etc.)
 - Polyfills for older browser features
 - Responsive design for various screen sizes
 - CSS vendor prefixes where needed
-
-**Worked on by**: All team members
-
----
-
-#### 5. Public API with Database Security (Major - 2pts)
-**Justification**: Secure RESTful API for external integrations with proper authentication and authorization.
-
-**Implementation**:
-- RESTful endpoints with `/api` prefix
-- JWT-based authentication
-- Input validation with Zod schemas
-- Rate limiting and security headers
-- Parameterized database queries
 
 **Worked on by**: All team members
 

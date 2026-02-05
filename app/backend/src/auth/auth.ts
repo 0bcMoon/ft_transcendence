@@ -246,14 +246,16 @@ const Auth = {
         return reply.status(200).send({ message: `Two-factor authentication ${action ? 'Enabled' : 'disabled'} successful` });
     },
 
-    TwoFactorAuthSetup: async (reply: FastifyReply, id: number, email: string) => {
+    TwoFactorAuthSetup: async (reply: FastifyReply, id: number, email: string, oauth_user: boolean = false) => {
 
 
         const session_key = generateRandomKey(24)
         const code = generateRandomKey(4);
         const r = await sendEmail(email, "Two-Factor Authentication Code - Pingo", twoFactorAuthTemplate(code))
-        if (!r.success) {
+        if (!r.success && !oauth_user) {
             return reply.status(500).send({ message: "Failed to send two-factor authentication email" });
+        } else if (!r.success && oauth_user) {
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=Unable to send two-factor authentication code, please try again later`);
         }
 
 
@@ -277,6 +279,9 @@ const Auth = {
         setTimeout(() => {
             session.delete(session_key);
         }, 15 * 60 * 1000); // 15 minutes expiration
+        if (oauth_user) {
+            return reply.redirect(`${env.FRONTEND_URL}/login?error=two_factor_required`);
+        }
 
         return reply.status(200).send({
             message: 'Two-factor authentication is enabled on your account. Please check your email for the confirmation code to complete the login process.',
@@ -408,12 +413,19 @@ const Auth = {
             }
 
             const user_data = await response.json() as Intra42OAuth2;
-            const id = await User.intraLogin(user_data)
+            const user = await User.intraLogin(user_data)
 
-            if (!id) {
+            if (!user) {
                 return reply.redirect(`${env.FRONTEND_URL}/login?error=email already exists with another account`);
             }
-            Auth.grantAccess(reply, id);
+
+            req.log.info(`User logged in with Intra42 OAuth2 successfully. ${user.two_factor_enabled ? 'Two-factor authentication is enabled.' : 'Two-factor authentication is not enabled.'}`);
+            if (user.two_factor_enabled) {
+                req.log.info(`Initiating two-factor authentication for user ${user.username} (ID: ${user.id})`);
+                return await Auth.TwoFactorAuthSetup(reply, user.id, user.email, true);
+            }
+
+            Auth.grantAccess(reply, user.id);
             reply.redirect(env.FRONTEND_URL); // Redirect to the home page or any other page after successful login
             return reply;
         } catch (error: any) {

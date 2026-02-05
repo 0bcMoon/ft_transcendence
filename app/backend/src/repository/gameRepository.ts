@@ -257,7 +257,6 @@ const gameRepository = {
         );
     },
 
-
     async updateStats(userId: number, xpGained: number, won: boolean): Promise<void> {
         await db.run(
             `INSERT OR IGNORE INTO player_stats (user_id) VALUES (?)`,
@@ -266,7 +265,7 @@ const gameRepository = {
         await db.run(
             `UPDATE player_stats 
              SET total_xp = total_xp + ?,
-                 level = (total_xp + ?) / 1000,
+             level = CAST((total_xp + ?) AS REAL) / 1000,
                  wins = wins + ?,
                  losses = losses + ?,
                  games_played = games_played + 1,

@@ -1,7 +1,7 @@
 import env from "../env";
 
 export function resetPasswordEmailTemplate(reset_code: string) {
-    const reset_link = `${env.FRONTEND_URL}/reset-password?rest_code=${reset_code}`;
+    const reset_link = `${env.FRONTEND_URL}/reset-password?reset_code=${reset_code}`;
 
     return `
             <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f9f9f9; padding: 40px; text-align: center; color: #334155;">
@@ -23,6 +23,10 @@ export function resetPasswordEmailTemplate(reset_code: string) {
                   This link will expire in 15 minutes for security reasons.
                 </p>
               </div>
+
+              <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">
+                © 2026 Ping Pong. All rights reserved.
+              </p>
             </div>
         `;
 
@@ -44,9 +48,12 @@ export function emailConfirmationTemplate(code: string) {
             </div>
             <p style="font-size: 14px; color: #94a3b8; margin-top: 40px;">
               Button not working? Copy and paste this link into your browser:<br>
-              <span style="color: #3b82f6;">{{verification_link}}</span>
             </p>
           </div>
+
+          <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">
+            © 2026 Ping Pong. All rights reserved.
+          </p>
         </div>
     `;
 }
@@ -75,6 +82,11 @@ export function otpConfirmationTemplate(code: string) {
           <div style="margin-top: 24px; font-size: 12px; color: #cbd5e1;">
             This is an automated security notification.
           </div>
+
+          <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">
+            © 2026 Ping Pong. All rights reserved.
+          </p>
+
         </div>
     `;
 }
@@ -112,7 +124,7 @@ export function twoFactorAuthTemplate(code: string) {
   </div>
   
   <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">
-    © {{year}} Your Project Name. All rights reserved.
+    © 2026 Ping Pong. All rights reserved.
   </p>
 </div>`
 }

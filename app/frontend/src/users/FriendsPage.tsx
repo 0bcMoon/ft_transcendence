@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { Search, Users, UserPlus, UserX, ArrowLeft } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { Search, Users, UserPlus, UserX} from "lucide-react"
 import FriendsList from "./components/FriendsList"
 import SearchUsers from "./components/SearchUsers"
 import FriendRequests from "./components/FriendRequests"
@@ -10,9 +9,6 @@ type TabType = "friends" | "search" | "requests" | "blocked"
 
 const FriendsPage = () => {
     const [activeTab, setActiveTab] = useState<TabType>("friends")
-    const navigate = useNavigate()
-
-    const handleGoBack = () => navigate(-1)
 
     const tabs = [
         { id: "friends" as TabType, label: "Friends", icon: Users },

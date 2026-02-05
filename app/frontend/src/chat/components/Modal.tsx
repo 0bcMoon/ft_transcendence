@@ -1,7 +1,7 @@
 import type React from "react"
 
 import { useEffect, useCallback } from "react"
-import { X, User, Gamepad2, Shield, Loader2 } from "lucide-react"
+import { X, User, Shield, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useActiveChatStore } from "@/state/Store"
 import toast from "react-hot-toast"
@@ -172,14 +172,6 @@ function Modal({ isOpen, onClose, title = "User Actions", userDisplayName = "Use
                         description="View profile details and information"
                         onClick={() => navigate(`/users/${active_chat?.id}`)}
                         variant="primary"
-                    />
-
-                    <ActionButton
-                        icon={<Gamepad2 size={20} />}
-                        label="Play a Ping Pong Match"
-                        description="Start a new game challenge"
-                        onClick={() => toast.error("Feature coming soon! Not yet implemented.")}
-                        variant="secondary"
                     />
 
                     <BlockAction />

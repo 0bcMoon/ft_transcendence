@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { User, userRepository } from "../repository/userRepository";
+import { User, User as User_t, userRepository } from "../repository/userRepository";
 import path from "path";
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -468,9 +468,13 @@ const User = {
     sendEmailConfirmation: async (id: number, email: string, reply: FastifyReply) => {
 
         const code = generateOTP(8);
-        // TODO: check for email faild
-        await sendEmail(email, "Confirmation Code - Pingo", otpConfirmationTemplate(code));
-        if (oneTimePass.has(id)) { //  TODO: could applay a cold down may be 
+
+        const r = await sendEmail(email, "Confirmation Code - Pingo", otpConfirmationTemplate(code));
+        if (!r.success) {
+            return reply.status(500).send({ message: "failed to send confirmation email" });
+        }
+
+        if (oneTimePass.has(id)) { 
             const existingOTP = oneTimePass.get(id);
             if (existingOTP) {
                 clearTimeout(existingOTP.timeout);
@@ -516,13 +520,13 @@ const User = {
         return await userRepository.createOauthUser(new_user);;
     },
 
-    intraLogin: async (user: Intra42OAuth2): Promise<number | undefined> => {
+    intraLogin: async (user: Intra42OAuth2): Promise<User_t | undefined> => {
 
         const existing_user = await userRepository.getUserByEmail(user.email);
 
         if (existing_user) {
             if (existing_user.oauth_type === 'intra42') {
-                return existing_user.id;
+                return existing_user;
             }
             return undefined;
         }
@@ -535,7 +539,8 @@ const User = {
             password: await bcrypt.hash(generateUUIDPassword(), 10),
             oauth_type: 'intra42'
         };
-        return await userRepository.createOauthUser(new_user);;
+        await userRepository.createOauthUser(new_user);;
+        return await userRepository.getUserByEmail(user.email);
     }
 }
 

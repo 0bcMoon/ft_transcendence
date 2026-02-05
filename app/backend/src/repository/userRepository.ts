@@ -329,7 +329,7 @@ export const userRepository = {
     },
 
     getUserByEmail: async (email: string): Promise<User | undefined> => {
-        const query: string = `SELECT id, oauth_type FROM users WHERE email = ?`;
+        const query: string = `SELECT id, oauth_type, two_factor_enabled, email FROM users WHERE email = ?`;
         return await db.get(query, [email]);
     }
 
