@@ -41,6 +41,7 @@ import AllNotificationsPage$1 from './notifications/AllNotificationsPage';
 
 import PrivacyPolicy from './landingpage/pages/PrivacyPolicy';
 import TermsOfService from './landingpage/pages/TermsOfService';
+import PublicArenaDashboard from './arena/pages/PublicArenaDashboard';
 
 
 const router = createBrowserRouter([
@@ -65,7 +66,7 @@ const router = createBrowserRouter([
             { path: "notifications", element: <AllNotificationsPage$1 /> },
 
 
-            // { path: "game/arena/start", element: <ArenaStartPage /> },
+            { path: "arena/public/api", element: <PublicArenaDashboard /> },
             { path: "arena", element: <ArenaLobbyPage /> },
             { path: "arena/history", element: <ArenaHistoryPage /> },
             { path: "/game/arena/:gameId/play", element: <ArenaPlayPage /> },
